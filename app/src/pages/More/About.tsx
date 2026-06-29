@@ -1,0 +1,68 @@
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import { useQuery } from "@apollo/client/react";
+import { type ReactElement } from "react";
+import { APP_ABOUT_PAGE_QUERY } from "../../graphql/queries/appAboutPageConfig.query";
+import { useHtmlContentSeoOverride } from "../../hooks/useHtmlContentSeoOverride";
+import { useTranslation } from "../../hooks/useTranslation";
+import { APP_SHELL_ROUTES } from "../../routing/app-shell-routes";
+import EnamadTrustSeal from "../../shared/EnamadTrustSeal";
+import { EMPTY_APP_ABOUT_PAGE, type AppAboutPageConfigQuery } from "./about-page.api";
+import styles from "./styles/more.module.scss";
+import { opaqueShellProps } from "../../shared/opaqueShell";
+
+const hasText = (value: string): boolean => value.trim().length > 0;
+
+const AboutPage = (): ReactElement => {
+  const { t } = useTranslation();
+  const { data, loading } = useQuery<AppAboutPageConfigQuery>(APP_ABOUT_PAGE_QUERY, {
+    fetchPolicy: "cache-and-network",
+  });
+  const aboutPage = data?.appAboutPageConfig ?? EMPTY_APP_ABOUT_PAGE;
+
+  useHtmlContentSeoOverride({
+    html: aboutPage.html,
+    fallbackDescriptionKey: "seo.pages.moreAbout.description",
+    canonicalPath: APP_SHELL_ROUTES.moreAbout,
+    breadcrumbs: [
+      { name: t("app.pageTitles.more"), path: APP_SHELL_ROUTES.more },
+      { name: t("app.pageTitles.moreAbout"), path: APP_SHELL_ROUTES.moreAbout },
+    ],
+  });
+
+  return (
+    <section className={styles.page} aria-busy={loading}>
+      <div className={styles.hero} {...opaqueShellProps}>
+        <p>درباره سامانه</p>
+        <h2>Smart Furnish</h2>
+        <span>معرفی فروشگاه هوشمند مبلمان، پیش‌نمایش AI و تجربه خرید</span>
+      </div>
+
+      <div className={styles.aboutPanel} {...opaqueShellProps}>
+        <div className={styles.aboutHeader}>
+          <span className={styles.aboutIcon}>
+            <InfoOutlinedIcon />
+          </span>
+        </div>
+
+        {hasText(aboutPage.html) ? (
+          <div
+            className={styles.aboutContent}
+            dangerouslySetInnerHTML={{ __html: aboutPage.html }}
+          />
+        ) : (
+          <p className={styles.aboutEmpty}>محتوای درباره سامانه هنوز تنظیم نشده است.</p>
+        )}
+
+        <div className={styles.aboutTrustSection}>
+          <p className={styles.aboutSafePayment}>
+            پرداخت‌های آنلاین در این سامانه از طریق درگاه‌های معتبر بانکی انجام می‌شود و اطلاعات
+            مالی شما با رعایت استانداردهای امنیتی محافظت می‌گردد.
+          </p>
+          <EnamadTrustSeal />
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default AboutPage;

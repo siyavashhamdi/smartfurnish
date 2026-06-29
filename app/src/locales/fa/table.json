@@ -1,0 +1,223 @@
+{
+    "table": {
+        "columns": {
+            "actions": "عملیات"
+        },
+        "pagination": {
+            "showing": "نمایش {{count}} از {{total}} مورد",
+            "rowsPerPage": "تعداد در هر صفحه",
+            "firstPage": "اولین صفحه",
+            "previousPage": "صفحه قبل",
+            "nextPage": "صفحه بعد",
+            "lastPage": "آخرین صفحه",
+            "goToPage": "رفتن به صفحه",
+            "goToPageLabel": "شماره صفحه",
+            "goToPagePlaceholder": "مثلاً ۵",
+            "goToPageButton": "برو",
+            "goToPageInvalid": "شماره صفحه باید بین ۱ تا {{totalPages}} باشد."
+        },
+        "filters": {
+            "all": "همه",
+            "multipleSelected": "چند انتخاب",
+            "noOptions": "موردی یافت نشد"
+        },
+        "tfFlags": {
+            "yesNo": {
+                "yes": "بلی",
+                "no": "خیر"
+            },
+            "hasNot": {
+                "yes": "دارد",
+                "no": "ندارد"
+            }
+        },
+        "toolbar": {
+            "searchPlaceholder": "جستجو",
+            "clearSearch": "پاک کردن جستجو",
+            "refresh": "به‌روزرسانی",
+            "columnVisibility": "نمایش/مخفی کردن ستون‌ها",
+            "columnVisibilityLabel": "ستون‌های قابل نمایش",
+            "columnVisibilityResetDefault": "بازنشانی به حالت پیش‌فرض"
+        },
+        "dataGrid": {
+            "toolbar": {
+                "toggleColumnFilters": "نمایش فیلتر ستون‌ها",
+                "hideColumnFilters": "مخفی کردن فیلتر ستون‌ها"
+            },
+            "emptyState": {
+                "noData": "داده‌ای یافت نشد."
+            },
+            "rowActions": {
+                "viewDetails": "مشاهده جزئیات",
+                "edit": "ویرایش",
+                "delete": "حذف"
+            },
+            "filter": {
+                "clearField": "پاک کردن فیلتر این ستون",
+                "applyFilters": "اعمال فیلترها",
+                "clearAllFilters": "پاک کردن همه فیلترها"
+            },
+            "deleteDialog": {
+                "title": "تایید حذف",
+                "cancel": "خیر",
+                "confirm": "بله، حذف شود"
+            },
+            "toggleActiveDialog": {
+                "activateTitle": "تایید فعال‌سازی",
+                "deactivateTitle": "تایید غیرفعال‌سازی",
+                "activateMessage": "با تأیید، این عضو فعال خواهد شد.",
+                "deactivateMessage": "با تأیید، این عضو غیرفعال خواهد شد.",
+                "cancel": "بستن",
+                "confirmActivate": "بله، فعال شود",
+                "confirmDeactivate": "بله، غیرفعال شود"
+            },
+            "modal": {
+                "close": "بستن",
+                "closeAria": "بستن",
+                "unsavedChangesTitle": "تأیید بستن فرم",
+                "unsavedChangesMessage": "تغییراتی در این فرم ایجاد کرده‌اید که هنوز ذخیره نشده‌اند.",
+                "unsavedChangesHint": "آیا از بستن فرم اطمینان دارید؟",
+                "unsavedChangesStay": "انصراف",
+                "unsavedChangesDiscard": "بله، بستن فرم"
+            }
+        },
+        "entity": {
+            "createButton": "ایجاد {{title}}",
+            "deleteConfirmMessage": "آیا از حذف این {{title}} مطمئن هستید؟",
+            "modalViewTitle": "جزئیات {{title}}"
+        },
+        "pages": {
+            "usersManagement": {
+                "columns": {
+                    "username": "نام کاربری",
+                    "firstName": "نام",
+                    "lastName": "نام خانوادگی",
+                    "fullName": "نام و نام خانوادگی",
+                    "email": "ایمیل",
+                    "phoneNumber": "شماره تماس",
+                    "avatarFileId": "تصویر پروفایل",
+                    "bio": "بیوگرافی",
+                    "roles": "نقش‌ها",
+                    "status": "وضعیت",
+                    "createdAt": "تاریخ ایجاد",
+                    "updatedAt": "آخرین بروزرسانی"
+                },
+                "filters": {
+                    "createdAtFrom": "ایجاد از تاریخ",
+                    "createdAtTo": "ایجاد تا تاریخ",
+                    "updatedAtFrom": "بروزرسانی از تاریخ",
+                    "updatedAtTo": "بروزرسانی تا تاریخ"
+                }
+            },
+            "payments": {
+                "columns": {
+                    "userFullName": "نام پرداخت‌کننده",
+                    "username": "نام کاربری",
+                    "userEmail": "ایمیل",
+                    "userPhone": "شماره تماس",
+                    "productTitle": "محصول",
+                    "status": "وضعیت",
+                    "paymentMethod": "روش پرداخت",
+                    "currency": "واحد",
+                    "paymentProvider": "درگاه/ارائه‌دهنده",
+                    "amountIrt": "مبلغ اولیه",
+                    "discountPercentage": "درصد تخفیف",
+                    "discountAmountIrt": "مبلغ تخفیف",
+                    "finalAmountIrt": "مبلغ نهایی",
+                    "paymentReference": "کد/مرجع پرداخت",
+                    "transactionId": "شناسه تراکنش",
+                    "couponCode": "کد تخفیف",
+                    "couponDiscountType": "نوع تخفیف کوپن",
+                    "couponDiscountValue": "مقدار تخفیف کوپن",
+                    "isManualStatusChange": "تغییر دستی",
+                    "manualStatusChangedDescription": "توضیح تغییر دستی",
+                    "createdAt": "تاریخ ثبت",
+                    "updatedAt": "آخرین بروزرسانی",
+                    "pendingAt": "تاریخ انتظار",
+                    "paidAt": "تاریخ پرداخت",
+                    "failedAt": "تاریخ خطا",
+                    "refundedAt": "تاریخ مرجوعی",
+                    "cancelledAt": "تاریخ لغو"
+                }
+            },
+            "support": {
+                "columns": {
+                    "id": "شناسه",
+                    "title": "عنوان",
+                    "category": "دسته‌بندی",
+                    "priority": "اولویت",
+                    "status": "وضعیت",
+                    "closedBy": "بسته‌شده توسط",
+                    "closedByUserName": "کاربر بستن",
+                    "closedAt": "تاریخ بسته‌شدن",
+                    "createdByUserName": "ثبت‌کننده",
+                    "updatedByUserName": "آخرین بروزرسانی توسط",
+                    "messageCount": "تعداد پیام",
+                    "lastMessageBody": "آخرین پیام",
+                    "attachmentCount": "پیوست‌ها",
+                    "createdAt": "تاریخ ثبت",
+                    "updatedAt": "آخرین بروزرسانی"
+                },
+                "filters": {
+                    "createdAtFrom": "ثبت از تاریخ",
+                    "createdAtTo": "ثبت تا تاریخ",
+                    "updatedAtFrom": "بروزرسانی از تاریخ",
+                    "updatedAtTo": "بروزرسانی تا تاریخ",
+                    "closedAtFrom": "بسته‌شدن از تاریخ",
+                    "closedAtTo": "بسته‌شدن تا تاریخ"
+                }
+            },
+            "appSettings": {
+                "columns": {
+                    "id": "شناسه",
+                    "key": "کلید",
+                    "label": "عنوان",
+                    "valueType": "نوع مقدار",
+                    "description": "توضیحات",
+                    "isActive": "وضعیت",
+                    "createdAt": "تاریخ ایجاد",
+                    "updatedAt": "آخرین بروزرسانی"
+                },
+                "filters": {
+                    "createdAtFrom": "ایجاد از تاریخ",
+                    "createdAtTo": "ایجاد تا تاریخ",
+                    "updatedAtFrom": "بروزرسانی از تاریخ",
+                    "updatedAtTo": "بروزرسانی تا تاریخ"
+                }
+            },
+            "coupons": {
+                "columns": {
+                    "id": "شناسه",
+                    "code": "کد",
+                    "title": "عنوان",
+                    "description": "توضیحات",
+                    "discountType": "نوع تخفیف",
+                    "discountValue": "تخفیف",
+                    "startsAt": "شروع اعتبار",
+                    "expiresAt": "پایان اعتبار",
+                    "totalUsageLimit": "سقف کل استفاده",
+                    "perUserUsageLimit": "سقف هر کاربر",
+                    "applicableProductIds": "محصولات قابل استفاده",
+                    "isFirstPurchaseOnly": "فقط قابل استفاده برای خرید اول",
+                    "isActive": "وضعیت",
+                    "totalUsageCount": "دفعات استفاده",
+                    "remainingTotalUsageCount": "باقی‌مانده",
+                    "createdBy": "ایجادکننده",
+                    "updatedBy": "بروزرسان",
+                    "createdAt": "تاریخ ایجاد",
+                    "updatedAt": "آخرین بروزرسانی"
+                },
+                "filters": {
+                    "startsAtFrom": "شروع از تاریخ",
+                    "startsAtTo": "شروع تا تاریخ",
+                    "expiresAtFrom": "انقضا از تاریخ",
+                    "expiresAtTo": "انقضا تا تاریخ",
+                    "createdAtFrom": "ایجاد از تاریخ",
+                    "createdAtTo": "ایجاد تا تاریخ",
+                    "updatedAtFrom": "بروزرسانی از تاریخ",
+                    "updatedAtTo": "بروزرسانی تا تاریخ"
+                }
+            }
+        }
+    }
+}

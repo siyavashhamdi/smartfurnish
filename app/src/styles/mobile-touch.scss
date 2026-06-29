@@ -1,0 +1,88 @@
+@use "variables" as variables;
+
+// Opaque shells for WebViews without color-mix() / flaky var() support.
+[data-opaque-shell],
+.main-layout__mobile-bottom-nav,
+.MuiDialog-paper {
+  background-color: #ffffff !important;
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  isolation: isolate;
+}
+
+.MuiMenu-paper,
+.MuiPopover-paper,
+.MuiAutocomplete-paper {
+  background-color: #faf8f5 !important;
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  isolation: isolate;
+}
+
+body[data-theme="dark"] [data-opaque-shell],
+body[data-theme="dark"] .main-layout__mobile-bottom-nav,
+body[data-theme="dark"] .MuiDialog-paper {
+  background-color: #141a15 !important;
+}
+
+body[data-theme="dark"] .MuiMenu-paper,
+body[data-theme="dark"] .MuiPopover-paper,
+body[data-theme="dark"] .MuiAutocomplete-paper {
+  background-color: #1a2018 !important;
+}
+
+html[data-native-android-shell="true"].keyboard-open {
+  --app-mobile-bottom-reserve: calc(1rem + env(safe-area-inset-bottom, 0px));
+
+  .main-layout__mobile-bottom-nav {
+    opacity: 0;
+    pointer-events: none;
+    transform: translate3d(0, calc(100% + 1.5rem), 0);
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .main-layout__container {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .main-layout::after {
+    opacity: 0;
+  }
+}
+
+html[data-native-android-shell="true"] .MuiDialogContent-root,
+html[data-native-android-shell="true"] .modalDialogContentScrollMobile {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+// iOS auto-zooms focused inputs smaller than 16px, which can reflow the page and drop focus.
+@media (max-width: (variables.$breakpoint-sm - 0.0625rem)) {
+  html:not([data-native-android-shell="true"]),
+  html:not([data-native-android-shell="true"]) body {
+    overscroll-behavior: none;
+  }
+
+  html[data-native-android-shell="true"] button,
+  html[data-native-android-shell="true"] a,
+  html[data-native-android-shell="true"] [role="button"],
+  html[data-native-android-shell="true"] .MuiButtonBase-root {
+    touch-action: manipulation;
+  }
+
+  .MuiInputBase-input,
+  .MuiInputBase-inputMultiline,
+  .MuiSelect-select,
+  input,
+  textarea,
+  select,
+  [contenteditable="true"] {
+    font-size: 1rem !important;
+  }
+}
+
+.MuiDialogContent-root {
+  -webkit-overflow-scrolling: touch;
+}

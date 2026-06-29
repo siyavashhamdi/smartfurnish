@@ -1,0 +1,101 @@
+// Shared button / icon-button patterns for Smart Furnish theme
+
+@use "variables" as variables;
+
+@mixin branded-contained-button {
+  color: variables.$color-primary-contrast !important;
+  background: linear-gradient(
+    135deg,
+    variables.$color-primary-main 0%,
+    variables.$color-primary-light 100%
+  ) !important;
+  box-shadow: 0 4px 14px rgba(26, 46, 31, 0.22);
+
+  :global(.MuiButton-startIcon),
+  :global(.MuiButton-endIcon),
+  :global(.MuiSvgIcon-root) {
+    color: inherit !important;
+    opacity: 1 !important;
+  }
+
+  &:hover {
+    color: variables.$color-primary-contrast !important;
+    background: linear-gradient(
+      135deg,
+      variables.$color-primary-light 0%,
+      variables.$color-primary-main 100%
+    ) !important;
+    box-shadow: 0 6px 20px rgba(26, 46, 31, 0.28);
+  }
+}
+
+@mixin branded-outlined-button {
+  color: variables.$color-primary-main !important;
+  border-color: color-mix(in srgb, variables.$color-primary-main 42%, transparent) !important;
+  background: color-mix(in srgb, var(--app-surface-bg) 92%, transparent);
+
+  :global(.MuiButton-startIcon),
+  :global(.MuiButton-endIcon),
+  :global(.MuiSvgIcon-root) {
+    color: inherit !important;
+    opacity: 1 !important;
+  }
+
+  &:hover {
+    color: variables.$color-primary-dark !important;
+    border-color: color-mix(in srgb, variables.$color-primary-main 58%, transparent) !important;
+    background: color-mix(in srgb, variables.$color-primary-main 8%, var(--app-surface-bg)) !important;
+  }
+}
+
+@mixin panel-icon-button {
+  color: var(--app-icon-button-color, #{variables.$color-primary-main}) !important;
+  border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 76%, transparent);
+  background: color-mix(in srgb, var(--app-surface-bg) 88%, #ffffff);
+  border-radius: 0.65rem;
+
+  :global(.MuiSvgIcon-root) {
+    font-size: 1.25rem;
+    opacity: 1;
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: var(--app-icon-button-hover-color, #{variables.$color-primary-dark}) !important;
+    border-color: color-mix(in srgb, variables.$color-secondary-main 40%, var(--app-surface-border));
+    background: color-mix(in srgb, variables.$color-secondary-main 12%, var(--app-surface-bg));
+  }
+
+  body[data-theme="dark"] & {
+    color: var(--app-icon-button-color, #{variables.$color-dark-primary-light}) !important;
+    background: color-mix(in srgb, var(--app-surface-bg) 92%, #0b100c);
+    border-color: rgba(255, 255, 255, 0.1);
+
+    &:hover,
+    &:focus-visible {
+      color: var(--app-icon-button-hover-color, #{variables.$color-dark-primary-main}) !important;
+      background: color-mix(in srgb, variables.$color-secondary-main 16%, var(--app-surface-bg));
+      border-color: rgba(201, 166, 107, 0.35);
+    }
+  }
+}
+
+@mixin hero-gradient-button {
+  @include branded-contained-button;
+  border-radius: 999px !important;
+  background: linear-gradient(
+    135deg,
+    variables.$color-gradient-start 0%,
+    variables.$color-gradient-mid 55%,
+    variables.$color-gradient-end 100%
+  ) !important;
+
+  &:hover {
+    background: linear-gradient(
+      135deg,
+      variables.$color-gradient-mid 0%,
+      variables.$color-gradient-start 55%,
+      variables.$color-gradient-end 100%
+    ) !important;
+  }
+}

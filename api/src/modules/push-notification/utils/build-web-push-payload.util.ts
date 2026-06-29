@@ -1,0 +1,51 @@
+import { buildPushNotificationUrl } from "./build-push-notification-url.util";
+import { DEFAULT_PUSH_TITLE } from "./resolve-web-push-content.util";
+
+export function buildWebPushPayloadJson(input: {
+  title: string;
+  body: string;
+  tag?: string;
+  notificationId?: string;
+  badgeCount: number;
+  payload?: Record<string, unknown> | null;
+}): string {
+  const subscriptionPayload = input.payload ?? {};
+  const inAppTitle =
+    typeof subscriptionPayload.title === "string" &&
+    subscriptionPayload.title.trim().length > 0
+      ? subscriptionPayload.title.trim()
+      : input.title;
+  const description =
+    typeof subscriptionPayload.description === "string" &&
+    subscriptionPayload.description.trim().length > 0
+      ? subscriptionPayload.description.trim()
+      : input.body;
+
+  const record: Record<string, unknown> = {
+    title: DEFAULT_PUSH_TITLE,
+    body: input.body,
+    inAppTitle,
+    description,
+    url: buildPushNotificationUrl(subscriptionPayload),
+    tag: input.tag ?? input.notificationId ?? "smart-furnish-push",
+    notificationId: input.notificationId,
+    badgeCount: input.badgeCount,
+  };
+
+  for (const key of [
+    "messageType",
+    "mode",
+    "productId",
+    "chapterKey",
+    "action",
+    "actionLabel",
+    "actionUrl",
+    "purchaseStatus",
+  ] as const) {
+    if (subscriptionPayload[key] != null) {
+      record[key] = subscriptionPayload[key];
+    }
+  }
+
+  return JSON.stringify(record);
+}

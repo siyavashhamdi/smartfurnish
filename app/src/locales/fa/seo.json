@@ -1,0 +1,108 @@
+{
+    "seo": {
+        "brand": {
+            "name": "Smart Furnish",
+            "tagline": "فروشگاه و پیش‌نمایش هوشمند منزل",
+            "publicTagline": "پیش‌نمایش واقعی دکوراسیون منزل با هوش مصنوعی",
+            "author": "Siya",
+            "locale": "fa_IR",
+            "language": "fa",
+            "country": "IR",
+            "themeColor": "#1a2e1f"
+        },
+        "defaults": {
+            "description": "Smart Furnish — فروشگاه هوشمند مبلمان و دکوراسیون منزل. محصولات فروشگاه را مرور کنید، مدل و رنگ دلخواه را انتخاب کنید و با آپلود عکس فضای خود، پیش‌نمایش واقع‌گرایانه ببینید.",
+            "keywords": "اسمارت فرنیش, Smart Furnish, مبلمان, دکوراسیون منزل, فرش, آشپزخانه, طراحی داخلی, پیش‌نمایش هوش مصنوعی, دکور",
+            "ogImageAlt": "لوگوی Smart Furnish — فروشگاه هوشمند مبلمان و دکوراسیون",
+            "twitterCard": "summary_large_image",
+            "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+            "ogType": "website"
+        },
+        "pages": {
+            "products": {
+                "description": "فهرست محصولات Smart Furnish — مبلمان، فرش، تلویزیون، آشپزخانه، نمای دیوار، دکور و سایر عناصر طراحی داخلی.",
+                "keywords": "محصولات, مبلمان, دکوراسیون, فرش, طراحی داخلی, Smart Furnish, فهرست محصولات",
+                "robots": "index, follow"
+            },
+            "moreAbout": {
+                "description": "درباره Smart Furnish — آشنایی با مأموریت، چشم‌انداز و ارزش‌های فروشگاه هوشمند مبلمان و دکوراسیون.",
+                "keywords": "درباره اسمارت فرنیش, درباره Smart Furnish, مأموریت, چشم‌انداز",
+                "robots": "index, follow"
+            },
+            "morePrivacyPolicy": {
+                "description": "سیاست حریم خصوصی Smart Furnish — نحوه جمع‌آوری، استفاده و حفاظت از اطلاعات شخصی کاربران.",
+                "keywords": "حریم خصوصی, سیاست حفظ حریم خصوصی, امنیت داده, Smart Furnish",
+                "robots": "index, follow"
+            },
+            "moreTermsOfUse": {
+                "description": "شرایط استفاده از Smart Furnish — قوانین، تعهدات کاربران و شرایط بهره‌برداری از خدمات سامانه.",
+                "keywords": "شرایط استفاده, قوانین, مقررات, Smart Furnish",
+                "robots": "index, follow"
+            },
+            "support": {
+                "description": "پشتیبانی Smart Furnish — راه‌های ارتباطی، راهنمای سریع و ثبت درخواست کمک برای کاربران.",
+                "keywords": "پشتیبانی, تماس با ما, راهنما, Smart Furnish",
+                "robots": "index, follow"
+            },
+            "supportFaq": {
+                "description": "سوالات پرتکرار Smart Furnish — پاسخ به رایج‌ترین پرسش‌های کاربران درباره ثبت‌نام، محصولات، پیش‌نمایش AI و پرداخت.",
+                "keywords": "سوالات پرتکرار, FAQ, راهنما, Smart Furnish",
+                "robots": "index, follow"
+            },
+            "login": {
+                "description": "ورود به Smart Furnish — دسترسی امن به حساب کاربری، کاتالوگ محصولات و پیش‌نمایش هوشمند.",
+                "keywords": "ورود, لاگین, حساب کاربری, Smart Furnish",
+                "robots": "noindex, nofollow"
+            },
+            "signup": {
+                "description": "ثبت‌نام در Smart Furnish — ایجاد حساب کاربری جدید و شروع تجربه خرید و پیش‌نمایش دکوراسیون.",
+                "keywords": "ثبت‌نام, عضویت, حساب جدید, Smart Furnish",
+                "robots": "noindex, nofollow"
+            },
+            "forgotPassword": {
+                "description": "بازیابی گذرواژه Smart Furnish — بازیابی امن دسترسی به حساب کاربری.",
+                "keywords": "بازیابی گذرواژه, فراموشی رمز, Smart Furnish",
+                "robots": "noindex, nofollow"
+            },
+            "genericPage": {
+                "description": "Smart Furnish — فروشگاه هوشمند مبلمان و دکوراسیون منزل با پیش‌نمایش واقع‌گرایانه.",
+                "keywords": "Smart Furnish, مبلمان, دکوراسیون, طراحی داخلی",
+                "robots": "noindex, nofollow"
+            },
+            "resetPassword": {
+                "description": "تغییر گذرواژه Smart Furnish — تنظیم گذرواژه جدید برای حساب کاربری.",
+                "keywords": "تغییر گذرواژه, رمز عبور جدید, Smart Furnish",
+                "robots": "noindex, nofollow"
+            },
+            "activateAccount": {
+                "description": "فعال‌سازی حساب Smart Furnish — تکمیل فرآیند ثبت‌نام و فعال‌سازی دسترسی.",
+                "keywords": "فعال‌سازی حساب, تأیید حساب, Smart Furnish",
+                "robots": "noindex, nofollow"
+            },
+            "paymentCallback": {
+                "description": "نتیجه پرداخت Smart Furnish — وضعیت تراکنش درگاه پرداخت.",
+                "keywords": "نتیجه پرداخت, درگاه پرداخت, Smart Furnish",
+                "robots": "noindex, nofollow"
+            },
+            "productDetail": {
+                "description": "جزئیات {{title}} در Smart Furnish — مشخصات محصول، مدل‌ها، رنگ‌ها و امکان پیش‌نمایش در فضای شما.",
+                "keywords": "جزئیات محصول, {{title}}, مبلمان, دکوراسیون, Smart Furnish",
+                "robots": "index, follow"
+            },
+            "landing": {
+                "description": "اسمارت فرنیش — فروشگاه هوشمند مبلمان و دکوراسیون. محصولات را انتخاب کنید، مدل و رنگ دلخواه را برگزینید و با هوش مصنوعی ببینید در فضای واقعی منزلتان چگونه خواهند بود.",
+                "keywords": "اسمارت فرنیش, Smart Furnish, مبلمان, دکوراسیون منزل, فرش, آشپزخانه, طراحی داخلی, پیش‌نمایش AI",
+                "robots": "index, follow"
+            },
+            "underConstruction": {
+                "description": "Smart Furnish به‌زودی در دسترس خواهد بود — فروشگاه هوشمند مبلمان و پیش‌نمایش دکوراسیون در حال آماده‌سازی.",
+                "keywords": "به‌زودی, Smart Furnish, مبلمان, دکوراسیون",
+                "robots": "noindex, nofollow"
+            }
+        },
+        "structuredData": {
+            "organizationDescription": "فروشگاه هوشمند Smart Furnish برای انتخاب محصولات دکوراسیون و پیش‌نمایش واقع‌گرایانه در فضای منزل.",
+            "websiteDescription": "مرور کاتالوگ مبلمان و دکور، انتخاب مدل و رنگ، و پیش‌نمایش هوشمند در عکس فضای شما."
+        }
+    }
+}

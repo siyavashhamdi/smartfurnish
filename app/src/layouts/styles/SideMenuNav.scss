@@ -1,0 +1,162 @@
+@use "../../styles/variables" as variables;
+@use "../../styles/buttons" as buttons;
+
+.side-menu-nav__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.side-menu-nav__header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.side-menu-nav__title {
+  display: grid;
+  gap: 0.08rem;
+  min-width: 0;
+}
+
+.side-menu-nav__title span {
+  color: var(--text-primary);
+  font-weight: variables.$font-weight-bold;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.side-menu-nav__title small {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.side-menu-nav__toggle.MuiIconButton-root {
+  @include buttons.panel-icon-button;
+  flex: 0 0 auto;
+}
+
+.side-menu-nav__list {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.side-menu-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  inline-size: 100%;
+  padding: 0.65rem 0.7rem;
+  font: inherit;
+  color: var(--text-secondary);
+  appearance: none;
+  border: 0;
+  background: transparent;
+  text-decoration: none;
+  border-radius: 0.8rem;
+  min-width: 0;
+  cursor: pointer;
+  text-align: start;
+  transition:
+    color variables.$transition-duration-shorter variables.$transition-easing-ease-in-out,
+    background-color variables.$transition-duration-shorter variables.$transition-easing-ease-in-out;
+}
+
+.side-menu-nav__item:hover,
+.side-menu-nav__item--active {
+  color: variables.$color-primary-main;
+  background: color-mix(in srgb, variables.$color-primary-main 11%, transparent);
+}
+
+.side-menu-nav__item-icon {
+  flex: 0 0 auto;
+  font-size: 1.2rem !important;
+  color: currentColor;
+}
+
+.side-menu-nav__item-avatar.MuiAvatar-root {
+  flex: 0 0 auto;
+  width: 1.35rem;
+  height: 1.35rem;
+  font-size: 0.72rem;
+}
+
+.side-menu-nav__item-icon-wrap {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.side-menu-nav__item-icon-wrap--attention::after {
+  content: "";
+  position: absolute;
+  top: -0.08rem;
+  left: -0.14rem;
+  inline-size: 0.52rem;
+  block-size: 0.52rem;
+  border-radius: 999rem;
+  background: #d32f2f;
+  box-shadow: 0 0 0 0.18rem color-mix(in srgb, #d32f2f 18%, transparent);
+  animation: sideMenuNavAttentionBlink 6s ease-in-out infinite;
+}
+
+.side-menu-nav__item-badge .MuiBadge-badge {
+  min-width: 1rem;
+  height: 1rem;
+  padding-inline: 0.25rem;
+  font-size: 0.62rem;
+  transform: translate(-50%, -22%);
+}
+
+@keyframes sideMenuNavAttentionBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.side-menu-nav__item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.side-menu-nav__item--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.side-menu-nav__item--disabled:hover {
+  color: var(--text-secondary);
+  background: transparent;
+}
+
+.side-menu-nav--collapsed .side-menu-nav__header {
+  justify-content: center;
+}
+
+.side-menu-nav--collapsed .side-menu-nav__title,
+.side-menu-nav--collapsed .side-menu-nav__item-label {
+  display: none;
+}
+
+.side-menu-nav--collapsed .side-menu-nav__item {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+body[data-theme="dark"] {
+  .side-menu-nav__item:hover,
+  .side-menu-nav__item--active {
+    color: #e8d3ae;
+    background: color-mix(in srgb, #c9a66b 22%, transparent);
+  }
+}

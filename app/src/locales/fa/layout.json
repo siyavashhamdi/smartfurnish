@@ -1,0 +1,124 @@
+{
+    "layout": {
+        "header": {
+            "brand": {
+                "title": "Smart Furnish",
+                "tagline": "فروشگاه و پیش‌نمایش هوشمند منزل",
+                "publicTagline": "پیش‌نمایش واقعی دکوراسیون منزل با هوش مصنوعی",
+                "adminPanelBadge": "پنل مدیریت"
+            },
+            "actions": {
+                "notifications": "اعلان‌ها",
+                "settings": "تنظیمات",
+                "help": "راهنما",
+                "exit": "خروج"
+            },
+            "panels": {
+                "notifications": {
+                    "popoverTitle": "اعلان‌های جدید",
+                    "panelSubtitle": "مدیریت Smart Furnish",
+                    "countLabel": "{{count}} مورد",
+                    "viewAll": "مشاهده همه",
+                    "markAllRead": "علامت‌گذاری همه",
+                    "empty": "اعلان خوانده‌نشده‌ای ندارید."
+                },
+                "settings": {
+                    "popoverTitle": "تنظیمات سریع",
+                    "popoverRoles": "دسترسی نقش‌ها",
+                    "popoverContact": "تماس با ما",
+                    "popoverNotifications": "تنظیمات اعلان‌ها",
+                    "title": "تنظیمات سریع سامانه",
+                    "subtitle": "میانبرهای پرکاربرد مدیریت فروشگاه",
+                    "badgeSuggested": "پیشنهادی",
+                    "enterSettings": "ورود به تنظیمات",
+                    "customizePanel": "شخصی‌سازی پنل",
+                    "items": {
+                        "roles": {
+                            "description": "بازنگری سطح دسترسی مدیران، کارشناسان فروشگاه و کاربران"
+                        },
+                        "systemSettings": {
+                            "title": "تنظیمات سامانه",
+                            "description": "پیکربندی عمومی فروشگاه، کاتالوگ و تنظیمات مدیریتی"
+                        },
+                        "notifications": {
+                            "description": "فعال‌سازی اعلان‌ها و انتخاب حالت نمایش"
+                        }
+                    }
+                },
+                "help": {
+                    "popoverTitle": "راهنمای سریع سامانه",
+                    "popoverRegisterGuide": "راهنمای استفاده از پیش‌نمایش هوشمند",
+                    "popoverFaqExperts": "سوالات متداول",
+                    "popoverSupportContact": "ارتباط با پشتیبانی سامانه",
+                    "subtitle": "پاسخ‌های فوری برای کارهای روزانه",
+                    "viewGuide": "مشاهده راهنما",
+                    "supportTicket": "تیکت پشتیبانی",
+                    "items": {
+                        "faq": {
+                            "description": "پاسخ سریع به خطاهای رایج و نکات کار با فروشگاه و پیش‌نمایش AI."
+                        },
+                        "support": {
+                            "description": "راه‌های ارتباطی با پشتیبانی و اطلاعات تماس سامانه."
+                        },
+                        "tickets": {
+                            "title": "تیکت‌های پشتیبانی",
+                            "description": "ثبت تیکت فوری برای مشکلات فنی، سفارش یا دسترسی کاربران."
+                        }
+                    }
+                },
+                "user": {
+                    "popoverEditProfile": "ویرایش اطلاعات کاربری",
+                    "popoverPersonalNotifications": "مدیریت اعلان‌های شخصی",
+                    "popoverSecurity": "تنظیمات امنیت حساب",
+                    "chipAriaLabel": "اطلاعات کاربر",
+                    "openProfile": "ورود به پروفایل",
+                    "changePassword": "تغییر گذرواژه",
+                    "items": {
+                        "profile": {
+                            "description": "به‌روزرسانی نام، اطلاعات تماس و تصویر پروفایل کاربر."
+                        },
+                        "notifications": {
+                            "description": "مشاهده و مدیریت اعلان‌های دریافتی حساب کاربری."
+                        },
+                        "security": {
+                            "description": "مدیریت گذرواژه، نشست‌های فعال و ورود دومرحله‌ای."
+                        }
+                    }
+                },
+                "theme": {
+                    "darkModeTooltip": "حالت تاریک",
+                    "lightModeTooltip": "حالت روشن"
+                }
+            },
+            "dashboardMenu": {
+                "imageAlt": "آیکون {{title}}"
+            }
+        },
+        "mainLayout": {
+            "fallbackUser": "کاربر",
+            "navigation": {
+                "brandHomeLink": "صفحه اصلی — {{title}}"
+            }
+        },
+        "offlineMode": {
+            "message": "اتصال شما برقرار نیست و در حال مشاهده آخرین اطلاعات نمایش داده‌شده می‌باشید.",
+            "backOnlineMessage": "اتصال برقرار شد.",
+            "dismissButton": "متوجه شدم"
+        },
+        "appUpdate": {
+            "message": "نسخه جدید آماده است. برای دریافت آخرین تغییرات، برنامه را به‌روزرسانی کنید.",
+            "updateButton": "به‌روزرسانی",
+            "laterButton": "بعداً"
+        },
+        "footer": {
+            "ariaLabel": "پاورقی سامانه",
+            "copyright": "Smart Furnish | ۱۴۰۵",
+            "version": "نسخه {{version}}",
+            "links": {
+                "helpCenter": "مرکز راهنما",
+                "supportTicket": "تیکت پشتیبانی",
+                "contactUs": "تماس با ما"
+            }
+        }
+    }
+}

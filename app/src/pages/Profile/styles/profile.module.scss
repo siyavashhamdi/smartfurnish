@@ -1,0 +1,218 @@
+@use "../../../styles/variables" as variables;
+@use "../../../styles/mixins" as mixins;
+@use "../../../styles/buttons" as buttons;
+
+.page {
+  @include mixins.mobile-page-stack-tight;
+}
+
+.pageStack {
+  display: flex;
+  flex-direction: column;
+  gap: variables.$spacing-3;
+}
+
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 0.0625rem solid rgba(61, 44, 53, 0.1);
+  border-radius: 1.1rem;
+  @include mixins.surface-hero(top right);
+}
+
+.avatar {
+  inline-size: 4rem !important;
+  block-size: 4rem !important;
+  font-size: 1.5rem !important;
+  font-weight: variables.$font-weight-bold !important;
+}
+
+.avatarWrap {
+  position: relative;
+  flex: 0 0 auto;
+  inline-size: 4rem;
+  block-size: 4rem;
+}
+
+.avatarInput {
+  display: none;
+}
+
+.avatarActionTooltipAnchor {
+  position: absolute;
+  right: -0.2rem;
+  bottom: -0.2rem;
+}
+
+.avatarAddNewButton {
+  inline-size: 1.35rem !important;
+  block-size: 1.35rem !important;
+  padding: 0 !important;
+  border: 0.1rem solid var(--app-surface-bg) !important;
+  background: variables.$color-primary-main !important;
+  color: variables.$color-primary-contrast !important;
+  box-shadow: 0 0.3rem 0.65rem rgba(26, 46, 31, 0.18) !important;
+}
+
+.avatarAddNewButton:disabled {
+  background: color-mix(in srgb, variables.$color-primary-main 72%, #ffffff) !important;
+  color: variables.$color-primary-contrast !important;
+}
+
+.avatarDeleteButton {
+  inline-size: 1.35rem !important;
+  block-size: 1.35rem !important;
+  padding: 0 !important;
+  border: 0.1rem solid var(--app-surface-bg) !important;
+  background: #d32f2f !important;
+  color: #ffffff !important;
+  box-shadow: 0 0.3rem 0.65rem rgba(15, 23, 42, 0.18) !important;
+}
+
+.avatarDeleteButton:disabled {
+  background: color-mix(in srgb, #d32f2f 72%, #ffffff) !important;
+  color: #ffffff !important;
+}
+
+.avatarAddNewButton :global(.MuiCircularProgress-root),
+.avatarDeleteButton :global(.MuiCircularProgress-root) {
+  color: currentColor;
+}
+
+.avatarAddNewButton :global(.MuiSvgIcon-root),
+.avatarDeleteButton :global(.MuiSvgIcon-root) {
+  font-size: 0.8rem;
+}
+
+.hero h2,
+.hero p {
+  margin: 0;
+}
+
+.hero h2 {
+  margin-block: 0.12rem;
+  font-size: clamp(1.15rem, 4vw, 1.45rem);
+}
+
+.hero p:not(.eyebrow) {
+  color: var(--text-secondary);
+}
+
+.roleBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.roleBadge {
+  display: inline-flex;
+  align-items: center;
+  border: 0.0625rem solid variables.$color-accent-soft-border;
+  background: variables.$color-accent-soft-bg;
+  color: variables.$color-accent-soft-fg;
+  border-radius: 50em;
+  padding: 0.12rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: variables.$font-weight-semibold;
+  line-height: 1.4;
+}
+
+.eyebrow {
+  color: variables.$color-primary-main;
+  font-size: 0.78rem;
+  font-weight: variables.$font-weight-semibold;
+}
+
+.cardGrid {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.actionCard {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  inline-size: 100%;
+  padding: 0.85rem;
+  border: 0.0625rem solid rgba(61, 44, 53, 0.1);
+  border-radius: 1rem;
+  @include mixins.surface-card;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.actionCard svg {
+  flex: 0 0 auto;
+  color: variables.$color-primary-main;
+}
+
+.actionCard span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.actionCard strong {
+  font-size: 0.92rem;
+}
+
+.actionCard small {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+}
+
+.editDialogContent {
+  flex: 1 1 auto;
+}
+
+.supportLink {
+  color: inherit;
+  font-weight: variables.$font-weight-bold;
+  text-decoration: underline;
+  text-underline-offset: 0.18rem;
+}
+
+.logoutButton {
+  justify-self: stretch;
+  border-radius: 0.9rem !important;
+  padding-block: 0.62rem !important;
+}
+
+.editProfileModalBody {
+  margin-top: variables.$spacing-2;
+}
+
+.latinInput {
+  direction: ltr;
+  font-family: variables.$font-family-latin !important;
+  text-align: left;
+
+  &::placeholder {
+    direction: rtl;
+    font-family: variables.$font-family !important;
+    text-align: right;
+  }
+}
+
+body[data-theme="dark"] {
+  .hero,
+  .actionCard {
+    @include mixins.surface-panel-dark;
+  }
+
+  .roleBadge {
+    border-color: variables.$color-accent-soft-fg-dark;
+    background: variables.$color-accent-soft-bg-dark;
+    color: variables.$color-accent-soft-fg-dark;
+  }
+}

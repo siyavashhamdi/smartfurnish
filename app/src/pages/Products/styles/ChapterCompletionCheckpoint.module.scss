@@ -1,0 +1,186 @@
+@use "../../../styles/variables" as variables;
+
+.checkpoint {
+  margin-block-start: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pendingCard,
+.completedCard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  inline-size: min(100%, 34rem);
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.75rem;
+  border: 0.0625rem solid transparent;
+}
+
+.pendingCard {
+  display: grid;
+  gap: 0.35rem;
+  background: color-mix(in srgb, #ecfdf5 72%, var(--app-surface-bg));
+  border-color: color-mix(in srgb, #22c55e 22%, var(--app-surface-border));
+}
+
+.pendingMain {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.pendingHint {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.completedCard {
+  background: color-mix(in srgb, #ecfdf5 82%, var(--app-surface-bg));
+  border-color: color-mix(in srgb, #22c55e 24%, var(--app-surface-border));
+}
+
+.completedMessage {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: color-mix(in srgb, #15803d 88%, var(--text-primary));
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.acknowledgement {
+  flex: 0 1 auto;
+  align-items: center !important;
+  margin: 0 !important;
+  min-inline-size: 0;
+}
+
+.acknowledgement :global(.MuiFormControlLabel-label) {
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.confirmButton {
+  flex: 0 0 auto;
+  border-radius: 999rem !important;
+  font-weight: 900 !important;
+  white-space: nowrap;
+}
+
+.nextChapterButton {
+  flex: 0 0 auto;
+  min-inline-size: 0 !important;
+  font-weight: 900 !important;
+}
+
+.progressSummary {
+  display: grid;
+  gap: 0.55rem;
+  margin-block-start: 0.85rem;
+  margin-inline: auto;
+  inline-size: min(100%, 34rem);
+  padding: 0.85rem 0.95rem;
+  border-radius: 0.95rem;
+  border: 0.0625rem solid color-mix(in srgb, variables.$color-info-dark 16%, var(--app-surface-border));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, variables.$color-accent-soft-bg 82%, var(--app-surface-bg)),
+      color-mix(in srgb, #fdf2f8 72%, var(--app-surface-bg))
+    );
+  text-align: center;
+  justify-items: center;
+}
+
+.progressSummaryComplete {
+  border-color: color-mix(in srgb, #22c55e 24%, var(--app-surface-border));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, #ecfdf5 88%, var(--app-surface-bg)),
+      color-mix(in srgb, variables.$color-accent-soft-bg 72%, var(--app-surface-bg))
+    );
+}
+
+.progressSummaryHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.progressSummaryLabel {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.progressSummaryValue {
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  font-weight: 950;
+}
+
+.progressBar {
+  inline-size: 100%;
+  block-size: 0.55rem !important;
+  border-radius: 999rem !important;
+  background: color-mix(in srgb, #64748b 12%, var(--app-surface-bg)) !important;
+
+  :global(.MuiLinearProgress-bar) {
+    border-radius: 999rem;
+    background: linear-gradient(90deg, variables.$color-primary-main, variables.$color-secondary-main 52%, variables.$color-secondary-light) !important;
+  }
+}
+
+.progressSummaryComplete :global(.MuiLinearProgress-bar) {
+  background: linear-gradient(90deg, #22c55e, #16a34a) !important;
+}
+
+.progressCompleteMessage {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  color: color-mix(in srgb, #15803d 82%, var(--text-secondary));
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.7;
+}
+
+body[data-theme="dark"] {
+  .pendingCard,
+  .completedCard {
+    background: color-mix(in srgb, #14532d 22%, #0b100c);
+    border-color: color-mix(in srgb, #22c55e 28%, rgba(255, 255, 255, 0.08));
+  }
+
+  .progressSummary {
+    border-color: color-mix(in srgb, #c9a66b 22%, rgba(255, 255, 255, 0.08));
+    background: linear-gradient(135deg, color-mix(in srgb, #0b100c 88%, #141a15), color-mix(in srgb, #2a4530 18%, #0b100c));
+  }
+}
+
+@media (max-width: variables.$breakpoint-sm) {
+  .pendingMain {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .confirmButton {
+    inline-size: 100%;
+  }
+
+  .progressSummaryHeader {
+    flex-direction: column;
+    align-items: center;
+  }
+}

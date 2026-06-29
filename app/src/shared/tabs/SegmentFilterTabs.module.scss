@@ -1,0 +1,137 @@
+@use "../../styles/variables" as variables;
+@use "../../styles/mixins" as mixins;
+@use "../../styles/buttons" as buttons;
+
+.filterTabs {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 0.3rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.25rem;
+  border-radius: 999rem;
+  @include mixins.surface-bg(color-mix(in srgb, var(--app-surface-bg) 88%, var(--text-secondary) 4%));
+  border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 72%, transparent);
+}
+
+.filterTabIndicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  border-radius: 999rem;
+  background: var(--app-surface-bg);
+  border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 72%, transparent);
+  pointer-events: none;
+  will-change: transform, width;
+}
+
+.filterTabIndicatorAnimated {
+  transition:
+    transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.filterTab {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 0;
+  min-height: 2.15rem;
+  padding-inline: 0.65rem;
+  border: 0.0625rem solid transparent;
+  border-radius: 999rem;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: variables.$font-weight-semibold;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.filterTab:hover {
+  color: variables.$color-primary-main;
+}
+
+.filterTabActive {
+  color: variables.$color-primary-main;
+  font-weight: variables.$font-weight-bold;
+
+  :global(.MuiSvgIcon-root) {
+    color: inherit;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filterTabIndicatorAnimated {
+    transition: none;
+  }
+}
+
+@media (max-width: (variables.$breakpoint-sm - 0.0625rem)) {
+  .filterTabsPinned {
+    position: sticky;
+    z-index: 6;
+    top: calc(env(safe-area-inset-top, 0rem) + 0.65rem);
+    padding: 0.28rem;
+    border: 0.0625rem solid rgba(61, 44, 53, 0.1);
+    border-radius: 1.35rem;
+    @include mixins.mobile-floating-shell;
+  }
+}
+
+.filterTabsPinnedDialog {
+  position: sticky;
+  z-index: 4;
+  top: 0;
+  padding: 0.28rem;
+  border: 0.0625rem solid rgba(61, 44, 53, 0.1);
+  border-radius: 1.35rem;
+  @include mixins.mobile-floating-shell;
+}
+
+@media (max-width: 720px) {
+  .filterTabs {
+    gap: 0.2rem;
+    padding: 0.2rem;
+    border-radius: 1rem;
+  }
+
+  .filterTab {
+    min-height: 2rem;
+    padding-inline: 0.28rem;
+    font-size: 0.72rem;
+  }
+
+  .filterTabsPinned {
+    padding: 0.28rem;
+    border-radius: 1.35rem;
+  }
+
+  .filterTabsPinnedDialog {
+    padding: 0.28rem;
+    border-radius: 1.35rem;
+  }
+}
+
+body[data-theme="dark"] {
+  @media (max-width: (variables.$breakpoint-sm - 0.0625rem)) {
+    .filterTabsPinned {
+      @include mixins.dark-floating-shell-gradient;
+    }
+  }
+
+  .filterTabsPinnedDialog {
+    @include mixins.dark-floating-shell-gradient;
+  }
+}

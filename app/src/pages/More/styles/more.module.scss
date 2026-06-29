@@ -1,0 +1,1504 @@
+@use "../../../styles/variables" as variables;
+@use "../../../styles/mixins" as mixins;
+
+.page {
+  display: grid;
+  gap: 0.9rem;
+
+  @include mixins.mobile-page-stack-tight;
+}
+
+.contentStack,
+.installStack {
+  display: grid;
+  gap: 1rem;
+}
+
+.pageBody {
+  display: grid;
+  gap: 1rem;
+  margin-block-end: 1rem;
+}
+
+.installStack:empty {
+  display: none;
+}
+
+.hero {
+  padding: 1rem;
+  border-radius: 1.15rem;
+  border: 0.0625rem solid rgba(61, 44, 53, 0.1);
+  @include mixins.surface-hero(top left);
+}
+
+.hero p,
+.hero h2,
+.hero span {
+  margin: 0;
+}
+
+.hero p {
+  color: #d9c39a;
+  font-size: 0.78rem;
+  font-weight: variables.$font-weight-semibold;
+}
+
+.hero h2 {
+  margin-block: 0.18rem;
+  font-size: clamp(1.15rem, 4vw, 1.45rem);
+}
+
+.hero span {
+  color: var(--text-secondary);
+}
+
+@include mixins.respond-below(sm) {
+  .hero {
+    display: none;
+  }
+}
+
+.themeCard {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border-radius: 1rem;
+  border: 0.0625rem solid rgba(61, 44, 53, 0.1);
+  @include mixins.surface-card;
+}
+
+.themeIcon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2.55rem;
+  block-size: 2.55rem;
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, #d9c39a 12%, transparent);
+  color: #d9c39a;
+}
+
+.themeCard strong,
+.themeCard small {
+  display: block;
+}
+
+.themeCard small {
+  margin-top: 0.12rem;
+  color: var(--text-secondary);
+}
+
+.switchButton {
+  box-sizing: border-box;
+  inline-size: 3.6rem;
+  block-size: 2.1rem;
+  padding: 0.16rem;
+  border: 0.0625rem solid color-mix(in srgb, #d9c39a 28%, var(--app-surface-border));
+  border-radius: 999rem;
+  background: color-mix(in srgb, var(--text-secondary) 15%, transparent);
+  color: #64748b;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.switchButton:hover {
+  box-shadow: 0 0.35rem 0.95rem color-mix(in srgb, #d9c39a 14%, transparent);
+}
+
+.switchButton:focus-visible {
+  outline: 0.16rem solid color-mix(in srgb, #d9c39a 42%, transparent);
+  outline-offset: 0.18rem;
+}
+
+.switchTrack {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.switchThumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1.7rem;
+  block-size: 1.7rem;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0.25rem 0.65rem color-mix(in srgb, #0b100c 20%, transparent);
+  transform: translateX(0);
+  transition:
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.switchThumb svg {
+  font-size: 0.95rem;
+}
+
+.switchButtonActive {
+  border-color: color-mix(in srgb, #d9c39a 45%, var(--app-surface-border));
+  background: color-mix(in srgb, #d9c39a 24%, transparent);
+  color: #d9c39a;
+}
+
+.switchButtonActive .switchThumb {
+  transform: translateX(1.5rem);
+}
+
+.notificationsSection {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 0.0625rem solid rgba(61, 44, 53, 0.1);
+  @include mixins.surface-card;
+}
+
+.preferenceRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+}
+
+.notificationCallout {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.85rem 0.9rem 0.95rem;
+  border-block-start: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 68%, transparent);
+}
+
+.notificationCalloutPrompt {
+  background:
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, variables.$color-primary-main 10%, transparent),
+      transparent 52%
+    ),
+    color-mix(in srgb, variables.$color-primary-main 4%, var(--app-surface-bg));
+}
+
+.notificationCalloutBlocked {
+  background:
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, #f59e0b 12%, transparent),
+      transparent 52%
+    ),
+    color-mix(in srgb, #f59e0b 5%, var(--app-surface-bg));
+}
+
+.notificationCalloutUnsupported {
+  background: color-mix(in srgb, var(--text-secondary) 6%, var(--app-surface-bg));
+}
+
+.notificationCalloutIcon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2.35rem;
+  block-size: 2.35rem;
+  border-radius: 0.85rem;
+  flex-shrink: 0;
+}
+
+.notificationCalloutPrompt .notificationCalloutIcon {
+  background: color-mix(in srgb, variables.$color-primary-main 14%, transparent);
+  color: variables.$color-primary-main;
+}
+
+.notificationCalloutBlocked .notificationCalloutIcon {
+  background: color-mix(in srgb, #f59e0b 16%, transparent);
+  color: #d97706;
+}
+
+.notificationCalloutUnsupported .notificationCalloutIcon {
+  background: color-mix(in srgb, var(--text-secondary) 12%, transparent);
+  color: var(--text-secondary);
+}
+
+.notificationCalloutContent {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.notificationCalloutContent strong {
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  line-height: 1.65;
+}
+
+.notificationCalloutTitleRow,
+.androidInstallTitleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.45rem;
+}
+
+.notificationCalloutTitleRow strong,
+.androidInstallTitleRow strong {
+  flex: 1;
+  min-width: 0;
+}
+
+.notificationCalloutTitleGroup {
+  display: grid;
+  gap: 0.12rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.notificationCalloutTitleGroup strong {
+  flex: unset;
+}
+
+.calloutInfoToggle {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  margin: 0;
+  padding: 0;
+  border: 0.0625rem solid color-mix(in srgb, var(--text-secondary) 24%, var(--app-surface-border));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text-secondary) 6%, transparent);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    color 140ms ease;
+}
+
+.calloutInfoToggle:hover {
+  border-color: color-mix(in srgb, variables.$color-primary-main 34%, var(--app-surface-border));
+  background: color-mix(in srgb, variables.$color-primary-main 8%, transparent);
+  color: variables.$color-primary-main;
+}
+
+.calloutInfoToggle:focus-visible {
+  outline: 0.16rem solid color-mix(in srgb, variables.$color-primary-main 42%, transparent);
+  outline-offset: 0.14rem;
+}
+
+.calloutInfoToggleActive {
+  border-color: color-mix(in srgb, variables.$color-primary-main 38%, var(--app-surface-border));
+  background: color-mix(in srgb, variables.$color-primary-main 12%, transparent);
+  color: variables.$color-primary-main;
+}
+
+.notificationCalloutExpandable {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.notificationCalloutExpandable[hidden] {
+  display: none;
+}
+
+.notificationCalloutContent p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.79rem;
+  line-height: 1.85;
+}
+
+.notificationCalloutBenefits {
+  display: grid;
+  gap: 0.28rem;
+  margin: 0;
+  padding-inline-start: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.75;
+}
+
+.notificationCalloutBenefits li::marker {
+  color: variables.$color-primary-main;
+}
+
+.notificationCalloutHelp {
+  margin: 0;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.75rem;
+  border: 0.0625rem solid color-mix(in srgb, #f59e0b 22%, var(--app-surface-border));
+  background: color-mix(in srgb, #f59e0b 7%, transparent);
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.85;
+}
+
+.notificationCalloutActions {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.15rem;
+}
+
+.notificationCalloutButton {
+  justify-self: start;
+  min-block-size: 2.35rem;
+  padding: 0.45rem 0.95rem;
+  border: 0;
+  border-radius: 999rem;
+  background: variables.$color-primary-main;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: variables.$font-weight-semibold;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    opacity 140ms ease;
+}
+
+.notificationCalloutButton:hover:not(:disabled) {
+  box-shadow: 0 0.45rem 1.1rem color-mix(in srgb, variables.$color-primary-main 28%, transparent);
+  transform: translateY(-0.0625rem);
+}
+
+.notificationCalloutButton:focus-visible {
+  outline: 0.16rem solid color-mix(in srgb, variables.$color-primary-main 42%, transparent);
+  outline-offset: 0.16rem;
+}
+
+.notificationCalloutButton:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.notificationCalloutPrivacy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  line-height: 1.7;
+}
+
+.notificationCalloutPrivacy svg {
+  font-size: 0.95rem;
+  color: color-mix(in srgb, variables.$color-primary-main 70%, var(--text-secondary));
+}
+
+.notificationCalloutHint {
+  margin: 0;
+  color: color-mix(in srgb, #d97706 78%, var(--text-secondary));
+  font-size: 0.74rem;
+  line-height: 1.75;
+}
+
+.iosInstallCard {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border-radius: 1rem;
+  border: 0.0625rem solid rgba(201, 166, 107, 0.24);
+  background-color: #ffffff;
+  background-image: radial-gradient(circle at top right, rgba(201, 166, 107, 0.12), transparent 52%);
+
+  @supports (background: color-mix(in srgb, #ffffff 50%, #000000)) {
+    border-color: color-mix(in srgb, #2563eb 24%, var(--app-surface-border));
+    background:
+      radial-gradient(
+        circle at top right,
+        color-mix(in srgb, #2563eb 12%, transparent),
+        transparent 52%
+      ),
+      color-mix(in srgb, var(--app-surface-bg) 94%, #ffffff);
+  }
+}
+
+.iosInstallIcon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2.55rem;
+  block-size: 2.55rem;
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, #2563eb 14%, transparent);
+  color: #2563eb;
+}
+
+.iosInstallContent {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.iosInstallContent strong {
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.iosInstallContent p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.79rem;
+  line-height: 1.85;
+}
+
+.iosInstallButton {
+  justify-self: start;
+  min-block-size: 2.35rem;
+  padding: 0.45rem 0.95rem;
+  border: 0;
+  border-radius: 999rem;
+  background: #2563eb;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: variables.$font-weight-semibold;
+  cursor: pointer;
+}
+
+.iosInstallButton:focus-visible {
+  outline: 0.16rem solid color-mix(in srgb, #2563eb 42%, transparent);
+  outline-offset: 0.16rem;
+}
+
+.androidInstallCard {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border-radius: 1rem;
+  border: 0.0625rem solid rgba(61, 161, 105, 0.24);
+  background-color: #ffffff;
+  background-image: radial-gradient(circle at top right, rgba(61, 161, 105, 0.12), transparent 52%);
+
+  @supports (background: color-mix(in srgb, #ffffff 50%, #000000)) {
+    border-color: color-mix(in srgb, #3da169 24%, var(--app-surface-border));
+    background:
+      radial-gradient(
+        circle at top right,
+        color-mix(in srgb, #3da169 12%, transparent),
+        transparent 52%
+      ),
+      color-mix(in srgb, var(--app-surface-bg) 94%, #ffffff);
+  }
+}
+
+.androidInstallIcon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2.55rem;
+  block-size: 2.55rem;
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, #3da169 14%, transparent);
+  color: #3da169;
+}
+
+.androidInstallContent {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.androidInstallContent strong {
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.androidInstallContent > p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.79rem;
+  line-height: 1.85;
+}
+
+.androidInstallAccessNote {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.75rem;
+  border: 0.0625rem solid color-mix(in srgb, #3da169 22%, var(--app-surface-border));
+  background: color-mix(in srgb, #3da169 7%, transparent);
+}
+
+.androidInstallAccessNote[hidden] {
+  display: none;
+}
+
+.androidInstallAccessNote p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.85;
+}
+
+.androidInstallButtonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.androidInstallButton {
+  justify-self: start;
+  min-block-size: 2.35rem;
+  padding: 0.45rem 0.95rem;
+  border: 0;
+  border-radius: 999rem;
+  background: #3da169;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: variables.$font-weight-semibold;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.androidInstallButtonSecondary {
+  border: 0.0625rem solid color-mix(in srgb, #3da169 42%, var(--app-surface-border));
+  background: color-mix(in srgb, #3da169 10%, transparent);
+  color: #2f8557;
+}
+
+.androidInstallButton:focus-visible {
+  outline: 0.16rem solid color-mix(in srgb, #3da169 42%, transparent);
+  outline-offset: 0.16rem;
+}
+
+.androidHomeInstallCard {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border-radius: 1rem;
+  border: 0.0625rem solid rgba(61, 161, 105, 0.24);
+  background-color: #ffffff;
+  background-image: radial-gradient(circle at top right, rgba(61, 161, 105, 0.12), transparent 52%);
+
+  @supports (background: color-mix(in srgb, #ffffff 50%, #000000)) {
+    border-color: color-mix(in srgb, #3da169 24%, var(--app-surface-border));
+    background:
+      radial-gradient(
+        circle at top right,
+        color-mix(in srgb, #3da169 12%, transparent),
+        transparent 52%
+      ),
+      color-mix(in srgb, var(--app-surface-bg) 94%, #ffffff);
+  }
+}
+
+.androidHomeInstallIcon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2.55rem;
+  block-size: 2.55rem;
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, #3da169 14%, transparent);
+  color: #3da169;
+}
+
+.androidHomeInstallContent {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.androidHomeInstallContent strong {
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.androidHomeInstallContent p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.79rem;
+  line-height: 1.85;
+}
+
+.androidHomeInstallButtonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.androidHomeInstallButton {
+  justify-self: start;
+  min-block-size: 2.35rem;
+  padding: 0.45rem 0.95rem;
+  border: 0;
+  border-radius: 999rem;
+  background: #3da169;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: variables.$font-weight-semibold;
+  cursor: pointer;
+}
+
+.androidHomeInstallButtonSecondary {
+  border: 0.0625rem solid color-mix(in srgb, #3da169 42%, var(--app-surface-border));
+  background: color-mix(in srgb, #3da169 10%, transparent);
+  color: #2f8557;
+}
+
+.androidHomeInstallButton:focus-visible {
+  outline: 0.16rem solid color-mix(in srgb, #3da169 42%, transparent);
+  outline-offset: 0.16rem;
+}
+
+.androidHomeInstallDialogPaper {
+  margin: 0.75rem !important;
+  border-radius: 1.15rem !important;
+  overflow: hidden;
+  background-color: var(--app-surface-bg) !important;
+}
+
+.androidHomeInstallDialogHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0.35rem;
+}
+
+.androidHomeInstallDialogEyebrow {
+  margin: 0 0 0.2rem;
+  color: #3da169;
+  font-size: 0.74rem;
+  font-weight: variables.$font-weight-semibold;
+}
+
+.androidHomeInstallDialogHeader h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.androidHomeInstallDialogBody {
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.35rem 1rem 1rem;
+}
+
+.androidHomeInstallDialogIntro,
+.androidHomeInstallDialogNote {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.85;
+  text-align: justify;
+  text-align-last: start;
+}
+
+.androidHomeInstallSteps {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.androidHomeInstallStep {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  padding: 0.7rem 0.75rem;
+  border-radius: 0.9rem;
+  border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 76%, transparent);
+  background: color-mix(in srgb, var(--app-surface-bg) 96%, #ffffff);
+}
+
+.androidHomeInstallStepNumber {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1.45rem;
+  block-size: 1.45rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, #3da169 14%, transparent);
+  color: #3da169;
+  font-size: 0.74rem;
+  font-weight: variables.$font-weight-semibold;
+}
+
+.androidHomeInstallStepIcon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, #3da169 10%, transparent);
+  color: #3da169;
+}
+
+.androidHomeInstallStepText {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.androidHomeInstallStepText strong {
+  font-size: 0.84rem;
+  line-height: 1.65;
+}
+
+.androidHomeInstallStepText p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.8;
+  text-align: justify;
+  text-align-last: start;
+}
+
+.androidHomeInstallDialogButton {
+  min-block-size: 2.45rem;
+  border: 0;
+  border-radius: 999rem;
+  background: variables.$color-primary-main;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: variables.$font-weight-semibold;
+  cursor: pointer;
+}
+
+.iosInstallDialogPaper {
+  margin: 0.75rem !important;
+  border-radius: 1.15rem !important;
+  overflow: hidden;
+  background-color: var(--app-surface-bg) !important;
+}
+
+.iosInstallDialogHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0.35rem;
+}
+
+.iosInstallDialogEyebrow {
+  margin: 0 0 0.2rem;
+  color: #2563eb;
+  font-size: 0.74rem;
+  font-weight: variables.$font-weight-semibold;
+}
+
+.iosInstallDialogHeader h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.iosInstallDialogBody {
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.35rem 1rem 1rem;
+}
+
+.iosInstallDialogIntro,
+.iosInstallDialogNote {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.85;
+  text-align: justify;
+  text-align-last: start;
+}
+
+.iosInstallSteps {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.iosInstallStep {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  padding: 0.7rem 0.75rem;
+  border-radius: 0.9rem;
+  border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 76%, transparent);
+  background: color-mix(in srgb, var(--app-surface-bg) 96%, #ffffff);
+}
+
+.iosInstallStepNumber {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1.45rem;
+  block-size: 1.45rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, #2563eb 14%, transparent);
+  color: #2563eb;
+  font-size: 0.74rem;
+  font-weight: variables.$font-weight-semibold;
+}
+
+.iosInstallStepIcon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, #2563eb 10%, transparent);
+  color: #2563eb;
+}
+
+.iosInstallStepText {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.iosInstallStepText strong {
+  font-size: 0.84rem;
+  line-height: 1.65;
+}
+
+.iosInstallStepText p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.8;
+  text-align: justify;
+  text-align-last: start;
+}
+
+.iosInstallSafariHint {
+  position: relative;
+  block-size: 3.2rem;
+  border-radius: 0.95rem;
+  border: 0.0625rem dashed color-mix(in srgb, #2563eb 28%, var(--app-surface-border));
+  background: color-mix(in srgb, #2563eb 5%, transparent);
+}
+
+.iosInstallSafariBar {
+  position: absolute;
+  inset-inline: 0.85rem;
+  inset-block-end: 0.55rem;
+  block-size: 0.42rem;
+  border-radius: 999rem;
+  background: color-mix(in srgb, var(--text-secondary) 18%, transparent);
+}
+
+.iosInstallSafariShare {
+  position: absolute;
+  inset-inline-start: 50%;
+  inset-block-end: 0.28rem;
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: 0.55rem;
+  background: #ffffff;
+  color: #2563eb;
+  box-shadow: 0 0.35rem 0.95rem color-mix(in srgb, #0b100c 12%, transparent);
+  transform: translateX(50%);
+}
+
+.iosInstallDialogButton {
+  min-block-size: 2.45rem;
+  border: 0;
+  border-radius: 999rem;
+  background: variables.$color-primary-main;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: variables.$font-weight-semibold;
+  cursor: pointer;
+}
+
+.preferenceIcon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2.35rem;
+  block-size: 2.35rem;
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, #d9c39a 11%, transparent);
+  color: #d9c39a;
+}
+
+.preferenceText {
+  display: grid;
+}
+
+.preferenceText strong,
+.preferenceText small {
+  margin: 0;
+}
+
+.preferenceText small {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.linkGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.linkCard {
+  display: grid;
+  place-items: center;
+  justify-items: center;
+  gap: 0.4rem;
+  min-block-size: 6.2rem;
+  padding-inline: 0.45rem;
+  border: 0.0625rem solid rgba(61, 44, 53, 0.1);
+  border-radius: 1rem;
+  @include mixins.surface-card;
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: variables.$font-weight-semibold;
+  text-align: center;
+  cursor: pointer;
+}
+
+.linkCard span {
+  inline-size: 100%;
+  text-align: center;
+}
+
+a.linkCard {
+  text-decoration: none;
+}
+
+.linkCard svg {
+  color: #d9c39a;
+}
+
+.linkCard:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.bugReportCard {
+  border-color: color-mix(in srgb, #ef4444 24%, var(--app-surface-border));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #ef4444 8%, var(--app-surface-bg)) 0%,
+    color-mix(in srgb, var(--app-surface-bg) 94%, #ffffff) 100%
+  );
+}
+
+.bugReportCard svg {
+  color: #dc2626;
+}
+
+.globalAnouncementCard {
+  border-color: color-mix(in srgb, #7c3aed 24%, var(--app-surface-border));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #7c3aed 9%, var(--app-surface-bg)) 0%,
+    color-mix(in srgb, var(--app-surface-bg) 94%, #ffffff) 100%
+  );
+}
+
+.globalAnouncementCard svg {
+  color: #7c3aed;
+}
+
+.couponsCard {
+  border-color: color-mix(in srgb, #f59e0b 28%, var(--app-surface-border));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #f59e0b 10%, var(--app-surface-bg)) 0%,
+    color-mix(in srgb, var(--app-surface-bg) 94%, #ffffff) 100%
+  );
+}
+
+.couponsCard svg {
+  color: #d97706;
+}
+
+.backupCard {
+  background:
+    linear-gradient(145deg, rgba(15, 118, 110, 0.12), rgba(255, 255, 255, 0.98)),
+    #ffffff;
+  border-color: rgba(15, 118, 110, 0.22);
+}
+
+.backupCard svg {
+  color: #1a2e1f;
+}
+
+.backupIcon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 3rem;
+  block-size: 3rem;
+  border-radius: 1rem;
+  background: color-mix(in srgb, #1a2e1f 12%, transparent);
+  color: #1a2e1f;
+  flex-shrink: 0;
+}
+
+.globalAnouncementPanel {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1rem, 3vw, 1.4rem);
+  border: 0.0625rem solid rgba(61, 44, 53, 0.1);
+  border-radius: 1.2rem;
+  background-color: #ffffff;
+  background-image: radial-gradient(circle at top right, rgba(124, 58, 237, 0.12), transparent 42%);
+  box-shadow: 0 0.8rem 2rem rgba(15, 23, 42, 0.05);
+
+  @supports (background: color-mix(in srgb, #ffffff 50%, #000000)) {
+    border-color: color-mix(in srgb, var(--app-surface-border) 76%, transparent);
+    background:
+      radial-gradient(
+        circle at top right,
+        color-mix(in srgb, #7c3aed 12%, transparent),
+        transparent 42%
+      ),
+      color-mix(in srgb, var(--app-surface-bg) 94%, #ffffff);
+    box-shadow: 0 0.8rem 2rem color-mix(in srgb, #0b100c 5%, transparent);
+  }
+}
+
+.globalAnouncementIcon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 3rem;
+  block-size: 3rem;
+  border-radius: 1rem;
+  background: color-mix(in srgb, #7c3aed 12%, transparent);
+  color: #7c3aed;
+  flex-shrink: 0;
+}
+
+.globalAnouncementHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+.globalAnouncementPreviewBlock {
+  display: grid;
+  gap: 0.55rem;
+  position: relative;
+  z-index: 0;
+}
+
+:global(.main-layout__general-update-popup).globalAnouncementPopupPreview {
+  position: relative;
+  inset: unset;
+  z-index: 0;
+  inline-size: 100%;
+  max-inline-size: 23rem;
+  margin-top: 0.35rem;
+}
+
+.globalAnouncementPreview {
+  --global-anouncement-preview-accent: #2563eb;
+  --global-anouncement-preview-fg: #d9c39a;
+
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  padding: 0.9rem 0.85rem;
+  border: 0.0625rem solid
+    color-mix(in srgb, var(--global-anouncement-preview-accent) 24%, var(--app-surface-border));
+  border-radius: 1.05rem;
+  background:
+    radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--global-anouncement-preview-accent) 13%, transparent),
+      transparent 58%
+    ),
+    color-mix(in srgb, var(--app-surface-bg) 96%, #ffffff);
+  box-shadow:
+    0 0.9rem 2rem color-mix(in srgb, #0b100c 10%, transparent),
+    inset 0 0.0625rem 0 rgba(255, 255, 255, 0.65);
+}
+
+.globalAnouncementPreviewSUCCESS {
+  --global-anouncement-preview-accent: #16a34a;
+  --global-anouncement-preview-fg: #15803d;
+}
+
+.globalAnouncementPreviewWARNING {
+  --global-anouncement-preview-accent: #d97706;
+  --global-anouncement-preview-fg: #b45309;
+}
+
+.globalAnouncementPreviewERROR {
+  --global-anouncement-preview-accent: #dc2626;
+  --global-anouncement-preview-fg: #b91c1c;
+}
+
+.globalAnouncementPreviewGlow {
+  position: absolute;
+  inset-block: 0.65rem;
+  inset-inline-start: 0;
+  inline-size: 0.22rem;
+  border-radius: 999rem;
+  background: var(--global-anouncement-preview-accent);
+  box-shadow: 0 0 1.2rem var(--global-anouncement-preview-accent);
+}
+
+.globalAnouncementPreviewIcon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: 0.68rem;
+  color: var(--global-anouncement-preview-fg);
+  background: color-mix(in srgb, var(--global-anouncement-preview-accent) 14%, transparent);
+  border: 0.0625rem solid
+    color-mix(in srgb, var(--global-anouncement-preview-accent) 30%, transparent);
+}
+
+.globalAnouncementPreviewContent {
+  display: grid;
+  gap: 0.28rem;
+  min-width: 0;
+}
+
+.globalAnouncementPreviewContent strong {
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  line-height: 1.7;
+}
+
+.globalAnouncementPreviewContent p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.79rem;
+  line-height: 1.8;
+  text-align: justify;
+  text-align-last: start;
+}
+
+.aboutPanel {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1rem, 3vw, 1.35rem);
+  border: 0.0625rem solid rgba(61, 44, 53, 0.1);
+  border-radius: 1.2rem;
+  background-color: #ffffff;
+  background-image: radial-gradient(circle at top right, rgba(25, 118, 210, 0.11), transparent 42%);
+  box-shadow: 0 0.8rem 2rem rgba(15, 23, 42, 0.05);
+
+  @supports (background: color-mix(in srgb, #ffffff 50%, #000000)) {
+    border-color: color-mix(in srgb, var(--app-surface-border) 76%, transparent);
+    background:
+      radial-gradient(
+        circle at top right,
+        color-mix(in srgb, #d9c39a 11%, transparent),
+        transparent 42%
+      ),
+      color-mix(in srgb, var(--app-surface-bg) 94%, #ffffff);
+    box-shadow: 0 0.8rem 2rem color-mix(in srgb, #0b100c 5%, transparent);
+  }
+}
+
+.aboutHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.aboutIcon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: 1rem;
+  background: color-mix(in srgb, #d9c39a 12%, transparent);
+  color: #d9c39a;
+}
+
+.aboutContent {
+  display: grid;
+  gap: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.95;
+  text-align: justify;
+  text-align-last: start;
+}
+
+.aboutContent h2,
+.aboutContent h3,
+.aboutContent p,
+.aboutContent ul {
+  margin: 0;
+}
+
+.aboutContent h2,
+.aboutContent h3 {
+  color: var(--text-primary);
+}
+
+.aboutContent h2 {
+  font-size: clamp(1.35rem, 4vw, 1.8rem);
+}
+
+.aboutContent h3 {
+  margin-block-start: 0.4rem;
+  font-size: 1.05rem;
+}
+
+.aboutContent ul {
+  display: grid;
+  gap: 0.45rem;
+  padding-inline-start: 1.2rem;
+}
+
+.aboutContent li::marker {
+  color: #d9c39a;
+}
+
+.aboutEmpty {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.aboutTrustSection {
+  display: grid;
+  gap: 0.85rem;
+  justify-items: center;
+  margin-block-start: 0.35rem;
+  padding-block-start: 1rem;
+  border-block-start: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 72%, transparent);
+}
+
+.aboutSafePayment {
+  margin: 0;
+  max-inline-size: 34rem;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  line-height: 1.9;
+  text-align: center;
+}
+
+.versionBlock {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+
+.versionDivider {
+  display: block;
+  block-size: 0.0625rem;
+  background: color-mix(in srgb, var(--app-surface-border) 76%, transparent);
+}
+
+.versionLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem 0.5rem;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  text-align: center;
+  cursor: help;
+}
+
+.versionItem {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  white-space: nowrap;
+}
+
+.versionSeparator {
+  color: color-mix(in srgb, var(--text-secondary) 55%, transparent);
+  user-select: none;
+}
+
+.versionLabel,
+.versionValue {
+  margin: 0;
+  font-family: variables.$font-family;
+}
+
+.versionValue {
+  font-variant-numeric: tabular-nums;
+}
+
+.versionDeployTooltip {
+  font-family: variables.$font-family-latin;
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: start;
+}
+
+body[data-theme="dark"] {
+  .hero,
+  .themeCard,
+  .notificationsSection,
+  .iosInstallCard,
+  .androidHomeInstallCard,
+  .androidInstallCard,
+  .linkCard,
+  .globalAnouncementPanel,
+  .aboutPanel {
+    @include mixins.surface-panel-dark;
+  }
+
+  .bugReportCard {
+    border-color: color-mix(in srgb, #f87171 28%, var(--app-surface-border));
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, #ef4444 14%, #141a15) 0%,
+      color-mix(in srgb, var(--app-surface-bg) 86%, #0b100c) 100%
+    );
+  }
+
+  .bugReportCard svg {
+    color: #fca5a5;
+  }
+
+  .globalAnouncementCard {
+    border-color: color-mix(in srgb, #a78bfa 30%, var(--app-surface-border));
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, #7c3aed 16%, #141a15) 0%,
+      color-mix(in srgb, var(--app-surface-bg) 86%, #0b100c) 100%
+    );
+  }
+
+  .globalAnouncementCard svg,
+  .globalAnouncementIcon {
+    color: #c4b5fd;
+  }
+
+  .couponsCard {
+    border-color: color-mix(in srgb, #fbbf24 32%, var(--app-surface-border));
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, #f59e0b 16%, #141a15) 0%,
+      color-mix(in srgb, var(--app-surface-bg) 86%, #0b100c) 100%
+    );
+  }
+
+  .couponsCard svg {
+    color: #fcd34d;
+  }
+
+  .backupCard {
+    border-color: color-mix(in srgb, #2dd4bf 30%, var(--app-surface-border));
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, #1a2e1f 18%, #141a15) 0%,
+      color-mix(in srgb, var(--app-surface-bg) 86%, #0b100c) 100%
+    );
+  }
+
+  .backupCard svg,
+  .backupIcon {
+    color: #5eead4;
+  }
+
+  .globalAnouncementPreview {
+    background:
+      radial-gradient(
+        circle at top left,
+        color-mix(in srgb, var(--global-anouncement-preview-accent) 16%, transparent),
+        transparent 58%
+      ),
+      color-mix(in srgb, var(--app-surface-bg) 90%, #0b100c);
+    box-shadow:
+      0 0.9rem 2rem rgba(0, 0, 0, 0.36),
+      inset 0 0.0625rem 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .globalAnouncementPreviewIcon {
+    background: color-mix(in srgb, var(--global-anouncement-preview-accent) 20%, transparent);
+  }
+
+  .notificationCalloutPrompt {
+    background:
+      radial-gradient(
+        circle at top right,
+        color-mix(in srgb, variables.$color-dark-primary-main 16%, transparent),
+        transparent 52%
+      ),
+      color-mix(in srgb, variables.$color-dark-primary-main 8%, #0b100c);
+  }
+
+  .notificationCalloutBlocked {
+    background:
+      radial-gradient(
+        circle at top right,
+        color-mix(in srgb, #f59e0b 14%, transparent),
+        transparent 52%
+      ),
+      color-mix(in srgb, #f59e0b 8%, #0b100c);
+  }
+
+  .notificationCalloutHelp {
+    background: color-mix(in srgb, #f59e0b 10%, #0b100c);
+    border-color: color-mix(in srgb, #fbbf24 24%, var(--app-surface-border));
+  }
+
+  .iosInstallCard {
+    background:
+      radial-gradient(
+        circle at top right,
+        color-mix(in srgb, #2563eb 16%, transparent),
+        transparent 52%
+      ),
+      color-mix(in srgb, var(--app-surface-bg) 86%, #0b100c);
+  }
+
+  .androidInstallCard {
+    background:
+      radial-gradient(
+        circle at top right,
+        color-mix(in srgb, #3da169 16%, transparent),
+        transparent 52%
+      ),
+      color-mix(in srgb, var(--app-surface-bg) 86%, #0b100c);
+  }
+
+  .androidHomeInstallCard {
+    background:
+      radial-gradient(
+        circle at top right,
+        color-mix(in srgb, #3da169 16%, transparent),
+        transparent 52%
+      ),
+      color-mix(in srgb, var(--app-surface-bg) 86%, #0b100c);
+  }
+
+  .androidInstallAccessNote {
+    background: color-mix(in srgb, #3da169 10%, #0b100c);
+    border-color: color-mix(in srgb, #3da169 24%, var(--app-surface-border));
+  }
+
+  .iosInstallStep {
+    background: color-mix(in srgb, var(--app-surface-bg) 90%, #0b100c);
+  }
+
+  .androidHomeInstallStep {
+    background: color-mix(in srgb, var(--app-surface-bg) 90%, #0b100c);
+  }
+
+  .iosInstallSafariShare {
+    background: color-mix(in srgb, var(--app-surface-bg) 92%, #ffffff);
+  }
+
+  .switchThumb {
+    background: color-mix(in srgb, var(--app-surface-bg) 92%, #ffffff);
+  }
+}

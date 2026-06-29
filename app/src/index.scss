@@ -1,0 +1,309 @@
+@use "styles/fonts";
+@use "styles/variables";
+@use "styles/mixins" as mixins;
+@use "styles/buttons" as buttons;
+@use "styles/mobile-touch";
+
+// Global reset
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+  height: 100%;
+  font-family: var(--app-font-family);
+}
+
+body {
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// CSS variables for layout / non-MUI surfaces (must stay aligned with theme.ts + B Yekan)
+:root {
+  --app-font-family: "B Yekan", "-apple-system", "BlinkMacSystemFont", "Arial", sans-serif;
+  --app-layout-glow: #c9a66b;
+  --app-layout-glow-2: #2a4530;
+  --app-layout-bg:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(201, 166, 107, 0.12), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(26, 46, 31, 0.04), transparent),
+    #faf8f5;
+  --app-surface-bg: #ffffff;
+  --app-content-surface-bg: #ffffff;
+  --app-content-surface-gradient: linear-gradient(
+    160deg,
+    #ffffff 0%,
+    #faf8f5 52%,
+    #f0ebe3 100%
+  );
+  --app-panel-gradient: linear-gradient(148deg, #ffffff 0%, #faf8f5 46%, #f0ebe3 100%);
+  --app-surface-border: rgba(23, 23, 23, 0.08);
+  --app-popover-bg: color-mix(in srgb, var(--app-content-surface-bg) 82%, var(--app-layout-glow) 18%);
+  --app-accent-soft-bg: rgba(201, 166, 107, 0.14);
+  --app-accent-soft-border: rgba(201, 166, 107, 0.35);
+  --app-accent-soft-fg: #9a7848;
+  --app-focus-ring: #c9a66b;
+  --app-icon-button-color: #1a2e1f;
+  --app-icon-button-hover-color: #9a7848;
+  --text-primary: #171717;
+  --text-secondary: #5c5c5c;
+  --divider: rgba(23, 23, 23, 0.08);
+  --app-input-min-height: #{variables.$input-min-height};
+  --app-multiline-textarea-min-rows: #{variables.$multiline-textarea-min-rows};
+  --app-multiline-textarea-min-height: #{variables.$multiline-textarea-min-height};
+  --app-multiline-textarea-max-height: #{variables.$multiline-textarea-max-height};
+}
+
+// Single-line inputs — same height as product edit dialog TextField (multiline excluded)
+.MuiOutlinedInput-root:not(.MuiInputBase-multiline):not(:has(.MuiAutocomplete-tag)) {
+  min-height: var(--app-input-min-height);
+  align-items: center;
+}
+
+.MuiOutlinedInput-root:not(.MuiInputBase-multiline) {
+  .MuiInputBase-input:not(.MuiInputBase-inputMultiline),
+  .MuiSelect-select {
+    padding-block: 0;
+    line-height: 1.4375;
+  }
+}
+
+// size="small" — same resting label / placeholder alignment as product edit (medium) fields
+.MuiOutlinedInput-root.MuiInputBase-sizeSmall:not(.MuiInputBase-multiline):not(:has(.MuiAutocomplete-tag)) {
+  min-height: var(--app-input-min-height);
+  align-items: center;
+
+  .MuiInputBase-input:not(.MuiInputBase-inputMultiline),
+  .MuiSelect-select {
+    padding-block: 0 !important;
+    line-height: 1.4375;
+  }
+}
+
+.MuiOutlinedInput-root.MuiInputBase-multiline,
+.MuiOutlinedInput-root:has(.MuiAutocomplete-tag) {
+  min-height: auto;
+}
+
+.MuiOutlinedInput-root.MuiInputBase-multiline textarea,
+.MuiOutlinedInput-root.MuiInputBase-multiline .MuiInputBase-inputMultiline {
+  box-sizing: border-box;
+  min-height: var(--app-multiline-textarea-min-height);
+  max-height: var(--app-multiline-textarea-max-height);
+  overflow-y: auto !important;
+  resize: none;
+  line-height: 1.4375;
+  @include mixins.visible-scrollbars;
+}
+
+[data-theme="dark"] {
+  --app-layout-glow: #c9a66b;
+  --app-layout-glow-2: #2a4530;
+  --app-layout-bg:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(201, 166, 107, 0.08), transparent),
+    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(42, 69, 48, 0.12), transparent),
+    #0b100c;
+  --app-surface-bg: #141a15;
+  --app-content-surface-bg: #141a15;
+  --app-content-surface-gradient: none;
+  --app-panel-gradient: none;
+  --app-surface-border: rgba(255, 255, 255, 0.08);
+  --app-popover-bg: color-mix(in srgb, var(--app-surface-bg) 88%, var(--app-layout-glow) 12%);
+  --app-accent-soft-bg: rgba(201, 166, 107, 0.18);
+  --app-accent-soft-border: rgba(201, 166, 107, 0.35);
+  --app-accent-soft-fg: #e8d3ae;
+  --text-primary: #f5f1eb;
+  --text-secondary: #b0b0aa;
+  --divider: rgba(255, 255, 255, 0.08);
+  --app-focus-ring: #d9c39a;
+  --app-icon-button-color: #e8d3ae;
+  --app-icon-button-hover-color: #faf8f5;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: #1a2018;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #4a5248;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #c9a66b;
+}
+
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+::-webkit-scrollbar {
+  width: variables.$scrollbar-width;
+  height: variables.$scrollbar-height;
+}
+
+::-webkit-scrollbar-track {
+  background: variables.$scrollbar-track-bg;
+}
+
+::-webkit-scrollbar-thumb {
+  background: variables.$scrollbar-thumb-bg;
+  border-radius: variables.$scrollbar-thumb-radius;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: variables.$scrollbar-thumb-bg-hover;
+}
+
+@media (max-width: (variables.$breakpoint-sm - 0.0625rem)) {
+  html,
+  body,
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  // Multiline inputs / rich editors — show vertical scrollbar when content overflows.
+  .MuiOutlinedInput-root.MuiInputBase-multiline textarea,
+  .MuiOutlinedInput-root.MuiInputBase-multiline .MuiInputBase-inputMultiline {
+    @include mixins.visible-scrollbars;
+  }
+}
+
+[data-theme="dark"] {
+  @media (max-width: (variables.$breakpoint-sm - 0.0625rem)) {
+    .MuiOutlinedInput-root.MuiInputBase-multiline textarea,
+    .MuiOutlinedInput-root.MuiInputBase-multiline .MuiInputBase-inputMultiline {
+      scrollbar-color: #4a5248 #1a2018;
+
+      &::-webkit-scrollbar-track {
+        background: #1a2018;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #4a5248;
+      }
+
+      &::-webkit-scrollbar-thumb:hover {
+        background: #c9a66b;
+      }
+    }
+  }
+}
+
+// Snackbar / Alert: ensure B Yekan (theme also sets typography; this covers portals)
+.MuiSnackbar-root,
+.MuiSnackbar-root *,
+.MuiAlert-root,
+.MuiAlert-root *,
+.MuiAlert-message,
+.MuiAlert-icon,
+.MuiAlert-action {
+  font-family: variables.$font-family !important;
+}
+
+// Snackbar alerts must keep dark filled tones in light mode (MuiPaper surface bg is excluded from Alert).
+body[data-theme="light"] .MuiSnackbar-root .MuiAlert-root.app-snackbar-alert {
+  background-image: none !important;
+
+  &.MuiAlert-filledSuccess {
+    background-color: #059669 !important;
+    color: #ffffff !important;
+  }
+
+  &.MuiAlert-filledError {
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
+  }
+
+  &.MuiAlert-filledWarning {
+    background-color: #d97706 !important;
+    color: #ffffff !important;
+  }
+
+  &.MuiAlert-filledInfo {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+  }
+
+  .MuiAlert-message,
+  .MuiAlert-icon,
+  .MuiAlert-action .MuiIconButton-root,
+  .MuiTypography-root {
+    color: #ffffff !important;
+  }
+}
+
+// Entity tables — restore pre–234df52 size="small" inputs (must beat global rules above).
+.entity-table-shell {
+  --app-input-min-height: #{variables.$table-input-min-height};
+
+  .MuiOutlinedInput-root.MuiInputBase-sizeSmall:not(.MuiInputBase-multiline):not(:has(.MuiAutocomplete-tag)),
+  .MuiInputBase-root.MuiInputBase-sizeSmall:not(.MuiInputBase-multiline):not(:has(.MuiAutocomplete-tag)) {
+    min-height: variables.$table-input-min-height !important;
+    align-items: center;
+  }
+
+  .MuiOutlinedInput-root.MuiInputBase-sizeSmall:not(.MuiInputBase-multiline):not(:has(.MuiAutocomplete-tag))
+    .MuiInputBase-input:not(.MuiInputBase-inputMultiline),
+  .MuiOutlinedInput-root.MuiInputBase-sizeSmall:not(.MuiInputBase-multiline):not(:has(.MuiAutocomplete-tag))
+    .MuiSelect-select {
+    padding-block: variables.$table-input-padding-block !important;
+    line-height: 1.4375 !important;
+    height: auto !important;
+  }
+
+  .MuiAutocomplete-root
+    .MuiOutlinedInput-root.MuiInputBase-sizeSmall:not(:has(.MuiAutocomplete-tag)) {
+    min-height: variables.$table-input-min-height !important;
+
+    .MuiAutocomplete-input {
+      padding-block: variables.$table-input-padding-block !important;
+      padding-inline: 4px !important;
+      line-height: 1.4375 !important;
+    }
+  }
+
+  .MuiInputLabel-root.MuiInputLabel-sizeSmall.MuiInputLabel-outlined:not(.MuiInputLabel-shrink) {
+    transform: translate(14px, variables.$table-input-label-rest-y) scale(1) !important;
+  }
+
+  [dir="rtl"] & .MuiInputLabel-root.MuiInputLabel-sizeSmall.MuiInputLabel-outlined:not(.MuiInputLabel-shrink) {
+    transform: translate(-14px, variables.$table-input-label-rest-y) scale(1) !important;
+  }
+}
+
+// Ensure button labels and icons inherit readable contrast across the app.
+.MuiButton-root {
+  .MuiButton-startIcon,
+  .MuiButton-endIcon,
+  .MuiSvgIcon-root {
+    opacity: 1;
+  }
+}
+
+.MuiButton-containedPrimary,
+.MuiButton-containedSecondary,
+.MuiButton-containedSuccess,
+.MuiButton-containedError {
+  .MuiButton-startIcon,
+  .MuiButton-endIcon,
+  .MuiSvgIcon-root {
+    color: inherit;
+  }
+}

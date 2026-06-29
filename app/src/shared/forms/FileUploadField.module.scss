@@ -1,0 +1,476 @@
+@use "../../styles/variables" as variables;
+@use "../../styles/mixins" as mixins;
+
+$field-label-inline-offset: 0.875rem;
+$field-label-float-scale: 0.75;
+
+// Subtle transparency checkerboard — low-contrast grays, larger tiles
+@mixin transparencyCheckerboard($tile: 0.875rem) {
+  background-color: variables.$color-grey-100;
+  background-image: repeating-conic-gradient(
+    variables.$color-grey-200 0% 25%,
+    variables.$color-grey-100 0% 50%
+  );
+  background-size: $tile $tile;
+
+  [data-theme="dark"] & {
+    background-color: variables.$color-grey-900;
+    background-image: repeating-conic-gradient(
+      variables.$color-grey-800 0% 25%,
+      variables.$color-grey-900 0% 50%
+    );
+  }
+}
+
+.root {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  max-inline-size: 100%;
+}
+
+.rootFullWidth {
+  display: flex;
+  inline-size: 100%;
+}
+
+.label {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 0;
+  inset-inline-start: $field-label-inline-offset;
+  transform: translateY(-50%) scale($field-label-float-scale);
+  transform-origin: top right;
+  padding-inline: 0.25rem;
+  background: var(--app-surface-bg);
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: variables.$font-weight-normal;
+  line-height: 1;
+  pointer-events: none;
+  transition: color 0.18s ease;
+}
+
+.root:focus-within .label,
+.root:has(.dropzoneDragActive) .label {
+  color: var(--app-focus-ring, #{variables.$color-primary-main});
+}
+
+.root:has(.dropzoneError) .label {
+  color: variables.$color-error-main;
+}
+
+.requiredMark {
+  color: variables.$color-error-main;
+}
+
+.dropzone {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  inline-size: 11rem;
+  block-size: 11rem;
+  max-inline-size: 100%;
+  border: 0.0625rem dashed color-mix(in srgb, var(--text-primary) 23%, transparent);
+  border-radius: variables.$border-radius-md;
+  padding: 0.9rem;
+  text-align: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    border-color 0.2s ease,
+    border-width 0.2s ease,
+    background-color 0.2s ease;
+
+  &:hover:not(:focus-within) {
+    border-color: var(--text-primary);
+  }
+
+  &:focus-within {
+    border-color: var(--app-focus-ring, #{variables.$color-primary-main});
+    border-width: 0.125rem;
+    padding: calc(0.9rem - 0.0625rem);
+  }
+}
+
+.dropzoneFullWidth {
+  inline-size: 100%;
+}
+
+.dropzoneDragActive {
+  border-color: var(--app-focus-ring, #{variables.$color-primary-main});
+  background-color: rgba(variables.$color-primary-main, 0.08);
+  box-shadow: 0 0 0 0.125rem rgba(variables.$color-primary-main, 0.12);
+}
+
+.dropzoneUploading {
+  pointer-events: none;
+  cursor: default;
+}
+
+.uploadProgressOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: variables.$spacing-1;
+  padding: 1rem;
+  border-radius: variables.$border-radius-md;
+  background-color: var(--app-surface-bg);
+  background-color: color-mix(in srgb, var(--app-surface-bg) 82%, transparent);
+  backdrop-filter: blur(0.125rem);
+}
+
+.uploadProgressBar {
+  inline-size: 100%;
+}
+
+.uploadProgressLabel {
+  text-align: center;
+  color: var(--text-secondary);
+  font-weight: variables.$font-weight-medium;
+}
+
+.dropzoneError {
+  border-color: variables.$color-error-main;
+}
+
+.dropzoneHasFile {
+  border-style: solid;
+  text-align: start;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0.35rem;
+
+  &:focus-within {
+    padding: calc(0.35rem - 0.0625rem);
+  }
+
+  .previewStage {
+    min-block-size: 100%;
+  }
+
+  .previewIcon {
+    min-block-size: 6.5rem;
+  }
+}
+
+.dropzoneReadOnly {
+  cursor: default;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--text-primary) 23%, transparent);
+    background-color: transparent;
+  }
+}
+
+.dropzoneReadOnly.dropzoneHasFile:hover {
+  border-color: color-mix(in srgb, var(--text-primary) 23%, transparent);
+  background-color: transparent;
+}
+
+.dropzoneReadOnlyPreviewable {
+  cursor: pointer;
+
+  &:hover:not(:focus-within) {
+    border-color: var(--app-focus-ring, #{variables.$color-primary-main});
+    background-color: rgba(variables.$color-primary-main, 0.04);
+  }
+}
+
+.previewMediaReadOnly {
+  pointer-events: none;
+}
+
+.icon {
+  font-size: 2rem;
+  color: variables.$color-text-secondary;
+  margin-bottom: variables.$spacing-0-5;
+}
+
+.title {
+  font-weight: variables.$font-weight-semibold;
+}
+
+.meta {
+  display: block;
+  color: variables.$color-text-secondary;
+  margin-top: variables.$spacing-0-5;
+}
+
+.rules {
+  display: grid;
+  justify-content: center;
+  gap: variables.$spacing-0-5;
+  margin-top: variables.$spacing-1;
+}
+
+.rule {
+  color: variables.$color-text-secondary;
+  background-color: variables.$color-grey-100;
+  border-radius: variables.$border-radius-full;
+  padding: 0.125rem 0.625rem;
+}
+
+.fileRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  direction: ltr;
+  gap: variables.$spacing-1;
+}
+
+.fileRowReadOnly {
+  justify-content: flex-end;
+}
+
+.fileInfo {
+  min-width: 0;
+  flex: 1;
+  max-width: min(100%, 13rem);
+  text-align: left;
+}
+
+.fileActions {
+  display: flex;
+  direction: rtl;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0.125rem;
+}
+
+.filePreview {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+.previewStage {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+.fileOverlay {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  z-index: 1;
+  padding: 2rem 0.35rem 0.3rem;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.78) 0%,
+    rgba(0, 0, 0, 0.42) 58%,
+    transparent 100%
+  );
+  border-end-end-radius: variables.$border-radius-md;
+  border-end-start-radius: variables.$border-radius-md;
+  pointer-events: none;
+
+  .fileRow {
+    pointer-events: auto;
+  }
+
+  .fileName {
+    color: #ffffff;
+    font-family: variables.$font-family-latin;
+    font-size: 0.78rem;
+    line-height: 1.25;
+    text-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.45);
+    direction: ltr;
+    unicode-bidi: isolate;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 100%;
+  }
+
+  .meta {
+    color: rgba(255, 255, 255, 0.86);
+    margin-top: 0.125rem;
+    text-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.45);
+    direction: rtl;
+    unicode-bidi: isolate;
+    text-align: left;
+  }
+
+  .fileActions {
+    :global(.MuiIconButton-root) {
+      color: rgba(255, 255, 255, 0.94);
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.12);
+      }
+    }
+
+    :global(.MuiIconButton-colorError) {
+      color: variables.$color-error-light;
+    }
+  }
+}
+
+.previewMedia {
+  display: block;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  block-size: 100%;
+  object-fit: contain;
+  border-radius: variables.$border-radius-md;
+  @include transparencyCheckerboard;
+}
+
+.previewDialogLatinTitle {
+  :global(.MuiTypography-h6) {
+    font-family: variables.$font-family-latin;
+    direction: ltr;
+    unicode-bidi: isolate;
+    text-align: left;
+    word-break: break-word;
+  }
+}
+
+.previewDialogFrame {
+  @include transparencyCheckerboard(1.125rem);
+}
+
+.previewDialogDocument {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-block-size: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: hidden;
+  border-radius: variables.$border-radius-md;
+  background-color: variables.$color-grey-100;
+
+  [data-theme="dark"] & {
+    background-color: variables.$color-grey-900;
+  }
+
+  @media (min-width: variables.$breakpoint-sm) {
+    block-size: min(calc(80vh - 9rem), 36rem);
+    min-block-size: 28rem;
+  }
+}
+
+.previewDialogDocumentBody {
+  flex: 1;
+  min-block-size: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: auto;
+  border: 0;
+  background-color: variables.$color-background-paper;
+  @include mixins.visible-scrollbars;
+}
+
+.previewDialogDocumentText {
+  flex: 1;
+  min-block-size: 0;
+  margin: 0;
+  padding: 1rem;
+  overflow: auto;
+  inline-size: 100%;
+  block-size: 100%;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  background-color: variables.$color-background-paper;
+  @include mixins.visible-scrollbars;
+}
+
+.previewDialogDocumentState {
+  display: grid;
+  place-items: center;
+  flex: 1;
+  min-block-size: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  padding-inline: 1rem;
+}
+
+.previewDialogDocumentReadOnly {
+  border-radius: 0;
+  flex: 1;
+  block-size: 100%;
+  min-block-size: 0;
+
+  @media (min-width: variables.$breakpoint-sm) {
+    block-size: min(calc(80vh - 9rem), 36rem);
+    min-block-size: 28rem;
+  }
+}
+
+.previewDialogDocumentBodyReadOnly {
+  overflow: hidden;
+  display: block;
+}
+
+.previewIcon,
+.loadingState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border-radius: variables.$border-radius-md;
+  background-color: variables.$color-grey-100;
+  color: variables.$color-text-secondary;
+}
+
+.previewIcon {
+  svg {
+    font-size: 3rem;
+  }
+}
+
+.fileName {
+  font-family: variables.$font-family-latin;
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 100%;
+  font-weight: variables.$font-weight-medium;
+}
+
+.hiddenInput,
+.hiddenMedia {
+  display: none;
+}
+
+.offscreenMedia {
+  position: absolute;
+  inline-size: 0;
+  block-size: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+@media (max-width: (variables.$breakpoint-sm - 0.0625rem)) {
+  .root,
+  .dropzone {
+    inline-size: 100%;
+  }
+
+  .dropzone {
+    block-size: auto;
+    min-block-size: 11rem;
+  }
+}
