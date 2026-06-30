@@ -15,6 +15,7 @@ import {
   type AppShellNavItemDefinition,
   APP_SHELL_NAV_ITEMS,
 } from "../layouts/app-shell-nav-items";
+import { UserRole } from "./graphql/generated";
 import {
   buildProductListQueryVariables,
   DEFAULT_PRODUCT_LIST_FILTERS,
@@ -166,7 +167,7 @@ function buildPrefetchOperationsForItem(
   item: AppShellNavItemDefinition,
   context: AppShellNavPrefetchContext
 ): readonly PrefetchOperation[] {
-  const isSuperAdmin = context.roles.includes("SUPER_ADMIN");
+  const isSuperAdmin = context.roles.includes(UserRole.SUPER_ADMIN);
   const isPublicProductView = !context.userId || context.isEndUser;
 
   switch (item.id) {

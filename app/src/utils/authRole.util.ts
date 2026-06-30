@@ -1,3 +1,9 @@
+import { UserRole } from "../lib/graphql/generated";
+
 export function isEndUserRole(roles: readonly string[]): boolean {
-  return roles.includes("END_USER") && !roles.includes("SUPER_ADMIN");
+  return roles.includes(UserRole.END_USER) && !roles.includes(UserRole.SUPER_ADMIN);
+}
+
+export function isSuperAdminRole(roles: readonly string[]): boolean {
+  return roles.includes(UserRole.SUPER_ADMIN);
 }

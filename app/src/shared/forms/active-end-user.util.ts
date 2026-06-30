@@ -1,4 +1,5 @@
 import { type UserListItemRow } from "../../pages/UsersManagement/users-management-list.api";
+import { UserRole } from "../../lib/graphql/generated";
 import type { FileAccessUrl } from "../../utils/fileAccessUrl.util";
 
 export type ActiveEndUserOption = {
@@ -38,6 +39,6 @@ export function mapActiveEndUserListItems(
   items: readonly UserListItemRow[]
 ): ActiveEndUserOption[] {
   return items
-    .filter((user) => user.roles.length === 1 && user.roles[0] === "END_USER")
+    .filter((user) => user.roles.length === 1 && user.roles[0] === UserRole.END_USER)
     .map(userToActiveEndUserOption);
 }

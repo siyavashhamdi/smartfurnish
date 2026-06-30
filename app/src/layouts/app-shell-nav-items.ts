@@ -7,6 +7,7 @@ import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneR
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import type { ComponentType } from "react";
 import { PAYMENTS_ENABLED } from "../constants/payments.constants";
+import { UserRole } from "../lib/graphql/generated";
 import { APP_SHELL_ROUTES } from "../routing/app-shell-routes";
 
 export type AppShellNavIcon = ComponentType<{ className?: string }>;
@@ -27,7 +28,8 @@ export type AppShellNavItemDefinition = {
   readonly title: string;
   readonly path: string;
   readonly Icon: AppShellNavIcon;
-  readonly requiredRoles?: readonly string[];
+  readonly requiredRoles?: readonly UserRole[];
+  readonly excludeRoles?: readonly UserRole[];
   readonly requiresAuth?: boolean;
   readonly badge?: AppShellNavBadgeKind;
   readonly supportTicketsForSuperAdmin?: boolean;
@@ -42,6 +44,7 @@ export const APP_SHELL_NAV_ITEMS: readonly AppShellNavItemDefinition[] = [
     path: APP_SHELL_ROUTES.landing,
     Icon: AutoStoriesRoundedIcon,
     exactPathMatch: true,
+    excludeRoles: [UserRole.SUPER_ADMIN],
   },
   {
     id: "products",
@@ -56,7 +59,7 @@ export const APP_SHELL_NAV_ITEMS: readonly AppShellNavItemDefinition[] = [
     title: "پرداخت‌ها",
     path: APP_SHELL_ROUTES.payments,
     Icon: AccountBalanceWalletRoundedIcon,
-    requiredRoles: ["SUPER_ADMIN"],
+    requiredRoles: [UserRole.SUPER_ADMIN],
     badge: "payments",
   },
   {
@@ -110,6 +113,10 @@ export function filterAppShellNavItems(
       return false;
     }
 
+    if (item.excludeRoles?.some((role) => context.roles.includes(role))) {
+      return false;
+    }
+
     if (item.requiresAuth && !context.isAuthenticated) {
       return false;
     }
@@ -126,7 +133,7 @@ export function resolveAppShellNavPath(
   item: AppShellNavItemDefinition,
   context: AppShellNavContext
 ): string {
-  if (item.supportTicketsForSuperAdmin && context.roles.includes("SUPER_ADMIN")) {
+  if (item.supportTicketsForSuperAdmin && context.roles.includes(UserRole.SUPER_ADMIN)) {
     return APP_SHELL_ROUTES.supportTickets;
   }
 

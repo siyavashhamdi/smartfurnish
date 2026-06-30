@@ -1,12 +1,12 @@
-export type UserRoleKey = "SUPER_ADMIN" | "END_USER";
+import { UserRole } from "../lib/graphql/generated";
 
-export const USER_ROLE_LABELS: Record<UserRoleKey, string> = {
-  SUPER_ADMIN: "سوپر ادمین",
-  END_USER: "کاربر",
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  [UserRole.SUPER_ADMIN]: "سوپر ادمین",
+  [UserRole.END_USER]: "کاربر",
 };
 
 export function getUserRoleLabel(role: string): string {
-  return USER_ROLE_LABELS[role as UserRoleKey] ?? role;
+  return USER_ROLE_LABELS[role as UserRole] ?? role;
 }
 
 /** Elevated roles are shown on profile; end-users see no role badge. */
@@ -17,9 +17,9 @@ export function getProfileDisplayRoles(
     return [];
   }
 
-  const hasElevatedRole = roles.some((role) => role === "SUPER_ADMIN");
+  const hasElevatedRole = roles.some((role) => role === UserRole.SUPER_ADMIN);
   if (hasElevatedRole) {
-    return roles.filter((role) => role !== "END_USER");
+    return roles.filter((role) => role !== UserRole.END_USER);
   }
 
   return [];

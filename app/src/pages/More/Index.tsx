@@ -15,6 +15,7 @@ import { useQuery } from "@apollo/client/react";
 import { useEffect, useRef, useState, type ReactElement } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { UserRole } from "../../lib/graphql/generated";
 import { useThemeMode } from "../../contexts/ThemeContext";
 import { USER_PROFILE_UPDATE_MUTATION } from "../../graphql/mutations/userProfileUpdate.mutation";
 import { APP_PRIVACY_POLICY_PAGE_QUERY } from "../../graphql/queries/appPrivacyPolicyPageConfig.query";
@@ -80,7 +81,7 @@ const More = (): ReactElement => {
   const isMobile = useMobileAppLayout();
   const { mode, setThemeMode } = useThemeMode();
   const roles = user?.roles ?? [];
-  const isSuperAdmin = roles.includes("SUPER_ADMIN");
+  const isSuperAdmin = roles.includes(UserRole.SUPER_ADMIN);
   const shouldShowPublicInfoCards = !isSuperAdmin;
   const { data: meData } = useQuery<UserMeResponse>(USER_ME_QUERY, {
     fetchPolicy: "cache-only",

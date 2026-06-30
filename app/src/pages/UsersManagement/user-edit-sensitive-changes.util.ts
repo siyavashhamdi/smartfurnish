@@ -1,4 +1,5 @@
-import type { UserRole, UserStatus } from "./users-management-list.api";
+import { UserRole } from "../../lib/graphql/generated";
+import type { UserStatus } from "./users-management-list.api";
 
 export type UserEditFormSnapshot = {
   readonly username: string;
@@ -27,7 +28,7 @@ function rolesSignature(roles: readonly UserRole[]): string {
 }
 
 function includesNonEndUserRole(roles: readonly UserRole[]): boolean {
-  return roles.some((role) => role !== "END_USER");
+  return roles.some((role) => role !== UserRole.END_USER);
 }
 
 export function collectUserEditSensitiveChanges(

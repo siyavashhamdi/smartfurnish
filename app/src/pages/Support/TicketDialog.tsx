@@ -19,6 +19,7 @@ import { resolveAvatarInitial, resolveMeUserDisplayName } from "../../utils/stor
 import { AvatarInitial } from "../../shared/display/AvatarInitial";
 import { CachedFileAvatar } from "../../shared/display/CachedFileAvatar";
 import { useAuth } from "../../contexts/AuthContext";
+import { UserRole } from "../../lib/graphql/generated";
 import { SUPER_ADMIN_TICKET_SEND_MUTATION } from "../../graphql/mutations/superAdminTicketSend.mutation";
 import { TICKET_CLOSE_MUTATION } from "../../graphql/mutations/ticketClose.mutation";
 import { USER_TICKET_CLOSE_MUTATION } from "../../graphql/mutations/userTicketClose.mutation";
@@ -529,7 +530,7 @@ const TicketDialog = ({
     [meUser, user?.username]
   );
   const roles = user?.roles ?? [];
-  const isEndUserView = !roles.includes("SUPER_ADMIN");
+  const isEndUserView = !roles.includes(UserRole.SUPER_ADMIN);
   const defaultCategory = initialCategory ?? "OTHER";
 
   const [title, setTitle] = useState("");

@@ -17,6 +17,7 @@ import {
 import { useMemo, useState, type ReactElement, type ReactNode } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { UserRole } from "../../lib/graphql/generated";
 import { useMe } from "../../hooks/useMe";
 import {
   resolveAvatarInitial,
@@ -80,7 +81,7 @@ const Header = (): ReactElement => {
 
   const brandTitle = t("layout.header.brand.title");
   const brandTagline = t("layout.header.brand.publicTagline");
-  const adminRoleBadgeLabel = authUser?.roles?.includes("SUPER_ADMIN")
+  const adminRoleBadgeLabel = authUser?.roles?.includes(UserRole.SUPER_ADMIN)
     ? SUPER_ADMIN_ROLE_BADGE_LABEL
     : null;
 

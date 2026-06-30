@@ -1,4 +1,5 @@
 import type { SortOrder } from "./product-list.api";
+import { UserRole } from "../../lib/graphql/generated";
 
 export type ProductReviewVisibility = "PUBLIC" | "PRIVATE" | "HIDDEN";
 
@@ -231,7 +232,7 @@ export function canUseEndUserProductReviewList(roles: readonly string[] | undefi
     return false;
   }
 
-  return roles.includes("END_USER") && !isStaffProductReviewer(roles);
+  return roles.includes(UserRole.END_USER) && !isStaffProductReviewer(roles);
 }
 
 export function canUseAdminProductReviewList(roles: readonly string[] | undefined): boolean {
@@ -243,7 +244,7 @@ export function canUseProductReviewExperience(roles: readonly string[] | undefin
 }
 
 export function isStaffProductReviewer(roles: readonly string[] | undefined): boolean {
-  return roles?.includes("SUPER_ADMIN") === true;
+  return roles?.includes(UserRole.SUPER_ADMIN) === true;
 }
 
 export function isStaffReviewOwner(review: AdminProductReviewRecord): boolean {

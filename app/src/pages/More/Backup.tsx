@@ -21,6 +21,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { BACKUP_RUN_MUTATION } from "../../graphql/mutations/backupRun.mutation";
 import { useMutationWithSnackbar } from "../../hooks/useMutationWithSnackbar";
 import { APP_SHELL_ROUTES } from "../../routing/app-shell-routes";
+import { UserRole } from "../../lib/graphql/generated";
 import DashboardMenuHeader from "../../shared/DashboardMenuHeader";
 import { opaqueShellProps } from "../../shared/opaqueShell";
 import styles from "./styles/more.module.scss";
@@ -93,7 +94,7 @@ const formatTargetLabel = (target: BackupTarget): string =>
 
 const Backup = (): ReactElement => {
   const { user } = useAuth();
-  const isSuperAdmin = user?.roles?.includes("SUPER_ADMIN") === true;
+  const isSuperAdmin = user?.roles?.includes(UserRole.SUPER_ADMIN) === true;
   const [selectedTargets, setSelectedTargets] = useState<readonly BackupTarget[]>(["MONGODB"]);
   const [lastResults, setLastResults] = useState<readonly BackupRunItem[]>([]);
   const [runBackup, runResult] = useMutationWithSnackbar<

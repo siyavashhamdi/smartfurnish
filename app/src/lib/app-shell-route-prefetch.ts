@@ -81,12 +81,12 @@ export function scheduleAppShellRoutePrefetch(context: AppShellNavContext): void
     return;
   }
 
-  const ourStoryItem = APP_SHELL_NAV_ITEMS.find((item) => item.id === "ourStory");
+  const visibleItems = filterAppShellNavItems(APP_SHELL_NAV_ITEMS, context);
+  const ourStoryItem = visibleItems.find((item) => item.id === "ourStory");
   if (ourStoryItem) {
     prefetchAppShellNavRoute(ourStoryItem, context);
   }
 
-  const visibleItems = filterAppShellNavItems(APP_SHELL_NAV_ITEMS, context);
   const remainingItems = visibleItems.filter((item) => item.id !== "ourStory");
   if (remainingItems.length === 0) {
     return;

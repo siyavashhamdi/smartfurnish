@@ -1,15 +1,16 @@
 import { APP_SHELL_ROUTES } from "../routing/app-shell-routes";
+import { UserRole } from "../lib/graphql/generated";
 
 export type HeaderPanelNavItem = {
   readonly id: string;
   readonly titleKey: string;
   readonly descriptionKey: string;
   readonly to: string;
-  readonly requiredRoles?: readonly string[];
+  readonly requiredRoles?: readonly UserRole[];
   readonly requiresAuth?: boolean;
 };
 
-const hasRequiredRole = (roles: readonly string[], requiredRoles?: readonly string[]): boolean => {
+const hasRequiredRole = (roles: readonly string[], requiredRoles?: readonly UserRole[]): boolean => {
   if (!requiredRoles?.length) {
     return true;
   }
@@ -32,7 +33,7 @@ export const HEADER_SETTINGS_ITEMS: readonly HeaderPanelNavItem[] = [
     titleKey: "layout.header.panels.settings.items.systemSettings.title",
     descriptionKey: "layout.header.panels.settings.items.systemSettings.description",
     to: APP_SHELL_ROUTES.moreSystemSettings,
-    requiredRoles: ["SUPER_ADMIN"],
+    requiredRoles: [UserRole.SUPER_ADMIN],
   },
   {
     id: "notification-preferences",
@@ -86,4 +87,4 @@ export const HEADER_USER_ITEMS: readonly HeaderPanelNavItem[] = [
 ];
 
 export const resolveHeaderSettingsDestination = (roles: readonly string[]): string =>
-  roles.includes("SUPER_ADMIN") ? APP_SHELL_ROUTES.moreSystemSettings : APP_SHELL_ROUTES.more;
+  roles.includes(UserRole.SUPER_ADMIN) ? APP_SHELL_ROUTES.moreSystemSettings : APP_SHELL_ROUTES.more;

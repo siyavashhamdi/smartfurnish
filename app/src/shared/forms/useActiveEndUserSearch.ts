@@ -13,6 +13,7 @@ import {
   mapActiveEndUserListItems,
   type ActiveEndUserOption,
 } from "./active-end-user.util";
+import { UserRole } from "../../lib/graphql/generated";
 
 type UseActiveEndUserSearchOptions = {
   readonly value: ActiveEndUserOption | null;
@@ -35,7 +36,7 @@ export function useActiveEndUserSearch({
       input: {
         filters: {
           query: query || null,
-          role: "END_USER",
+          role: UserRole.END_USER,
           status: "ACTIVE",
         },
         options: {

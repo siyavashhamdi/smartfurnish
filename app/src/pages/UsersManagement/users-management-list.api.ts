@@ -2,7 +2,7 @@ import type { ManagedUserRecord, ManagedUsersListFilters } from "./users-managem
 import { parseJalaliParamDate } from "../../utilities/jalali-date-param.util";
 import type { FileAccessUrl } from "../../utils/fileAccessUrl.util";
 
-export type UserRole = "SUPER_ADMIN" | "END_USER";
+export { UserRole } from "../../lib/graphql/generated";
 export type UserStatus = "ACTIVE" | "DEACTIVE" | "SUSPENDED" | "BANNED";
 
 export type UserListProfileSummary = {

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@apollo/client/react";
 import { useAuth } from "../../contexts/AuthContext";
+import { UserRole } from "../../lib/graphql/generated";
 import { PRODUCT_LIST_QUERY } from "../../graphql/queries/productList.query";
 import { USER_PRODUCT_LIST_QUERY } from "../../graphql/queries/userProductList.query";
 import {
@@ -27,8 +28,8 @@ type UseLandingFeaturedProductsResult = {
 export function useLandingFeaturedProducts(): UseLandingFeaturedProductsResult {
   const { isAuthenticated, user, isLoading: isAuthLoading } = useAuth();
 
-  const isEndUser = user?.roles?.includes("END_USER") === true;
-  const isSuperAdmin = user?.roles?.includes("SUPER_ADMIN") === true;
+  const isEndUser = user?.roles?.includes(UserRole.END_USER) === true;
+  const isSuperAdmin = user?.roles?.includes(UserRole.SUPER_ADMIN) === true;
   const usePublicList = !isAuthenticated || isEndUser;
   const canFetchProducts = !isAuthLoading && (usePublicList || (isAuthenticated && isSuperAdmin));
 

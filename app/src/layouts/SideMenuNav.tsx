@@ -5,6 +5,7 @@ import { NavLink } from "react-router-dom";
 import { useMemo, type ReactElement } from "react";
 import { OverflowTooltip } from "../shared/OverflowTooltip";
 import { useAuth } from "../contexts/AuthContext";
+import { UserRole } from "../lib/graphql/generated";
 import { AppShellNavItemIcon } from "./AppShellNavItemIcon";
 import {
   APP_SHELL_NAV_ITEMS,
@@ -48,7 +49,7 @@ export function SideMenuNav({
 }: SideMenuNavProps): ReactElement {
   const { user } = useAuth();
   const roles = user?.roles ?? [];
-  const isEndUser = roles.includes("END_USER");
+  const isEndUser = roles.includes(UserRole.END_USER);
   const navContext = {
     roles,
     isAuthenticated: Boolean(user),

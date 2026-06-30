@@ -36,6 +36,7 @@ import { TICKET_DETAIL_QUERY } from "../../graphql/queries/ticketDetail.query";
 import { USER_TICKET_LIST_QUERY } from "../../graphql/queries/userTicketList.query";
 import { USER_TICKET_DETAIL_QUERY } from "../../graphql/queries/userTicketDetail.query";
 import { useAuth } from "../../contexts/AuthContext";
+import { UserRole } from "../../lib/graphql/generated";
 import { useBadgeCountFirstPageReload } from "../../hooks/useBadgeCountFirstPageReload";
 import { useDebounce } from "../../hooks/useDebounce";
 import {
@@ -999,7 +1000,7 @@ function EndUserSupportTicketList({
 const SupportList = (): ReactElement => {
   const { user } = useAuth();
   const roles = user?.roles ?? [];
-  const isSuperAdmin = roles.includes("SUPER_ADMIN");
+  const isSuperAdmin = roles.includes(UserRole.SUPER_ADMIN);
   const isStaff = isSuperAdmin;
 
   if (isStaff) {

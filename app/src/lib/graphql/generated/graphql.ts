@@ -175,14 +175,82 @@ export type AppTermsOfUsePageConfigGqlResponse = {
   html: Scalars["String"]["output"];
 };
 
+/** Supported audio output container formats */
+export const AudioOutputExtension = {
+  AAC: "AAC",
+  FLAC: "FLAC",
+  M4A: "M4A",
+  MP3: "MP3",
+  OGG: "OGG",
+  OPUS: "OPUS",
+  WAV: "WAV",
+  WEBM_AUDIO: "WEBM_AUDIO",
+  WMA: "WMA",
+} as const;
+
+export type AudioOutputExtension = (typeof AudioOutputExtension)[keyof typeof AudioOutputExtension];
+export type BackupRunGqlInput = {
+  /** Backup sources to archive as password-protected RAR and deliver to Telegram */
+  targets: Array<BackupTarget>;
+};
+
+export type BackupRunGqlResponse = {
+  __typename?: "BackupRunGqlResponse";
+  /** One item per requested backup target, each sent to Telegram separately */
+  items: Array<BackupRunItemGqlResponse>;
+};
+
+export type BackupRunItemGqlResponse = {
+  __typename?: "BackupRunItemGqlResponse";
+  /** Compressed archive file name (rar) */
+  archiveFileName: Scalars["String"]["output"];
+  /** Archive compression format (password-protected RAR) */
+  archiveFormat: Scalars["String"]["output"];
+  /** Number of RAR volumes created for this backup */
+  archivePartCount: Scalars["Int"]["output"];
+  /** Absolute archive path on the server */
+  archivePath: Scalars["String"]["output"];
+  /** Archive size in bytes */
+  archiveSizeBytes: Scalars["Float"]["output"];
+  /** MongoDB collection count */
+  collectionCount?: Maybe<Scalars["Int"]["output"]>;
+  /** Backup creation timestamp */
+  createdAt: Scalars["DateTime"]["output"];
+  /** MongoDB document count */
+  documentCount?: Maybe<Scalars["Int"]["output"]>;
+  /** Backup duration in milliseconds */
+  durationMs: Scalars["Int"]["output"];
+  /** Stored file record count included in MinIO backup */
+  fileRecordCount?: Maybe<Scalars["Int"]["output"]>;
+  /** Human-readable archive size */
+  formattedArchiveSize: Scalars["String"]["output"];
+  /** MinIO object count */
+  objectCount?: Maybe<Scalars["Int"]["output"]>;
+  /** Backup source that was executed */
+  target: BackupTarget;
+  /** Whether the archive file was uploaded to Telegram */
+  telegramDelivered: Scalars["Boolean"]["output"];
+  /** Extra note when Telegram file delivery was skipped */
+  telegramDeliveryNote?: Maybe<Scalars["String"]["output"]>;
+  /** Telegram message id when delivery succeeded or fell back */
+  telegramMessageId?: Maybe<Scalars["Int"]["output"]>;
+};
+
+/** Backup source to archive and deliver */
+export const BackupTarget = {
+  MINIO: "MINIO",
+  MONGODB: "MONGODB",
+} as const;
+
+export type BackupTarget = (typeof BackupTarget)[keyof typeof BackupTarget];
 export type BadgeCountGqlResponse = {
   __typename?: "BadgeCountGqlResponse";
-  /** Product badge count. Staff users receive all products; end users receive active products. */
-  products: Scalars["Int"]["output"];
   /** Unread direct notification count for the current user. */
   notifications?: Maybe<Scalars["Int"]["output"]>;
   /** Pending payment badge count for staff users. Null for end users. */
   payments?: Maybe<Scalars["Int"]["output"]>;
+  /** Product badge count. Staff users receive all products; end users receive active products. */
+  products: Scalars["Int"]["output"];
   /** Support ticket badge count. Staff users receive open tickets; end users receive answered own tickets. */
   tickets?: Maybe<Scalars["Int"]["output"]>;
 };
@@ -451,8 +519,6 @@ export type CouponValidateGqlResponse = {
   couponDiscountAmountIrt?: Maybe<Scalars["Float"]["output"]>;
   /** Coupon ID when validation succeeds */
   couponId?: Maybe<Scalars["ID"]["output"]>;
-  /** Built-in product discount amount */
-  productDiscountAmountIrt?: Maybe<Scalars["Float"]["output"]>;
   /** Coupon discount type */
   discountType?: Maybe<CouponDiscountType>;
   /** Coupon discount value */
@@ -465,8 +531,747 @@ export type CouponValidateGqlResponse = {
   message?: Maybe<Scalars["String"]["output"]>;
   /** Amount after built-in product discount and before coupon */
   payableAmountBeforeCouponIrt?: Maybe<Scalars["Float"]["output"]>;
+  /** Built-in product discount amount */
+  productDiscountAmountIrt?: Maybe<Scalars["Float"]["output"]>;
   /** Coupon title */
   title?: Maybe<Scalars["String"]["output"]>;
+};
+
+export type FileAccessUrlGqlResponse = {
+  __typename?: "FileAccessUrlGqlResponse";
+  /** API path prefix for file content requests, e.g. /api/v1/files */
+  apiPath: Scalars["String"]["output"];
+  /** Public app origin for file requests. Falls back to the browser origin on the client when omitted. */
+  baseUrl?: Maybe<Scalars["String"]["output"]>;
+  /** Stored file ID */
+  fileId: Scalars["ID"]["output"];
+  /** Stored file MIME type */
+  mimeType?: Maybe<Scalars["String"]["output"]>;
+  /** Original stored file name including extension */
+  name?: Maybe<Scalars["String"]["output"]>;
+  /** Stored file size in bytes */
+  sizeBytes?: Maybe<Scalars["Float"]["output"]>;
+  /** Signed access token for the file content endpoint */
+  token: Scalars["String"]["output"];
+};
+
+export type FileCompressMediaGqlInput = {
+  /** Audio container for audio output or audio extraction from video. */
+  audioOutputExtension?: InputMaybe<AudioOutputExtension>;
+  /** Stored file ID to compress */
+  fileId: Scalars["ID"]["input"];
+  /** Target compression quality tier */
+  targetQuality: MediaCompressionQuality;
+  /** Optional trim range in seconds */
+  trim?: InputMaybe<MediaCompressionTrimGqlInput>;
+  /** Video container for video output. Required when compressing a video file to video. */
+  videoOutputExtension?: InputMaybe<VideoOutputExtension>;
+};
+
+export type FileCompressMediaGqlResponse = {
+  __typename?: "FileCompressMediaGqlResponse";
+  /** Ratio of current size to previous size */
+  compressionRatio: Scalars["Float"]["output"];
+  /** Current media bitrate in kilobits per second */
+  currentBitrateKbps?: Maybe<Scalars["Float"]["output"]>;
+  /** Current media codec name */
+  currentCodec: Scalars["String"]["output"];
+  /** Current codec family */
+  currentCodecFamily: MediaCodecFamily;
+  /** Current file extension without dot */
+  currentExtension: Scalars["String"]["output"];
+  /** Quality tier after compression or skip evaluation */
+  currentQuality: MediaCompressionQuality;
+  /** Current video resolution */
+  currentResolution: MediaResolutionGqlResponse;
+  /** Current file size in bytes */
+  currentSizeBytes: Scalars["Float"]["output"];
+  /** Processing duration in milliseconds */
+  durationMs: Scalars["Int"]["output"];
+  /** Current stored file metadata */
+  file: FileUploadGqlResponse;
+  /** Current stored file ID after compression or skip */
+  fileId: Scalars["ID"]["output"];
+  /** Resulting media duration in seconds after trim */
+  mediaDurationSeconds: Scalars["Float"]["output"];
+  /** Resulting media type */
+  mediaType: MediaType;
+  /** Previous media bitrate in kilobits per second */
+  previousBitrateKbps?: Maybe<Scalars["Float"]["output"]>;
+  /** Previous media codec name */
+  previousCodec: Scalars["String"]["output"];
+  /** Previous codec family */
+  previousCodecFamily: MediaCodecFamily;
+  /** Previous file extension without dot */
+  previousExtension: Scalars["String"]["output"];
+  /** Previous stored file ID */
+  previousFileId: Scalars["ID"]["output"];
+  /** Detected quality tier before compression */
+  previousQuality: MediaCompressionQuality;
+  /** Previous video resolution */
+  previousResolution: MediaResolutionGqlResponse;
+  /** Previous file size in bytes */
+  previousSizeBytes: Scalars["Float"]["output"];
+  /** Reason compression was skipped, if applicable */
+  skipReason: MediaCompressionSkipReason;
+  /** Requested and applied trim details */
+  trim: MediaCompressionTrimGqlResponse;
+  /** Whether a new compressed file was created and stored */
+  wasCompressed: Scalars["Boolean"]["output"];
+};
+
+export type FileUploadGqlResponse = {
+  __typename?: "FileUploadGqlResponse";
+  /** Signed file access descriptor for reading the stored file */
+  accessUrl?: Maybe<FileAccessUrlGqlResponse>;
+  /** File MIME type */
+  mimeType: Scalars["String"]["output"];
+  /** Original file name */
+  name: Scalars["String"]["output"];
+  /** MinIO object path stored for this file */
+  path: Scalars["String"]["output"];
+  /** File size in bytes */
+  sizeBytes: Scalars["Float"]["output"];
+  /** Upload completion date */
+  uploadedAt: Scalars["DateTime"]["output"];
+};
+
+export type GeneralSubscriptionGqlResponse = {
+  __typename?: "GeneralSubscriptionGqlResponse";
+  /** UTC timestamp when this update was generated */
+  createdAt: Scalars["DateTime"]["output"];
+  /** Type-specific payload object */
+  payload?: Maybe<Scalars["JSON"]["output"]>;
+  /** Optional scoped identifier for this update (for example, ticket or product id) */
+  targetId?: Maybe<Scalars["String"]["output"]>;
+  /** General update type emitted by backend */
+  updateType: GeneralSubscriptionUpdateType;
+};
+
+/** Type of real-time update in general subscription channel */
+export const GeneralSubscriptionUpdateType = {
+  BADGE_COUNTS: "BADGE_COUNTS",
+  NOTIFICATION: "NOTIFICATION",
+  VERIFICATION_STATUS: "VERIFICATION_STATUS",
+} as const;
+
+export type GeneralSubscriptionUpdateType =
+  (typeof GeneralSubscriptionUpdateType)[keyof typeof GeneralSubscriptionUpdateType];
+/** Display type used for global anouncements */
+export const GlobalAnouncementMessageType = {
+  POPUP: "POPUP",
+  SNACKBAR: "SNACKBAR",
+} as const;
+
+export type GlobalAnouncementMessageType =
+  (typeof GlobalAnouncementMessageType)[keyof typeof GlobalAnouncementMessageType];
+export type GlobalAnouncementSendGqlInput = {
+  /** Anouncement message shown to subscribed users */
+  description: Scalars["String"]["input"];
+  /** Whether this notification should also be pushed through native push channel */
+  isPushNotification?: InputMaybe<Scalars["Boolean"]["input"]>;
+  /** Target message renderer on clients (popup or snackbar) */
+  messageType?: InputMaybe<GlobalAnouncementMessageType>;
+  /** Popup mode used by clients when displaying the anouncement */
+  mode?: InputMaybe<NotificationMode>;
+  /** Optional extra structured payload for future client actions */
+  payload?: InputMaybe<Scalars["JSON"]["input"]>;
+  /** Anouncement title shown to subscribed users */
+  title?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type GlobalAnouncementSendGqlResponse = {
+  __typename?: "GlobalAnouncementSendGqlResponse";
+  /** Number of active users subscribed to the general updates channel */
+  activeSubscribedUsers: Scalars["Int"]["output"];
+  /** Number of active subscribed users that received the update */
+  deliveredUsers: Scalars["Int"]["output"];
+};
+
+/** Normalized codec family detected from media probes */
+export const MediaCodecFamily = {
+  AAC: "AAC",
+  AV1: "AV1",
+  H264: "H264",
+  H265: "H265",
+  MP3: "MP3",
+  OPUS: "OPUS",
+  PCM: "PCM",
+  UNKNOWN: "UNKNOWN",
+  VORBIS: "VORBIS",
+  VP9: "VP9",
+} as const;
+
+export type MediaCodecFamily = (typeof MediaCodecFamily)[keyof typeof MediaCodecFamily];
+/** Detected or requested media compression quality tier */
+export const MediaCompressionQuality = {
+  HIGH: "HIGH",
+  LOW: "LOW",
+  MAX: "MAX",
+  MEDIUM: "MEDIUM",
+  MEDIUM_HIGH: "MEDIUM_HIGH",
+  MEDIUM_LOW: "MEDIUM_LOW",
+  ORIGINAL: "ORIGINAL",
+  TINY: "TINY",
+  VERY_HIGH: "VERY_HIGH",
+  VERY_LOW: "VERY_LOW",
+} as const;
+
+export type MediaCompressionQuality =
+  (typeof MediaCompressionQuality)[keyof typeof MediaCompressionQuality];
+/** Reason media compression was skipped */
+export const MediaCompressionSkipReason = {
+  ALREADY_AT_TARGET: "ALREADY_AT_TARGET",
+  ALREADY_BELOW_TARGET: "ALREADY_BELOW_TARGET",
+  FILE_TOO_SMALL: "FILE_TOO_SMALL",
+  NONE: "NONE",
+  OUTPUT_NOT_SMALLER: "OUTPUT_NOT_SMALLER",
+} as const;
+
+export type MediaCompressionSkipReason =
+  (typeof MediaCompressionSkipReason)[keyof typeof MediaCompressionSkipReason];
+export type MediaCompressionTrimAppliedGqlResponse = {
+  __typename?: "MediaCompressionTrimAppliedGqlResponse";
+  /** Resulting media duration in seconds */
+  durationSeconds: Scalars["Float"]["output"];
+  /** Applied trim end in seconds */
+  endSeconds: Scalars["Float"]["output"];
+  /** Applied trim start in seconds */
+  startSeconds: Scalars["Float"]["output"];
+};
+
+export type MediaCompressionTrimGqlInput = {
+  /** Trim end position in seconds. Omit or null to keep until the end. */
+  endSeconds?: InputMaybe<Scalars["Float"]["input"]>;
+  /** Trim start position in seconds. Omit or null to start from the beginning. */
+  startSeconds?: InputMaybe<Scalars["Float"]["input"]>;
+};
+
+export type MediaCompressionTrimGqlResponse = {
+  __typename?: "MediaCompressionTrimGqlResponse";
+  /** Trim range applied during processing */
+  applied: MediaCompressionTrimAppliedGqlResponse;
+  /** Trim range requested by the caller */
+  requested: MediaCompressionTrimRequestedGqlResponse;
+};
+
+export type MediaCompressionTrimRequestedGqlResponse = {
+  __typename?: "MediaCompressionTrimRequestedGqlResponse";
+  /** Requested trim end in seconds */
+  endSeconds?: Maybe<Scalars["Float"]["output"]>;
+  /** Requested trim start in seconds */
+  startSeconds?: Maybe<Scalars["Float"]["output"]>;
+};
+
+export type MediaResolutionGqlResponse = {
+  __typename?: "MediaResolutionGqlResponse";
+  /** Media height in pixels */
+  height: Scalars["Int"]["output"];
+  /** Media width in pixels */
+  width: Scalars["Int"]["output"];
+};
+
+/** Stored media type */
+export const MediaType = {
+  AUDIO: "AUDIO",
+  VIDEO: "VIDEO",
+} as const;
+
+export type MediaType = (typeof MediaType)[keyof typeof MediaType];
+export type Mutation = {
+  __typename?: "Mutation";
+  /** Update a single app setting record, including typed value, metadata, and active status */
+  appSettingUpdate: AppSettingMutationGqlResponse;
+  /** Create password-protected RAR backup archives and deliver each target to Telegram */
+  backupRun: BackupRunGqlResponse;
+  /** Create a coupon with discount rules, usage limits, product applicability, and active status */
+  couponCreate: CouponListGqlResponse;
+  /** Delete a coupon */
+  couponDelete: Scalars["Boolean"]["output"];
+  /** Update a coupon's discount rules, usage limits, product applicability, or active status */
+  couponUpdate: CouponListGqlResponse;
+  /** Compress or trim an existing stored video/audio file with ffmpeg, replacing it with a new stored file record */
+  fileCompressMedia: FileCompressMediaGqlResponse;
+  /** Broadcast a global anouncement to active users subscribed to general updates */
+  globalAnouncementSend: GlobalAnouncementSendGqlResponse;
+  /** Confirm completion of an unlocked product chapter for the authenticated learner */
+  productChapterComplete: ProductChapterCompleteGqlResponse;
+  /** Create a product with chapters and items, returning calculated release and item types */
+  productCreate: ProductListGqlResponse;
+  /** Delete a product and remove its detached file attachments */
+  productDelete: Scalars["Boolean"]["output"];
+  /** Create a manual product payment record for an active paid product as a super admin */
+  productPaymentManualCreate: ProductPaymentListGqlResponse;
+  /** Manually update a product payment status and optional review description */
+  productPaymentStatusUpdate: ProductPaymentListGqlResponse;
+  /** Submit a product purchase using gateway, card-to-card, cryptocurrency, or a free coupon */
+  productPurchaseSubmit: ProductPurchaseSubmitGqlResponse;
+  /** Update product review moderation visibility for the review thread, rating, or a single message */
+  productReviewModerationUpdate: ProductReviewListGqlResponse;
+  /** Create or update a product star rating and optionally append a follow-up comment */
+  productReviewSubmit: ProductReviewSubmitGqlResponse;
+  /** Update a product and clean up replaced or removed file attachments */
+  productUpdate: ProductListGqlResponse;
+  /** Register or refresh the current user's native mobile push token (FCM) */
+  registerNativePushToken: PushSubscriptionMutationGqlResponse;
+  /** Register or refresh the current user's Web Push subscription */
+  registerPushSubscription: PushSubscriptionMutationGqlResponse;
+  /** Request login code using username, email, or phone identity */
+  requestLoginCode: UserRequestLoginCodeGqlResponse;
+  /** Request SMS verification code for mobile signup */
+  requestSignupCode: UserRequestLoginCodeGqlResponse;
+  /** Resolve whether an identity belongs to an existing user account */
+  resolveAuthIdentity: UserResolveAuthIdentityGqlResponse;
+  /** Create a ticket or append a new super-admin update to an existing ticket, automatically reopening it if needed */
+  superAdminTicketSend: TicketListGqlResponse;
+  /** Close a support ticket as support staff */
+  ticketClose: TicketListGqlResponse;
+  /** Remove a native mobile push token for the current user */
+  unregisterNativePushToken: PushSubscriptionMutationGqlResponse;
+  /** Remove a Web Push subscription for the current user */
+  unregisterPushSubscription: PushSubscriptionMutationGqlResponse;
+  /** Activate a newly created account using the emailed activation link */
+  userActivateAccount: UserPasswordResetGqlResponse;
+  /** Create a user account with profile, avatar file, roles, status, and initial password */
+  userCreate: UserMutationGqlResponse;
+  /** Request a password reset code using username, email, or phone number */
+  userForgotPassword: UserPasswordResetGqlResponse;
+  /** Login and get JWT access token */
+  userLogin: UserLoginGqlResponse;
+  /** Logout and mark the current session as logged out */
+  userLogout: Scalars["Boolean"]["output"];
+  /** Bulk update current-user notifications by setting them read, unread, or archived */
+  userNotificationUpdate: NotificationUpdateGqlResponse;
+  /** Update the authenticated user's user document: account info, profile, preferences, avatar file, or password */
+  userProfileUpdate: UserMutationGqlResponse;
+  /** Send a verification email to the authenticated user's address */
+  userRequestEmailVerification: UserPasswordResetGqlResponse;
+  /** Reset account password using the emailed one-time code and account identity */
+  userResetPassword: UserPasswordResetGqlResponse;
+  /** Create an END_USER account using username/email/mobile and start a session */
+  userSignup: UserLoginGqlResponse;
+  /** Close one of the current end-user's support tickets */
+  userTicketClose: UserTicketListGqlResponse;
+  /** Create a ticket or append a new END_USER update to an owned ticket, automatically reopening it if needed */
+  userTicketSend: UserTicketListGqlResponse;
+  /** Update a user account, profile, preferences, avatar file, roles, status, or password */
+  userUpdate: UserMutationGqlResponse;
+  /** Verify SMS login code and create an authenticated session */
+  verifyLoginCode: UserVerifyLoginCodeGqlResponse;
+};
+
+export type MutationAppSettingUpdateArgs = {
+  input: AppSettingUpdateGqlInput;
+};
+
+export type MutationBackupRunArgs = {
+  input: BackupRunGqlInput;
+};
+
+export type MutationCouponCreateArgs = {
+  input: CouponCreateGqlInput;
+};
+
+export type MutationCouponDeleteArgs = {
+  input: CouponDeleteGqlInput;
+};
+
+export type MutationCouponUpdateArgs = {
+  input: CouponUpdateGqlInput;
+};
+
+export type MutationFileCompressMediaArgs = {
+  input: FileCompressMediaGqlInput;
+};
+
+export type MutationGlobalAnouncementSendArgs = {
+  input: GlobalAnouncementSendGqlInput;
+};
+
+export type MutationProductChapterCompleteArgs = {
+  input: ProductChapterCompleteGqlInput;
+};
+
+export type MutationProductCreateArgs = {
+  input: ProductCreateGqlInput;
+};
+
+export type MutationProductDeleteArgs = {
+  input: ProductDeleteGqlInput;
+};
+
+export type MutationProductPaymentManualCreateArgs = {
+  input: ProductPaymentManualCreateGqlInput;
+};
+
+export type MutationProductPaymentStatusUpdateArgs = {
+  input: ProductPaymentStatusUpdateGqlInput;
+};
+
+export type MutationProductPurchaseSubmitArgs = {
+  input: ProductPurchaseSubmitGqlInput;
+};
+
+export type MutationProductReviewModerationUpdateArgs = {
+  input: ProductReviewModerationUpdateGqlInput;
+};
+
+export type MutationProductReviewSubmitArgs = {
+  input: ProductReviewSubmitGqlInput;
+};
+
+export type MutationProductUpdateArgs = {
+  input: ProductUpdateGqlInput;
+};
+
+export type MutationRegisterNativePushTokenArgs = {
+  input: RegisterNativePushTokenGqlInput;
+};
+
+export type MutationRegisterPushSubscriptionArgs = {
+  input: RegisterPushSubscriptionGqlInput;
+};
+
+export type MutationRequestLoginCodeArgs = {
+  input: UserRequestLoginCodeGqlInput;
+};
+
+export type MutationRequestSignupCodeArgs = {
+  input: UserRequestSignupCodeGqlInput;
+};
+
+export type MutationResolveAuthIdentityArgs = {
+  input: UserRequestLoginCodeGqlInput;
+};
+
+export type MutationSuperAdminTicketSendArgs = {
+  input: SuperAdminTicketSendGqlInput;
+};
+
+export type MutationTicketCloseArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationUnregisterNativePushTokenArgs = {
+  input: UnregisterNativePushTokenGqlInput;
+};
+
+export type MutationUnregisterPushSubscriptionArgs = {
+  input: UnregisterPushSubscriptionGqlInput;
+};
+
+export type MutationUserActivateAccountArgs = {
+  token: Scalars["String"]["input"];
+};
+
+export type MutationUserCreateArgs = {
+  input: UserCreateGqlInput;
+};
+
+export type MutationUserForgotPasswordArgs = {
+  input: UserForgotPasswordGqlInput;
+};
+
+export type MutationUserLoginArgs = {
+  input: UserLoginGqlInput;
+};
+
+export type MutationUserNotificationUpdateArgs = {
+  input: NotificationUpdateGqlInput;
+};
+
+export type MutationUserProfileUpdateArgs = {
+  input: UserProfileUpdateGqlInput;
+};
+
+export type MutationUserResetPasswordArgs = {
+  input: UserResetPasswordGqlInput;
+};
+
+export type MutationUserSignupArgs = {
+  input: UserSignupGqlInput;
+};
+
+export type MutationUserTicketCloseArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationUserTicketSendArgs = {
+  input: UserTicketSendGqlInput;
+};
+
+export type MutationUserUpdateArgs = {
+  input: UserUpdateGqlInput;
+};
+
+export type MutationVerifyLoginCodeArgs = {
+  input: UserVerifyLoginCodeGqlInput;
+};
+
+/** Native mobile push platform */
+export const NativePushPlatform = {
+  ANDROID: "ANDROID",
+} as const;
+
+export type NativePushPlatform = (typeof NativePushPlatform)[keyof typeof NativePushPlatform];
+export type NotificationListCursorPageOptionsParamsInput = {
+  /** Maximum number of records to return */
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  /** Sort options as a map of field names to sort order */
+  sort?: InputMaybe<NotificationListSortOptionInput>;
+  /** Cursor to start after. Uses the beginning if omitted */
+  startCursor?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type NotificationListFilterInput = {
+  /** Filter notifications archived from this ISO date */
+  archivedAtFrom?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter notifications archived until this ISO date */
+  archivedAtTo?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter notifications created from this ISO date */
+  createdAtFrom?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter notifications created until this ISO date */
+  createdAtTo?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter notifications by ID */
+  id?: InputMaybe<Scalars["ID"]["input"]>;
+  /** Filter by whether the notification is archived */
+  isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
+  /** Filter by read state */
+  isRead?: InputMaybe<Scalars["Boolean"]["input"]>;
+  /** Filter notifications that are currently visible or currently expired */
+  isVisible?: InputMaybe<Scalars["Boolean"]["input"]>;
+  /** Filter notifications by message */
+  message?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter notifications by visual mode */
+  mode?: InputMaybe<NotificationMode>;
+  /** Search query that matches notification title or message */
+  query?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter notifications read from this ISO date */
+  readAtFrom?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter notifications read until this ISO date */
+  readAtTo?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter notifications by domain source */
+  source?: InputMaybe<NotificationSource>;
+  /** Filter notifications by title */
+  title?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter notifications updated from this ISO date */
+  updatedAtFrom?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter notifications updated until this ISO date */
+  updatedAtTo?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter notifications visible until from this ISO date */
+  visibleUntilFrom?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter notifications visible until this ISO date */
+  visibleUntilTo?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type NotificationListGqlInput = {
+  /** Filter options for narrowing down the notification list */
+  filters?: InputMaybe<NotificationListFilterInput>;
+  /** Cursor pagination and sorting options */
+  options?: InputMaybe<NotificationListCursorPageOptionsParamsInput>;
+};
+
+export type NotificationListGqlResponse = {
+  __typename?: "NotificationListGqlResponse";
+  /** Date when the notification was archived */
+  archivedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  /** Date when the notification was created */
+  createdAt?: Maybe<Scalars["DateTime"]["output"]>;
+  /** Notification ID */
+  id: Scalars["ID"]["output"];
+  /** Whether the notification has been read */
+  isRead: Scalars["Boolean"]["output"];
+  /** Notification message */
+  message: Scalars["String"]["output"];
+  /** Visual mode for this notification */
+  mode: NotificationMode;
+  /** Type-specific payload object */
+  payload?: Maybe<Scalars["JSON"]["output"]>;
+  /** Date when the notification was read */
+  readAt?: Maybe<Scalars["DateTime"]["output"]>;
+  /** Domain source that produced this notification */
+  source: NotificationSource;
+  /** Notification title */
+  title?: Maybe<Scalars["String"]["output"]>;
+  /** Date when the notification was last updated */
+  updatedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  /** Target user ID for direct notifications */
+  userId?: Maybe<Scalars["ID"]["output"]>;
+  /** Date until this notification should remain visible */
+  visibleUntil?: Maybe<Scalars["DateTime"]["output"]>;
+};
+
+export type NotificationListPaginatedCursorGqlResponse = {
+  __typename?: "NotificationListPaginatedCursorGqlResponse";
+  /** List of notifications visible to the current user */
+  items: Array<NotificationListGqlResponse>;
+  /** Pagination metadata */
+  pagination: PaginationCursorResponse;
+};
+
+export type NotificationListSortOptionInput = {
+  /** Sort by archive date */
+  archivedAt?: InputMaybe<SortingOrder>;
+  /** Sort by creation date */
+  createdAt?: InputMaybe<SortingOrder>;
+  /** Sort by read state */
+  isRead?: InputMaybe<SortingOrder>;
+  /** Sort by message */
+  message?: InputMaybe<SortingOrder>;
+  /** Sort by notification mode */
+  mode?: InputMaybe<SortingOrder>;
+  /** Sort by read date */
+  readAt?: InputMaybe<SortingOrder>;
+  /** Sort by notification source */
+  source?: InputMaybe<SortingOrder>;
+  /** Sort by title */
+  title?: InputMaybe<SortingOrder>;
+  /** Sort by last update date */
+  updatedAt?: InputMaybe<SortingOrder>;
+  /** Sort by visibility expiration date */
+  visibleUntil?: InputMaybe<SortingOrder>;
+};
+
+/** Visual mode for notifications */
+export const NotificationMode = {
+  ERROR: "ERROR",
+  INFO: "INFO",
+  SUCCESS: "SUCCESS",
+  WARNING: "WARNING",
+} as const;
+
+export type NotificationMode = (typeof NotificationMode)[keyof typeof NotificationMode];
+/** Domain source that produced a notification */
+export const NotificationSource = {
+  OTHER: "OTHER",
+  PAYMENT: "PAYMENT",
+  PRODUCT: "PRODUCT",
+  PRODUCT_CHAPTER: "PRODUCT_CHAPTER",
+  TICKET: "TICKET",
+  USER: "USER",
+} as const;
+
+export type NotificationSource = (typeof NotificationSource)[keyof typeof NotificationSource];
+/** Bulk update action for user notifications */
+export const NotificationUpdateAction = {
+  ARCHIVE: "ARCHIVE",
+  SET_AS_READ: "SET_AS_READ",
+  SET_AS_UNREAD: "SET_AS_UNREAD",
+  UNARCHIVE: "UNARCHIVE",
+} as const;
+
+export type NotificationUpdateAction =
+  (typeof NotificationUpdateAction)[keyof typeof NotificationUpdateAction];
+export type NotificationUpdateGqlInput = {
+  /** Action to apply to the selected notifications */
+  action: NotificationUpdateAction;
+  /** Notification IDs to update. Every notification must belong to the current user. */
+  notificationIds: Array<Scalars["ID"]["input"]>;
+};
+
+export type NotificationUpdateGqlResponse = {
+  __typename?: "NotificationUpdateGqlResponse";
+  /** Action applied to the selected notifications */
+  action: NotificationUpdateAction;
+  /** Updated notification records */
+  items: Array<NotificationListGqlResponse>;
+  /** Number of current-user notifications matched */
+  matchedCount: Scalars["Int"]["output"];
+  /** Number of notification documents modified by this operation */
+  modifiedCount: Scalars["Int"]["output"];
+  /** Notification IDs requested for update */
+  notificationIds: Array<Scalars["ID"]["output"]>;
+  /** Number of unique notification IDs requested */
+  requestedCount: Scalars["Int"]["output"];
+};
+
+export type OffsetPageOptionsParamsInput = {
+  /** Maximum number of records to return */
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  /** Number of records to skip (offset) */
+  skip?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type PaginationCursorResponse = {
+  __typename?: "PaginationCursorResponse";
+  /** Number of items returned in this page */
+  count: Scalars["Int"]["output"];
+  /** Cursor for the last item in this page. Use this as startCursor for the next page */
+  endCursor?: Maybe<Scalars["ID"]["output"]>;
+  /** Whether there are more items available after this page */
+  hasNextPage: Scalars["Boolean"]["output"];
+  /** Whether there are items before this page */
+  hasPreviousPage: Scalars["Boolean"]["output"];
+  /** Number of items requested */
+  limit: Scalars["Int"]["output"];
+  /** Cursor for the first item in this page. Use this as endCursor for the previous page */
+  startCursor?: Maybe<Scalars["ID"]["output"]>;
+  /** Total number of items */
+  total: Scalars["Int"]["output"];
+};
+
+export type PaginationOffsetResponse = {
+  __typename?: "PaginationOffsetResponse";
+  /** Number of items returned in this page */
+  count: Scalars["Int"]["output"];
+  /** Number of items requested */
+  limit: Scalars["Int"]["output"];
+  /** Number of items skipped (offset) */
+  skip: Scalars["Int"]["output"];
+  /** Total number of items */
+  total: Scalars["Int"]["output"];
+};
+
+export type PaymentCheckoutCardGqlResponse = {
+  __typename?: "PaymentCheckoutCardGqlResponse";
+  /** Payment card bank name */
+  bankName: Scalars["String"]["output"];
+  /** Payment card number */
+  cardNumber: Scalars["String"]["output"];
+  /** Payment card holder name */
+  holderName: Scalars["String"]["output"];
+};
+
+export type PaymentCheckoutConfigGqlResponse = {
+  __typename?: "PaymentCheckoutConfigGqlResponse";
+  /** Available cryptocurrency wallets */
+  cryptoWallets: Array<PaymentCheckoutCryptoWalletGqlResponse>;
+  /** Available payment cards */
+  paymentCards: Array<PaymentCheckoutCardGqlResponse>;
+  /** Payment method visibility and availability configuration */
+  paymentMethods: Array<PaymentCheckoutMethodGqlResponse>;
+  /** USDT to IRT conversion settings */
+  usdtIrtRate: PaymentCheckoutUsdtIrtRateGqlResponse;
+};
+
+export type PaymentCheckoutCryptoWalletGqlResponse = {
+  __typename?: "PaymentCheckoutCryptoWalletGqlResponse";
+  /** Crypto wallet address */
+  address: Scalars["String"]["output"];
+  /** Crypto wallet network */
+  network: Scalars["String"]["output"];
+};
+
+export type PaymentCheckoutMethodGqlResponse = {
+  __typename?: "PaymentCheckoutMethodGqlResponse";
+  /** Whether the method can currently be selected */
+  isActive: Scalars["Boolean"]["output"];
+  /** Whether the method should be marked as recommended */
+  isRecommended: Scalars["Boolean"]["output"];
+  /** Whether the method should be shown in checkout */
+  isVisible: Scalars["Boolean"]["output"];
+  /** Payment method identifier */
+  method: UserProductPaymentMethod;
+};
+
+export type PaymentCheckoutUsdtIrtRateGqlResponse = {
+  __typename?: "PaymentCheckoutUsdtIrtRateGqlResponse";
+  /** Multiplier applied to converted USDT amount */
+  coefficient: Scalars["Float"]["output"];
+  /** Fixed USDT fee added after conversion */
+  feeUsdt: Scalars["Float"]["output"];
+  /** IRT value equivalent to one USDT before fee/coefficient */
+  valueIrt: Scalars["Float"]["output"];
 };
 
 export type ProductChapterCompleteGqlInput = {
@@ -548,12 +1353,12 @@ export type ProductCreateGqlInput = {
 
 export type ProductDeleteDependenciesGqlResponse = {
   __typename?: "ProductDeleteDependenciesGqlResponse";
+  /** Detailed dependency groups grouped by impact */
+  groups: Array<ProductDeleteDependencyGroupGqlResponse>;
   /** Product ID */
   productId: Scalars["ID"]["output"];
   /** Product title */
   productTitle: Scalars["String"]["output"];
-  /** Detailed dependency groups grouped by impact */
-  groups: Array<ProductDeleteDependencyGroupGqlResponse>;
   /** High-level delete impact summary */
   summary: ProductDeleteDependenciesSummaryGqlResponse;
 };
@@ -694,7 +1499,7 @@ export type ProductListFilterInput = {
   description?: InputMaybe<Scalars["String"]["input"]>;
   /** Filter products that contain at least one free chapter */
   hasFreeChapter?: InputMaybe<Scalars["Boolean"]["input"]>;
-  /** Filter products by whether a price is set */
+  /** Filter products by whether a paid price is set. true = priceIrt > 0, false = unset/null or priceIrt <= 0. */
   hasPrice?: InputMaybe<Scalars["Boolean"]["input"]>;
   /** Scope the product list for a specific user by excluding products they have already paid for. */
   includeUserId?: InputMaybe<Scalars["ID"]["input"]>;
@@ -828,18 +1633,6 @@ export type ProductListSummaryGqlResponse = {
   title: Scalars["String"]["output"];
 };
 
-export type ProductPaymentProductSnapshotGqlResponse = {
-  __typename?: "ProductPaymentProductSnapshotGqlResponse";
-  /** Product description snapshot */
-  description?: Maybe<Scalars["String"]["output"]>;
-  /** Product ID */
-  id: Scalars["ID"]["output"];
-  /** Original product price in IRT */
-  priceIrt: Scalars["Float"]["output"];
-  /** Product title snapshot */
-  title: Scalars["String"]["output"];
-};
-
 export type ProductPaymentDetailGqlInput = {
   /** User-product purchase record ID */
   id: Scalars["ID"]["input"];
@@ -855,12 +1648,6 @@ export type ProductPaymentListCouponSummaryGqlResponse = {
   discountType: CouponDiscountType;
   /** Coupon discount value. Percentage or fixed amount based on discountType */
   discountValue: Scalars["Float"]["output"];
-};
-
-export type ProductPaymentListProductSummaryGqlResponse = {
-  __typename?: "ProductPaymentListProductSummaryGqlResponse";
-  /** Product title snapshot */
-  title: Scalars["String"]["output"];
 };
 
 export type ProductPaymentListFilterInput = {
@@ -882,10 +1669,6 @@ export type ProductPaymentListFilterInput = {
   couponDiscountValueMin?: InputMaybe<Scalars["Float"]["input"]>;
   /** Filter by coupon ID */
   couponId?: InputMaybe<Scalars["ID"]["input"]>;
-  /** Filter payments by product ID */
-  productId?: InputMaybe<Scalars["ID"]["input"]>;
-  /** Filter by product title snapshot */
-  productTitle?: InputMaybe<Scalars["String"]["input"]>;
   /** Filter records created from this ISO date */
   createdAtFrom?: InputMaybe<Scalars["String"]["input"]>;
   /** Filter records created until this ISO date */
@@ -936,6 +1719,10 @@ export type ProductPaymentListFilterInput = {
   pendingAtFrom?: InputMaybe<Scalars["String"]["input"]>;
   /** Filter pending payments until this ISO date */
   pendingAtTo?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter payments by product ID */
+  productId?: InputMaybe<Scalars["ID"]["input"]>;
+  /** Filter by product title snapshot */
+  productTitle?: InputMaybe<Scalars["String"]["input"]>;
   /** Search query that matches buyer, product, payment reference, or transaction ID */
   query?: InputMaybe<Scalars["String"]["input"]>;
   /** Filter by receipt uploader user ID */
@@ -981,10 +1768,6 @@ export type ProductPaymentListGqlResponse = {
   cancelledAt?: Maybe<Scalars["DateTime"]["output"]>;
   /** Applied coupon snapshot, if any */
   coupon?: Maybe<ProductCouponSnapshotGqlResponse>;
-  /** Product snapshot captured when the purchase was submitted */
-  product: ProductPaymentProductSnapshotGqlResponse;
-  /** Product ID */
-  productId: Scalars["ID"]["output"];
   /** Payment submitted date */
   createdAt?: Maybe<Scalars["DateTime"]["output"]>;
   /** User ID that initially created the payment record */
@@ -1001,12 +1784,12 @@ export type ProductPaymentListGqlResponse = {
   failedAt?: Maybe<Scalars["DateTime"]["output"]>;
   /** Final payable amount in IRT */
   finalAmountIrt: Scalars["Float"]["output"];
+  /** Gateway pending status date */
+  gatewayPendingAt?: Maybe<Scalars["DateTime"]["output"]>;
   /** User-product purchase record ID */
   id: Scalars["ID"]["output"];
   /** Whether the payment status was changed manually */
   isManualStatusChange: Scalars["Boolean"]["output"];
-  /** Actor that changed the payment status */
-  statusChangedBy?: Maybe<PurchaseStatusChangedBy>;
   /** User ID that manually changed the status */
   manualStatusChangedBy?: Maybe<Scalars["ID"]["output"]>;
   /** Manual status-change description */
@@ -1023,8 +1806,10 @@ export type ProductPaymentListGqlResponse = {
   paymentReference?: Maybe<Scalars["String"]["output"]>;
   /** Pending status date */
   pendingAt?: Maybe<Scalars["DateTime"]["output"]>;
-  /** Gateway pending status date */
-  gatewayPendingAt?: Maybe<Scalars["DateTime"]["output"]>;
+  /** Product snapshot captured when the purchase was submitted */
+  product: ProductPaymentProductSnapshotGqlResponse;
+  /** Product ID */
+  productId: Scalars["ID"]["output"];
   /** User ID that uploaded the receipt */
   receiptUploadedBy?: Maybe<Scalars["ID"]["output"]>;
   /** User that uploaded the receipt */
@@ -1033,6 +1818,8 @@ export type ProductPaymentListGqlResponse = {
   refundedAt?: Maybe<Scalars["DateTime"]["output"]>;
   /** Payment status */
   status: UserProductPurchaseStatus;
+  /** Actor that changed the payment status */
+  statusChangedBy?: Maybe<PurchaseStatusChangedBy>;
   /** Whether this payment record was initially submitted by an admin */
   submittedInitiallyByAdmin: Scalars["Boolean"]["output"];
   /** Gateway ref ID or crypto transaction ID */
@@ -1055,6 +1842,12 @@ export type ProductPaymentListPaginatedOffsetGqlResponse = {
   pagination: PaginationOffsetResponse;
 };
 
+export type ProductPaymentListProductSummaryGqlResponse = {
+  __typename?: "ProductPaymentListProductSummaryGqlResponse";
+  /** Product title snapshot */
+  title: Scalars["String"]["output"];
+};
+
 export type ProductPaymentListReceiptFileSummaryGqlResponse = {
   __typename?: "ProductPaymentListReceiptFileSummaryGqlResponse";
   /** Signed access descriptor for reading the stored receipt file */
@@ -1069,10 +1862,6 @@ export type ProductPaymentListSummaryGqlResponse = {
   cancelledAt?: Maybe<Scalars["DateTime"]["output"]>;
   /** Applied coupon snapshot, if any */
   coupon?: Maybe<ProductPaymentListCouponSummaryGqlResponse>;
-  /** Product snapshot captured when the purchase was submitted */
-  product: ProductPaymentListProductSummaryGqlResponse;
-  /** Product ID */
-  productId: Scalars["ID"]["output"];
   /** Payment submitted date */
   createdAt?: Maybe<Scalars["DateTime"]["output"]>;
   /** Payment currency */
@@ -1085,6 +1874,8 @@ export type ProductPaymentListSummaryGqlResponse = {
   failedAt?: Maybe<Scalars["DateTime"]["output"]>;
   /** Final payable amount in IRT */
   finalAmountIrt: Scalars["Float"]["output"];
+  /** Gateway pending status date */
+  gatewayPendingAt?: Maybe<Scalars["DateTime"]["output"]>;
   /** User-product purchase record ID */
   id: Scalars["ID"]["output"];
   /** Whether the payment status was changed manually */
@@ -1103,14 +1894,18 @@ export type ProductPaymentListSummaryGqlResponse = {
   paymentReference?: Maybe<Scalars["String"]["output"]>;
   /** Pending status date */
   pendingAt?: Maybe<Scalars["DateTime"]["output"]>;
-  /** Gateway pending status date */
-  gatewayPendingAt?: Maybe<Scalars["DateTime"]["output"]>;
+  /** Product snapshot captured when the purchase was submitted */
+  product: ProductPaymentListProductSummaryGqlResponse;
+  /** Product ID */
+  productId: Scalars["ID"]["output"];
   /** User ID that uploaded the receipt */
   receiptUploadedBy?: Maybe<Scalars["ID"]["output"]>;
   /** Refunded status date */
   refundedAt?: Maybe<Scalars["DateTime"]["output"]>;
   /** Payment status */
   status: UserProductPurchaseStatus;
+  /** Actor that changed the payment status */
+  statusChangedBy?: Maybe<PurchaseStatusChangedBy>;
   /** Gateway ref ID or crypto transaction ID */
   transactionId?: Maybe<Scalars["String"]["output"]>;
   /** Last payment update date */
@@ -1140,18 +1935,30 @@ export type ProductPaymentListUserSummaryGqlResponse = {
 export type ProductPaymentManualCreateGqlInput = {
   /** Optional coupon code to apply to this manual payment */
   couponCode?: InputMaybe<Scalars["String"]["input"]>;
-  /** Active paid product ID to register payment for */
-  productId: Scalars["ID"]["input"];
   /** Optional manual review description */
   manualStatusChangedDescription?: InputMaybe<Scalars["String"]["input"]>;
   /** Payment method selected by support for this manual record */
   paymentMethod: UserProductPaymentMethod;
+  /** Active paid product ID to register payment for */
+  productId: Scalars["ID"]["input"];
   /** Initial manual purchase status */
   status: UserProductPurchaseStatus;
   /** Optional uploaded payment evidence file ID */
   uploadedReceiptFileId?: InputMaybe<Scalars["ID"]["input"]>;
   /** User ID that will receive the payment record */
   userId: Scalars["ID"]["input"];
+};
+
+export type ProductPaymentProductSnapshotGqlResponse = {
+  __typename?: "ProductPaymentProductSnapshotGqlResponse";
+  /** Product description snapshot */
+  description?: Maybe<Scalars["String"]["output"]>;
+  /** Product ID */
+  id: Scalars["ID"]["output"];
+  /** Original product price in IRT */
+  priceIrt: Scalars["Float"]["output"];
+  /** Product title snapshot */
+  title: Scalars["String"]["output"];
 };
 
 export type ProductPaymentRelatedUserGqlResponse = {
@@ -1212,15 +2019,15 @@ export type ProductPaymentUserSnapshotGqlResponse = {
 export type ProductPurchaseSubmitGqlInput = {
   /** Optional coupon code to apply to this purchase */
   couponCode?: InputMaybe<Scalars["String"]["input"]>;
-  /** Product ID to purchase */
-  productId: Scalars["ID"]["input"];
   /** Payment method. Supports GATEWAY, CARD_TO_CARD, CRYPTOCURRENCY, and FREE. */
   paymentMethod: UserProductPaymentMethod;
-  /** Receipt number or last card digits. Required for CARD_TO_CARD. */
+  /** Receipt number or last card digits. Required for CARD_TO_CARD when uploadedReceiptFileId is omitted. */
   paymentReference?: InputMaybe<Scalars["String"]["input"]>;
+  /** Product ID to purchase */
+  productId: Scalars["ID"]["input"];
   /** Blockchain transaction ID. Required for CRYPTOCURRENCY. */
   transactionId?: InputMaybe<Scalars["String"]["input"]>;
-  /** Uploaded receipt file ID. Required for CARD_TO_CARD. */
+  /** Uploaded receipt file ID. Required for CARD_TO_CARD when paymentReference is omitted. */
   uploadedReceiptFileId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
@@ -1230,8 +2037,6 @@ export type ProductPurchaseSubmitGqlResponse = {
   amountIrt: Scalars["Float"]["output"];
   /** Applied coupon code, if the purchase used a coupon */
   couponCode?: Maybe<Scalars["String"]["output"]>;
-  /** Purchased product ID */
-  productId: Scalars["ID"]["output"];
   /** Currency expected for the payment method */
   currency: UserProductPurchaseCurrency;
   /** Applied discount amount in IRT */
@@ -1250,6 +2055,8 @@ export type ProductPurchaseSubmitGqlResponse = {
   paymentReference?: Maybe<Scalars["String"]["output"]>;
   /** Gateway redirect URL for online payments */
   paymentUrl?: Maybe<Scalars["String"]["output"]>;
+  /** Purchased product ID */
+  productId: Scalars["ID"]["output"];
   /** Purchase status after submission */
   status: UserProductPurchaseStatus;
   /** Blockchain transaction ID for crypto purchases */
@@ -1263,12 +2070,6 @@ export const ProductReleaseType = {
 } as const;
 
 export type ProductReleaseType = (typeof ProductReleaseType)[keyof typeof ProductReleaseType];
-export type ProductReviewProductSnapshotGqlResponse = {
-  __typename?: "ProductReviewProductSnapshotGqlResponse";
-  /** Stored product title snapshot */
-  title: Scalars["String"]["output"];
-};
-
 export type ProductReviewListCursorPageOptionsParamsInput = {
   /** Maximum number of records to return */
   limit?: InputMaybe<Scalars["Int"]["input"]>;
@@ -1279,14 +2080,14 @@ export type ProductReviewListCursorPageOptionsParamsInput = {
 };
 
 export type ProductReviewListFilterInput = {
-  /** Filter reviews by product ID */
-  productId?: InputMaybe<Scalars["ID"]["input"]>;
   /** Filter reviews that include at least one message */
   hasMessages?: InputMaybe<Scalars["Boolean"]["input"]>;
   /** Filter reviews that include a rating */
   hasRating?: InputMaybe<Scalars["Boolean"]["input"]>;
   /** Filter reviews containing at least one message with this visibility */
   messageVisibility?: InputMaybe<ProductReviewVisibility>;
+  /** Filter reviews by product ID */
+  productId?: InputMaybe<Scalars["ID"]["input"]>;
   /** Search query that matches rating comment, message body, user snapshot, or product title */
   query?: InputMaybe<Scalars["String"]["input"]>;
   /** Filter reviews by rating moderation visibility */
@@ -1295,10 +2096,10 @@ export type ProductReviewListFilterInput = {
   reviewVisibility?: InputMaybe<ProductReviewVisibility>;
   /** Filter reviews by exact star rating */
   stars?: InputMaybe<Scalars["Int"]["input"]>;
-  /** Filter reviews by linked user product enrollment ID */
-  userProductId?: InputMaybe<Scalars["ID"]["input"]>;
   /** Filter reviews by review owner user ID */
   userId?: InputMaybe<Scalars["ID"]["input"]>;
+  /** Filter reviews by linked user product enrollment ID */
+  userProductId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
 export type ProductReviewListGqlInput = {
@@ -1310,10 +2111,6 @@ export type ProductReviewListGqlInput = {
 
 export type ProductReviewListGqlResponse = {
   __typename?: "ProductReviewListGqlResponse";
-  /** Product ID */
-  productId: Scalars["ID"]["output"];
-  /** Stored product snapshot */
-  productSnapshot: ProductReviewProductSnapshotGqlResponse;
   /** Date when the review thread was created */
   createdAt?: Maybe<Scalars["DateTime"]["output"]>;
   /** Minimal user that created the review thread */
@@ -1332,6 +2129,10 @@ export type ProductReviewListGqlResponse = {
   messages: Array<ProductReviewMessageGqlResponse>;
   /** Review thread moderation metadata */
   moderation: ProductReviewModerationGqlResponse;
+  /** Product ID */
+  productId: Scalars["ID"]["output"];
+  /** Stored product snapshot */
+  productSnapshot: ProductReviewProductSnapshotGqlResponse;
   /** Product rating, if submitted */
   rating?: Maybe<ProductReviewRatingGqlResponse>;
   /** Date when the review thread was last updated */
@@ -1342,10 +2143,10 @@ export type ProductReviewListGqlResponse = {
   updatedByUserId?: Maybe<Scalars["ID"]["output"]>;
   /** Minimal review owner information */
   user?: Maybe<UserMinimalGqlResponse>;
-  /** Linked user product enrollment ID, when the reviewer purchased the product */
-  userProductId?: Maybe<Scalars["ID"]["output"]>;
   /** Review owner user ID */
   userId: Scalars["ID"]["output"];
+  /** Linked user product enrollment ID, when the reviewer purchased the product */
+  userProductId?: Maybe<Scalars["ID"]["output"]>;
   /** Stored review owner snapshot */
   userSnapshot: ProductReviewUserSnapshotGqlResponse;
 };
@@ -1356,6 +2157,8 @@ export type ProductReviewListPaginatedCursorGqlResponse = {
   items: Array<ProductReviewListGqlResponse>;
   /** Pagination metadata */
   pagination: PaginationCursorResponse;
+  /** Aggregated rating summary excluding hidden reviews and hidden ratings */
+  summary: ProductReviewRatingSummaryGqlResponse;
 };
 
 export type ProductReviewMessageGqlResponse = {
@@ -1410,6 +2213,22 @@ export type ProductReviewModerationUpdateGqlInput = {
   visibility: ProductReviewVisibility;
 };
 
+export type ProductReviewProductSnapshotGqlResponse = {
+  __typename?: "ProductReviewProductSnapshotGqlResponse";
+  /** Stored product title snapshot */
+  title: Scalars["String"]["output"];
+};
+
+export type ProductReviewRatingDistributionGqlResponse = {
+  __typename?: "ProductReviewRatingDistributionGqlResponse";
+  /** Number of ratings with this star value */
+  count: Scalars["Int"]["output"];
+  /** Share of eligible ratings, rounded to a percent */
+  percentage: Scalars["Int"]["output"];
+  /** Star value from 1 to 5 */
+  stars: Scalars["Int"]["output"];
+};
+
 export type ProductReviewRatingGqlResponse = {
   __typename?: "ProductReviewRatingGqlResponse";
   /** Optional review comment */
@@ -1424,6 +2243,16 @@ export type ProductReviewRatingGqlResponse = {
   updatedAt?: Maybe<Scalars["DateTime"]["output"]>;
 };
 
+export type ProductReviewRatingSummaryGqlResponse = {
+  __typename?: "ProductReviewRatingSummaryGqlResponse";
+  /** Average star rating across eligible reviews */
+  averageRating?: Maybe<Scalars["Float"]["output"]>;
+  /** Distribution of eligible ratings by star value */
+  distribution: Array<ProductReviewRatingDistributionGqlResponse>;
+  /** Number of eligible ratings included in the summary */
+  ratedCount: Scalars["Int"]["output"];
+};
+
 export type ProductReviewSubmitGqlInput = {
   /** Captcha challenge identifier issued by the backend */
   captchaId?: InputMaybe<Scalars["String"]["input"]>;
@@ -1431,10 +2260,10 @@ export type ProductReviewSubmitGqlInput = {
   captchaValue?: InputMaybe<Scalars["String"]["input"]>;
   /** Optional review comment */
   comment?: InputMaybe<Scalars["String"]["input"]>;
-  /** Product ID to review */
-  productId: Scalars["ID"]["input"];
   /** Staff only. Visibility for a support message; PUBLIC or PRIVATE */
   messageVisibility?: InputMaybe<ProductReviewVisibility>;
+  /** Product ID to review */
+  productId: Scalars["ID"]["input"];
   /** Optional star rating from 1 to 5 */
   stars?: InputMaybe<Scalars["Int"]["input"]>;
   /** Review owner user ID; staff only. END_USER accounts always review as themselves */
@@ -1443,12 +2272,12 @@ export type ProductReviewSubmitGqlInput = {
 
 export type ProductReviewSubmitGqlResponse = {
   __typename?: "ProductReviewSubmitGqlResponse";
-  /** Reviewed product ID */
-  productId: Scalars["ID"]["output"];
   /** Product review thread ID */
   id: Scalars["ID"]["output"];
   /** Whether this call created the rating for the first time */
   isNewRating: Scalars["Boolean"]["output"];
+  /** Reviewed product ID */
+  productId: Scalars["ID"]["output"];
   /** Submitted rating, if any */
   rating?: Maybe<ProductReviewSubmitRatingGqlResponse>;
   /** Minimal review owner information; returned to staff only */
@@ -1515,528 +2344,35 @@ export type ProductUpdateGqlInput = {
   title: Scalars["String"]["input"];
 };
 
-export type FileAccessUrlGqlResponse = {
-  __typename?: "FileAccessUrlGqlResponse";
-  /** API path prefix for file content requests, e.g. /api/v1/files */
-  apiPath: Scalars["String"]["output"];
-  /** Public app origin for file requests. Falls back to the browser origin on the client when omitted. */
-  baseUrl?: Maybe<Scalars["String"]["output"]>;
-  /** Stored file ID */
-  fileId: Scalars["ID"]["output"];
-  /** Stored file MIME type */
-  mimeType?: Maybe<Scalars["String"]["output"]>;
-  /** Original stored file name including extension */
-  name?: Maybe<Scalars["String"]["output"]>;
-  /** Stored file size in bytes */
-  sizeBytes?: Maybe<Scalars["Float"]["output"]>;
-  /** Signed access token for the file content endpoint */
-  token: Scalars["String"]["output"];
-};
-
-export type GeneralSubscriptionGqlResponse = {
-  __typename?: "GeneralSubscriptionGqlResponse";
-  /** UTC timestamp when this update was generated */
-  createdAt: Scalars["DateTime"]["output"];
-  /** Type-specific payload object */
-  payload?: Maybe<Scalars["JSON"]["output"]>;
-  /** Optional scoped identifier for this update (for example, ticket or product id) */
-  targetId?: Maybe<Scalars["String"]["output"]>;
-  /** General update type emitted by backend */
-  updateType: GeneralSubscriptionUpdateType;
-};
-
-/** Type of real-time update in general subscription channel */
-export const GeneralSubscriptionUpdateType = {
-  BADGE_COUNTS: "BADGE_COUNTS",
-  NOTIFICATION: "NOTIFICATION",
-  VERIFICATION_STATUS: "VERIFICATION_STATUS",
+/** Actor that changed a product purchase status */
+export const PurchaseStatusChangedBy = {
+  ADMIN: "ADMIN",
+  SYSTEM: "SYSTEM",
 } as const;
 
-export type GeneralSubscriptionUpdateType =
-  (typeof GeneralSubscriptionUpdateType)[keyof typeof GeneralSubscriptionUpdateType];
-/** Display type used for global anouncements */
-export const GlobalAnouncementMessageType = {
-  POPUP: "POPUP",
-  SNACKBAR: "SNACKBAR",
-} as const;
-
-export type GlobalAnouncementMessageType =
-  (typeof GlobalAnouncementMessageType)[keyof typeof GlobalAnouncementMessageType];
-export type GlobalAnouncementSendGqlInput = {
-  /** Anouncement message shown to subscribed users */
-  description: Scalars["String"]["input"];
-  /** Whether this notification should also be pushed through native push channel */
-  isPushNotification?: InputMaybe<Scalars["Boolean"]["input"]>;
-  /** Target message renderer on clients (popup or snackbar) */
-  messageType?: InputMaybe<GlobalAnouncementMessageType>;
-  /** Popup mode used by clients when displaying the anouncement */
-  mode?: InputMaybe<NotificationMode>;
-  /** Optional extra structured payload for future client actions */
-  payload?: InputMaybe<Scalars["JSON"]["input"]>;
-  /** Anouncement title shown to subscribed users */
-  title?: InputMaybe<Scalars["String"]["input"]>;
+export type PurchaseStatusChangedBy =
+  (typeof PurchaseStatusChangedBy)[keyof typeof PurchaseStatusChangedBy];
+export type PushNotificationConfigGqlResponse = {
+  __typename?: "PushNotificationConfigGqlResponse";
+  /** Whether server-side Web Push delivery is configured */
+  enabled: Scalars["Boolean"]["output"];
+  /** Whether server-side native mobile push (FCM) delivery is configured */
+  nativePushEnabled: Scalars["Boolean"]["output"];
+  /** VAPID public key used by clients for PushManager.subscribe() */
+  publicKey?: Maybe<Scalars["String"]["output"]>;
 };
 
-export type GlobalAnouncementSendGqlResponse = {
-  __typename?: "GlobalAnouncementSendGqlResponse";
-  /** Number of active users subscribed to the general updates channel */
-  activeSubscribedUsers: Scalars["Int"]["output"];
-  /** Number of active subscribed users that received the update */
-  deliveredUsers: Scalars["Int"]["output"];
+export type PushSubscriptionKeysGqlInput = {
+  /** Push subscription auth key */
+  auth: Scalars["String"]["input"];
+  /** Push subscription p256dh key */
+  p256dh: Scalars["String"]["input"];
 };
 
-export type Mutation = {
-  __typename?: "Mutation";
-  /** Update a single app setting record, including typed value, metadata, and active status */
-  appSettingUpdate: AppSettingMutationGqlResponse;
-  /** Create a coupon with discount rules, usage limits, product applicability, and active status */
-  couponCreate: CouponListGqlResponse;
-  /** Delete a coupon */
-  couponDelete: Scalars["Boolean"]["output"];
-  /** Update a coupon's discount rules, usage limits, product applicability, or active status */
-  couponUpdate: CouponListGqlResponse;
-  /** Confirm completion of an unlocked product chapter for the authenticated learner */
-  productChapterComplete: ProductChapterCompleteGqlResponse;
-  /** Create a product with chapters and items, returning calculated release and item types */
-  productCreate: ProductListGqlResponse;
-  /** Delete a product and remove its detached file attachments */
-  productDelete: Scalars["Boolean"]["output"];
-  /** Create a manual product payment record for an active paid product as a super admin */
-  productPaymentManualCreate: ProductPaymentListGqlResponse;
-  /** Manually update a product payment status and optional review description */
-  productPaymentStatusUpdate: ProductPaymentListGqlResponse;
-  /** Submit a product purchase using gateway, card-to-card, cryptocurrency, or a free coupon */
-  productPurchaseSubmit: ProductPurchaseSubmitGqlResponse;
-  /** Update product review moderation visibility for the review thread, rating, or a single message */
-  productReviewModerationUpdate: ProductReviewListGqlResponse;
-  /** Create or update a product star rating and optionally append a follow-up comment */
-  productReviewSubmit: ProductReviewSubmitGqlResponse;
-  /** Update a product and clean up replaced or removed file attachments */
-  productUpdate: ProductListGqlResponse;
-  /** Broadcast a global anouncement to active users subscribed to general updates */
-  globalAnouncementSend: GlobalAnouncementSendGqlResponse;
-  /** Request login code using username, email, or phone identity */
-  requestLoginCode: UserRequestLoginCodeGqlResponse;
-  /** Request SMS verification code for mobile signup */
-  requestSignupCode: UserRequestLoginCodeGqlResponse;
-  /** Resolve whether an identity belongs to an existing user account */
-  resolveAuthIdentity: UserResolveAuthIdentityGqlResponse;
-  /** Create a ticket or append a new super-admin update to an existing ticket, automatically reopening it if needed */
-  superAdminTicketSend: TicketListGqlResponse;
-  /** Close a support ticket as support staff */
-  ticketClose: TicketListGqlResponse;
-  /** Activate a newly created account using the emailed activation link */
-  userActivateAccount: UserPasswordResetGqlResponse;
-  /** Create a user account with profile, avatar file, roles, status, and initial password */
-  userCreate: UserMutationGqlResponse;
-  /** Request a password reset code using username, email, or phone number */
-  userForgotPassword: UserPasswordResetGqlResponse;
-  /** Login and get JWT access token */
-  userLogin: UserLoginGqlResponse;
-  /** Logout and mark the current session as logged out */
-  userLogout: Scalars["Boolean"]["output"];
-  /** Bulk update current-user notifications by setting them read, unread, or archived */
-  userNotificationUpdate: NotificationUpdateGqlResponse;
-  /** Update the authenticated user's user document: account info, profile, preferences, avatar file, or password */
-  userProfileUpdate: UserMutationGqlResponse;
-  /** Send a verification email to the authenticated user's address */
-  userRequestEmailVerification: UserPasswordResetGqlResponse;
-  /** Reset account password using the emailed one-time code and account identity */
-  userResetPassword: UserPasswordResetGqlResponse;
-  /** Create an END_USER account using username/email/mobile and start a session */
-  userSignup: UserLoginGqlResponse;
-  /** Close one of the current end-user's support tickets */
-  userTicketClose: UserTicketListGqlResponse;
-  /** Create a ticket or append a new END_USER update to an owned ticket, automatically reopening it if needed */
-  userTicketSend: UserTicketListGqlResponse;
-  /** Update a user account, profile, preferences, avatar file, roles, status, or password */
-  userUpdate: UserMutationGqlResponse;
-  /** Verify SMS login code and create an authenticated session */
-  verifyLoginCode: UserVerifyLoginCodeGqlResponse;
-};
-
-export type MutationAppSettingUpdateArgs = {
-  input: AppSettingUpdateGqlInput;
-};
-
-export type MutationCouponCreateArgs = {
-  input: CouponCreateGqlInput;
-};
-
-export type MutationCouponDeleteArgs = {
-  input: CouponDeleteGqlInput;
-};
-
-export type MutationCouponUpdateArgs = {
-  input: CouponUpdateGqlInput;
-};
-
-export type MutationProductChapterCompleteArgs = {
-  input: ProductChapterCompleteGqlInput;
-};
-
-export type MutationProductCreateArgs = {
-  input: ProductCreateGqlInput;
-};
-
-export type MutationProductDeleteArgs = {
-  input: ProductDeleteGqlInput;
-};
-
-export type MutationProductPaymentManualCreateArgs = {
-  input: ProductPaymentManualCreateGqlInput;
-};
-
-export type MutationProductPaymentStatusUpdateArgs = {
-  input: ProductPaymentStatusUpdateGqlInput;
-};
-
-export type MutationProductPurchaseSubmitArgs = {
-  input: ProductPurchaseSubmitGqlInput;
-};
-
-export type MutationProductReviewModerationUpdateArgs = {
-  input: ProductReviewModerationUpdateGqlInput;
-};
-
-export type MutationProductReviewSubmitArgs = {
-  input: ProductReviewSubmitGqlInput;
-};
-
-export type MutationProductUpdateArgs = {
-  input: ProductUpdateGqlInput;
-};
-
-export type MutationGlobalAnouncementSendArgs = {
-  input: GlobalAnouncementSendGqlInput;
-};
-
-export type MutationRequestLoginCodeArgs = {
-  input: UserRequestLoginCodeGqlInput;
-};
-
-export type MutationRequestSignupCodeArgs = {
-  input: UserRequestSignupCodeGqlInput;
-};
-
-export type MutationResolveAuthIdentityArgs = {
-  input: UserRequestLoginCodeGqlInput;
-};
-
-export type MutationSuperAdminTicketSendArgs = {
-  input: SuperAdminTicketSendGqlInput;
-};
-
-export type MutationTicketCloseArgs = {
-  id: Scalars["ID"]["input"];
-};
-
-export type MutationUserActivateAccountArgs = {
-  token: Scalars["String"]["input"];
-};
-
-export type MutationUserCreateArgs = {
-  input: UserCreateGqlInput;
-};
-
-export type MutationUserForgotPasswordArgs = {
-  input: UserForgotPasswordGqlInput;
-};
-
-export type MutationUserLoginArgs = {
-  input: UserLoginGqlInput;
-};
-
-export type MutationUserNotificationUpdateArgs = {
-  input: NotificationUpdateGqlInput;
-};
-
-export type MutationUserProfileUpdateArgs = {
-  input: UserProfileUpdateGqlInput;
-};
-
-export type MutationUserResetPasswordArgs = {
-  input: UserResetPasswordGqlInput;
-};
-
-export type MutationUserSignupArgs = {
-  input: UserSignupGqlInput;
-};
-
-export type MutationUserTicketCloseArgs = {
-  id: Scalars["ID"]["input"];
-};
-
-export type MutationUserTicketSendArgs = {
-  input: UserTicketSendGqlInput;
-};
-
-export type MutationUserUpdateArgs = {
-  input: UserUpdateGqlInput;
-};
-
-export type MutationVerifyLoginCodeArgs = {
-  input: UserVerifyLoginCodeGqlInput;
-};
-
-export type NotificationListCursorPageOptionsParamsInput = {
-  /** Maximum number of records to return */
-  limit?: InputMaybe<Scalars["Int"]["input"]>;
-  /** Sort options as a map of field names to sort order */
-  sort?: InputMaybe<NotificationListSortOptionInput>;
-  /** Cursor to start after. Uses the beginning if omitted */
-  startCursor?: InputMaybe<Scalars["ID"]["input"]>;
-};
-
-export type NotificationListFilterInput = {
-  /** Filter notifications archived from this ISO date */
-  archivedAtFrom?: InputMaybe<Scalars["String"]["input"]>;
-  /** Filter notifications archived until this ISO date */
-  archivedAtTo?: InputMaybe<Scalars["String"]["input"]>;
-  /** Filter notifications created from this ISO date */
-  createdAtFrom?: InputMaybe<Scalars["String"]["input"]>;
-  /** Filter notifications created until this ISO date */
-  createdAtTo?: InputMaybe<Scalars["String"]["input"]>;
-  /** Filter notifications by ID */
-  id?: InputMaybe<Scalars["ID"]["input"]>;
-  /** Filter by whether the notification is archived */
-  isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
-  /** Filter by read state */
-  isRead?: InputMaybe<Scalars["Boolean"]["input"]>;
-  /** Filter notifications that are currently visible or currently expired */
-  isVisible?: InputMaybe<Scalars["Boolean"]["input"]>;
-  /** Filter notifications by message */
-  message?: InputMaybe<Scalars["String"]["input"]>;
-  /** Filter notifications by visual mode */
-  mode?: InputMaybe<NotificationMode>;
-  /** Search query that matches notification title or message */
-  query?: InputMaybe<Scalars["String"]["input"]>;
-  /** Filter notifications read from this ISO date */
-  readAtFrom?: InputMaybe<Scalars["String"]["input"]>;
-  /** Filter notifications read until this ISO date */
-  readAtTo?: InputMaybe<Scalars["String"]["input"]>;
-  /** Filter notifications by domain source */
-  source?: InputMaybe<NotificationSource>;
-  /** Filter notifications by title */
-  title?: InputMaybe<Scalars["String"]["input"]>;
-  /** Filter notifications updated from this ISO date */
-  updatedAtFrom?: InputMaybe<Scalars["String"]["input"]>;
-  /** Filter notifications updated until this ISO date */
-  updatedAtTo?: InputMaybe<Scalars["String"]["input"]>;
-  /** Filter notifications visible until from this ISO date */
-  visibleUntilFrom?: InputMaybe<Scalars["String"]["input"]>;
-  /** Filter notifications visible until this ISO date */
-  visibleUntilTo?: InputMaybe<Scalars["String"]["input"]>;
-};
-
-export type NotificationListGqlInput = {
-  /** Filter options for narrowing down the notification list */
-  filters?: InputMaybe<NotificationListFilterInput>;
-  /** Cursor pagination and sorting options */
-  options?: InputMaybe<NotificationListCursorPageOptionsParamsInput>;
-};
-
-export type NotificationListGqlResponse = {
-  __typename?: "NotificationListGqlResponse";
-  /** Date when the notification was archived */
-  archivedAt?: Maybe<Scalars["DateTime"]["output"]>;
-  /** Date when the notification was created */
-  createdAt?: Maybe<Scalars["DateTime"]["output"]>;
-  /** Notification ID */
-  id: Scalars["ID"]["output"];
-  /** Whether the notification has been read */
-  isRead: Scalars["Boolean"]["output"];
-  /** Notification message */
-  message: Scalars["String"]["output"];
-  /** Visual mode for this notification */
-  mode: NotificationMode;
-  /** Type-specific payload object */
-  payload?: Maybe<Scalars["JSON"]["output"]>;
-  /** Date when the notification was read */
-  readAt?: Maybe<Scalars["DateTime"]["output"]>;
-  /** Domain source that produced this notification */
-  source: NotificationSource;
-  /** Notification title */
-  title?: Maybe<Scalars["String"]["output"]>;
-  /** Date when the notification was last updated */
-  updatedAt?: Maybe<Scalars["DateTime"]["output"]>;
-  /** Target user ID for direct notifications */
-  userId?: Maybe<Scalars["ID"]["output"]>;
-  /** Date until this notification should remain visible */
-  visibleUntil?: Maybe<Scalars["DateTime"]["output"]>;
-};
-
-export type NotificationListPaginatedCursorGqlResponse = {
-  __typename?: "NotificationListPaginatedCursorGqlResponse";
-  /** List of notifications visible to the current user */
-  items: Array<NotificationListGqlResponse>;
-  /** Pagination metadata */
-  pagination: PaginationCursorResponse;
-};
-
-export type NotificationListSortOptionInput = {
-  /** Sort by archive date */
-  archivedAt?: InputMaybe<SortingOrder>;
-  /** Sort by creation date */
-  createdAt?: InputMaybe<SortingOrder>;
-  /** Sort by read state */
-  isRead?: InputMaybe<SortingOrder>;
-  /** Sort by message */
-  message?: InputMaybe<SortingOrder>;
-  /** Sort by notification mode */
-  mode?: InputMaybe<SortingOrder>;
-  /** Sort by read date */
-  readAt?: InputMaybe<SortingOrder>;
-  /** Sort by notification source */
-  source?: InputMaybe<SortingOrder>;
-  /** Sort by title */
-  title?: InputMaybe<SortingOrder>;
-  /** Sort by last update date */
-  updatedAt?: InputMaybe<SortingOrder>;
-  /** Sort by visibility expiration date */
-  visibleUntil?: InputMaybe<SortingOrder>;
-};
-
-/** Visual mode for notifications */
-export const NotificationMode = {
-  ERROR: "ERROR",
-  INFO: "INFO",
-  SUCCESS: "SUCCESS",
-  WARNING: "WARNING",
-} as const;
-
-export type NotificationMode = (typeof NotificationMode)[keyof typeof NotificationMode];
-/** Domain source that produced a notification */
-export const NotificationSource = {
-  PRODUCT: "PRODUCT",
-  PRODUCT_CHAPTER: "PRODUCT_CHAPTER",
-  OTHER: "OTHER",
-  PAYMENT: "PAYMENT",
-  TICKET: "TICKET",
-  USER: "USER",
-} as const;
-
-export type NotificationSource = (typeof NotificationSource)[keyof typeof NotificationSource];
-/** Bulk update action for user notifications */
-export const NotificationUpdateAction = {
-  ARCHIVE: "ARCHIVE",
-  SET_AS_READ: "SET_AS_READ",
-  SET_AS_UNREAD: "SET_AS_UNREAD",
-  UNARCHIVE: "UNARCHIVE",
-} as const;
-
-export type NotificationUpdateAction =
-  (typeof NotificationUpdateAction)[keyof typeof NotificationUpdateAction];
-export type NotificationUpdateGqlInput = {
-  /** Action to apply to the selected notifications */
-  action: NotificationUpdateAction;
-  /** Notification IDs to update. Every notification must belong to the current user. */
-  notificationIds: Array<Scalars["ID"]["input"]>;
-};
-
-export type NotificationUpdateGqlResponse = {
-  __typename?: "NotificationUpdateGqlResponse";
-  /** Action applied to the selected notifications */
-  action: NotificationUpdateAction;
-  /** Updated notification records */
-  items: Array<NotificationListGqlResponse>;
-  /** Number of current-user notifications matched */
-  matchedCount: Scalars["Int"]["output"];
-  /** Number of notification documents modified by this operation */
-  modifiedCount: Scalars["Int"]["output"];
-  /** Notification IDs requested for update */
-  notificationIds: Array<Scalars["ID"]["output"]>;
-  /** Number of unique notification IDs requested */
-  requestedCount: Scalars["Int"]["output"];
-};
-
-export type OffsetPageOptionsParamsInput = {
-  /** Maximum number of records to return */
-  limit?: InputMaybe<Scalars["Int"]["input"]>;
-  /** Number of records to skip (offset) */
-  skip?: InputMaybe<Scalars["Int"]["input"]>;
-};
-
-export type PaginationCursorResponse = {
-  __typename?: "PaginationCursorResponse";
-  /** Number of items returned in this page */
-  count: Scalars["Int"]["output"];
-  /** Cursor for the last item in this page. Use this as startCursor for the next page */
-  endCursor?: Maybe<Scalars["ID"]["output"]>;
-  /** Whether there are more items available after this page */
-  hasNextPage: Scalars["Boolean"]["output"];
-  /** Whether there are items before this page */
-  hasPreviousPage: Scalars["Boolean"]["output"];
-  /** Number of items requested */
-  limit: Scalars["Int"]["output"];
-  /** Cursor for the first item in this page. Use this as endCursor for the previous page */
-  startCursor?: Maybe<Scalars["ID"]["output"]>;
-  /** Total number of items */
-  total: Scalars["Int"]["output"];
-};
-
-export type PaginationOffsetResponse = {
-  __typename?: "PaginationOffsetResponse";
-  /** Number of items returned in this page */
-  count: Scalars["Int"]["output"];
-  /** Number of items requested */
-  limit: Scalars["Int"]["output"];
-  /** Number of items skipped (offset) */
-  skip: Scalars["Int"]["output"];
-  /** Total number of items */
-  total: Scalars["Int"]["output"];
-};
-
-export type PaymentCheckoutCardGqlResponse = {
-  __typename?: "PaymentCheckoutCardGqlResponse";
-  /** Payment card bank name */
-  bankName: Scalars["String"]["output"];
-  /** Payment card number */
-  cardNumber: Scalars["String"]["output"];
-  /** Payment card holder name */
-  holderName: Scalars["String"]["output"];
-};
-
-export type PaymentCheckoutConfigGqlResponse = {
-  __typename?: "PaymentCheckoutConfigGqlResponse";
-  /** Available cryptocurrency wallets */
-  cryptoWallets: Array<PaymentCheckoutCryptoWalletGqlResponse>;
-  /** Available payment cards */
-  paymentCards: Array<PaymentCheckoutCardGqlResponse>;
-  /** Payment method visibility and availability configuration */
-  paymentMethods: Array<PaymentCheckoutMethodGqlResponse>;
-  /** USDT to IRT conversion settings */
-  usdtIrtRate: PaymentCheckoutUsdtIrtRateGqlResponse;
-};
-
-export type PaymentCheckoutCryptoWalletGqlResponse = {
-  __typename?: "PaymentCheckoutCryptoWalletGqlResponse";
-  /** Crypto wallet address */
-  address: Scalars["String"]["output"];
-  /** Crypto wallet network */
-  network: Scalars["String"]["output"];
-};
-
-export type PaymentCheckoutMethodGqlResponse = {
-  __typename?: "PaymentCheckoutMethodGqlResponse";
-  /** Whether the method can currently be selected */
-  isActive: Scalars["Boolean"]["output"];
-  /** Whether the method should be marked as recommended */
-  isRecommended: Scalars["Boolean"]["output"];
-  /** Whether the method should be shown in checkout */
-  isVisible: Scalars["Boolean"]["output"];
-  /** Payment method identifier */
-  method: UserProductPaymentMethod;
-};
-
-export type PaymentCheckoutUsdtIrtRateGqlResponse = {
-  __typename?: "PaymentCheckoutUsdtIrtRateGqlResponse";
-  /** Multiplier applied to converted USDT amount */
-  coefficient: Scalars["Float"]["output"];
-  /** Fixed USDT fee added after conversion */
-  feeUsdt: Scalars["Float"]["output"];
-  /** IRT value equivalent to one USDT before fee/coefficient */
-  valueIrt: Scalars["Float"]["output"];
+export type PushSubscriptionMutationGqlResponse = {
+  __typename?: "PushSubscriptionMutationGqlResponse";
+  /** Whether the push subscription operation succeeded */
+  success: Scalars["Boolean"]["output"];
 };
 
 export type Query = {
@@ -2059,6 +2395,10 @@ export type Query = {
   couponList: CouponListPaginatedOffsetGqlResponse;
   /** Validate a coupon for the current user's product purchase */
   couponValidate: CouponValidateGqlResponse;
+  /** Get the currently authenticated user's information */
+  me: UserMeGqlResponse;
+  /** Get payment checkout settings for product purchases */
+  paymentCheckoutConfig: PaymentCheckoutConfigGqlResponse;
   /** Inspect related records before deleting a product, including retained and removed dependencies */
   productDeleteDependencies: ProductDeleteDependenciesGqlResponse;
   /** Get full product data for SUPER_ADMIN, including chapters and items for editing */
@@ -2071,22 +2411,14 @@ export type Query = {
   productPaymentList: ProductPaymentListPaginatedOffsetGqlResponse;
   /** Get a cursor-paginated, filterable, sortable staff list of product reviews with full data */
   productReviewList: ProductReviewListPaginatedCursorGqlResponse;
-  /** Get the currently authenticated user's information */
-  me: UserMeGqlResponse;
-  /** Get payment checkout settings for product purchases */
-  paymentCheckoutConfig: PaymentCheckoutConfigGqlResponse;
+  /** Public Web Push configuration for browser subscription setup */
+  pushNotificationConfig: PushNotificationConfigGqlResponse;
   /** Get configured support contact channels */
   supportContactConfig: SupportContactConfigGqlResponse;
   /** Get full support ticket data for SUPER_ADMIN, including messages and attachments for review */
   ticketDetail: TicketListGqlResponse;
   /** Get a paginated, filterable, sortable super-admin list of support tickets using offset-based pagination */
   ticketList: TicketListPaginatedOffsetGqlResponse;
-  /** Get active product details for anonymous users and END_USER accounts with locked content redacted */
-  userProductDetail: UserProductDetailGqlResponse;
-  /** Get active products for anonymous users and END_USER views with purchase state */
-  userProductList: UserProductListPaginatedCursorGqlResponse;
-  /** Get a cursor-paginated list of public product reviews for anonymous users and END_USER accounts */
-  userProductReviewList: UserProductReviewListPaginatedCursorGqlResponse;
   /** Get full user data for SUPER_ADMIN, including profile fields for editing */
   userDetail: UserListGqlResponse;
   /** Get a paginated, filterable, sortable super-admin list of users using offset-based pagination */
@@ -2095,6 +2427,12 @@ export type Query = {
   userLoginCaptcha: UserLoginCaptchaGqlResponse;
   /** Get a cursor-paginated, filterable, sortable list of notifications visible to the current user */
   userNotificationList: NotificationListPaginatedCursorGqlResponse;
+  /** Get active product details for anonymous users and END_USER accounts with locked content redacted */
+  userProductDetail: UserProductDetailGqlResponse;
+  /** Get active products for anonymous users and END_USER views with purchase state */
+  userProductList: UserProductListPaginatedCursorGqlResponse;
+  /** Get a cursor-paginated list of public product reviews for anonymous users and END_USER accounts */
+  userProductReviewList: UserProductReviewListPaginatedCursorGqlResponse;
   /** Get full support ticket data for the current END_USER, including messages and attachments for viewing and replying */
   userTicketDetail: UserTicketListGqlResponse;
   /** Get a paginated, filterable, sortable list of support tickets owned by the current END_USER */
@@ -2153,18 +2491,6 @@ export type QueryTicketListArgs = {
   input: TicketListGqlInput;
 };
 
-export type QueryUserProductDetailArgs = {
-  input: UserProductDetailGqlInput;
-};
-
-export type QueryUserProductListArgs = {
-  input: ProductListGqlInput;
-};
-
-export type QueryUserProductReviewListArgs = {
-  input: UserProductReviewListGqlInput;
-};
-
 export type QueryUserDetailArgs = {
   input: UserDetailGqlInput;
 };
@@ -2177,12 +2503,40 @@ export type QueryUserNotificationListArgs = {
   input: NotificationListGqlInput;
 };
 
+export type QueryUserProductDetailArgs = {
+  input: UserProductDetailGqlInput;
+};
+
+export type QueryUserProductListArgs = {
+  input: ProductListGqlInput;
+};
+
+export type QueryUserProductReviewListArgs = {
+  input: UserProductReviewListGqlInput;
+};
+
 export type QueryUserTicketDetailArgs = {
   input: UserTicketDetailGqlInput;
 };
 
 export type QueryUserTicketListArgs = {
   input: UserTicketListGqlInput;
+};
+
+export type RegisterNativePushTokenGqlInput = {
+  /** Native platform that issued the push token */
+  platform: NativePushPlatform;
+  /** FCM device token */
+  token: Scalars["String"]["input"];
+};
+
+export type RegisterPushSubscriptionGqlInput = {
+  /** Push service endpoint URL */
+  endpoint: Scalars["String"]["input"];
+  /** Encryption keys returned by PushManager.subscribe() */
+  keys: PushSubscriptionKeysGqlInput;
+  /** Previous push endpoint for this browser, removed before registering the new one */
+  replacesEndpoint?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type SessionClientContextGqlInput = {
@@ -2235,7 +2589,7 @@ export const SortingOrder = {
 export type SortingOrder = (typeof SortingOrder)[keyof typeof SortingOrder];
 export type Subscription = {
   __typename?: "Subscription";
-  /** General typed app updates for logged-in users */
+  /** General typed app updates for connected clients */
   generalUpdates: GeneralSubscriptionGqlResponse;
 };
 
@@ -2362,9 +2716,9 @@ export type SupportFaqSectionGqlResponse = {
 export const TicketCategory = {
   ACCOUNT: "ACCOUNT",
   BUG: "BUG",
-  PRODUCT: "PRODUCT",
   OTHER: "OTHER",
   PAYMENT: "PAYMENT",
+  PRODUCT: "PRODUCT",
   TECHNICAL: "TECHNICAL",
 } as const;
 
@@ -2625,257 +2979,14 @@ export type TicketUserProfileMinimalGqlResponse = {
   lastName?: Maybe<Scalars["String"]["output"]>;
 };
 
-export type UserProductDetailChapterGqlResponse = {
-  __typename?: "UserProductDetailChapterGqlResponse";
-  /** Chapter description */
-  description?: Maybe<Scalars["String"]["output"]>;
-  /** Whether the authenticated learner has confirmed completion of this chapter */
-  isCompleted: Scalars["Boolean"]["output"];
-  /** Whether this chapter is free to access */
-  isFree: Scalars["Boolean"]["output"];
-  /** Whether this chapter content is hidden from the current viewer */
-  isLocked: Scalars["Boolean"]["output"];
-  /** Chapter items. Null when the chapter is locked for the current viewer. */
-  items?: Maybe<Array<UserProductDetailItemGqlResponse>>;
-  /** Stable chapter key */
-  key: Scalars["String"]["output"];
-  /** Chapter title */
-  title: Scalars["String"]["output"];
-  /** When this chapter becomes available for a paid viewer under gradual release */
-  unlocksAt?: Maybe<Scalars["DateTime"]["output"]>;
-  /** When the learner confirmed completion of this chapter */
-  userCompletedAt?: Maybe<Scalars["DateTime"]["output"]>;
-  /** Number of minutes after purchase/enrollment when visible */
-  visibleAfterMinutes?: Maybe<Scalars["Int"]["output"]>;
+export type UnregisterNativePushTokenGqlInput = {
+  /** FCM device token to remove */
+  token: Scalars["String"]["input"];
 };
 
-export type UserProductDetailGqlInput = {
-  /** Product ID */
-  id: Scalars["ID"]["input"];
-};
-
-export type UserProductDetailGqlResponse = {
-  __typename?: "UserProductDetailGqlResponse";
-  /** Number of chapters currently unlocked and eligible for completion */
-  accessibleChapterCount: Scalars["Int"]["output"];
-  /** Product chapters with locked content redacted */
-  chapters: Array<UserProductDetailChapterGqlResponse>;
-  /** Number of unlocked chapters the learner has confirmed complete */
-  completedChapterCount: Scalars["Int"]["output"];
-  /** Signed access descriptor for the product cover image */
-  coverImageAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
-  /** Product description */
-  description?: Maybe<Scalars["String"]["output"]>;
-  /** Optional public product discount */
-  discount?: Maybe<UserProductListDiscountGqlResponse>;
-  /** Product ID */
-  id: Scalars["ID"]["output"];
-  /** Whether this product is free to access */
-  isFree: Scalars["Boolean"]["output"];
-  /** Whether the current END_USER has a paid purchase for this product */
-  isPurchased: Scalars["Boolean"]["output"];
-  /** Whether learners can submit reviews for this product */
-  isReviewSubmissionEnabled: Scalars["Boolean"]["output"];
-  /** Whether the reviews section is visible on the product detail page */
-  isReviewsSectionVisible: Scalars["Boolean"]["output"];
-  /** Product price in IRT */
-  priceIrt?: Maybe<Scalars["Float"]["output"]>;
-  /** Current END_USER purchase status for this product, if any */
-  purchaseStatus?: Maybe<UserProductPurchaseStatus>;
-  /** Calculated release strategy. GRADUAL means at least one chapter has visibleAfterMinutes. */
-  releaseType: ProductReleaseType;
-  /** Product tags */
-  tags: Array<Scalars["String"]["output"]>;
-  /** Product title */
-  title: Scalars["String"]["output"];
-};
-
-export type UserProductDetailItemGqlResponse = {
-  __typename?: "UserProductDetailItemGqlResponse";
-  /** Article body for unlocked text-based items */
-  article?: Maybe<Scalars["String"]["output"]>;
-  /** Signed access descriptor for an unlocked file-backed item */
-  fileAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
-  /** Product item title */
-  title: Scalars["String"]["output"];
-  /** Calculated item content type */
-  type: ProductItemType;
-};
-
-export type UserProductListDiscountGqlResponse = {
-  __typename?: "UserProductListDiscountGqlResponse";
-  /** Discount calculation type */
-  type: ProductDiscountType;
-  /** Discount value. Percentage for PERCENTAGE, IRT amount for FIXED_AMOUNT_IRT */
-  value: Scalars["Float"]["output"];
-};
-
-export type UserProductListGqlResponse = {
-  __typename?: "UserProductListGqlResponse";
-  /** Number of chapters in the product */
-  chapterCount: Scalars["Int"]["output"];
-  /** Signed access descriptor for the product cover image */
-  coverImageAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
-  /** Product description */
-  description?: Maybe<Scalars["String"]["output"]>;
-  /** Optional public product discount */
-  discount?: Maybe<UserProductListDiscountGqlResponse>;
-  /** Product ID */
-  id: Scalars["ID"]["output"];
-  /** Whether the current END_USER has a paid purchase for this product */
-  isPurchased: Scalars["Boolean"]["output"];
-  /** Number of items in the product */
-  itemCount: Scalars["Int"]["output"];
-  /** Calculated content types available in this product */
-  itemTypes: Array<ProductItemType>;
-  /** Product price in IRT */
-  priceIrt?: Maybe<Scalars["Float"]["output"]>;
-  /** Calculated release strategy. GRADUAL means at least one chapter has visibleAfterMinutes. */
-  releaseType: ProductReleaseType;
-  /** Product tags */
-  tags: Array<Scalars["String"]["output"]>;
-  /** Product title */
-  title: Scalars["String"]["output"];
-};
-
-export type UserProductListPaginatedCursorGqlResponse = {
-  __typename?: "UserProductListPaginatedCursorGqlResponse";
-  /** List of products for anonymous and end-user views */
-  items: Array<UserProductListGqlResponse>;
-  /** Pagination metadata */
-  pagination: PaginationCursorResponse;
-};
-
-/** Supported product payment methods */
-export const UserProductPaymentMethod = {
-  CARD_TO_CARD: "CARD_TO_CARD",
-  CRYPTOCURRENCY: "CRYPTOCURRENCY",
-  FREE: "FREE",
-  GATEWAY: "GATEWAY",
-} as const;
-
-export type UserProductPaymentMethod =
-  (typeof UserProductPaymentMethod)[keyof typeof UserProductPaymentMethod];
-/** Currency used for product purchases */
-export const UserProductPurchaseCurrency = {
-  IRT: "IRT",
-  USDT: "USDT",
-} as const;
-
-export type UserProductPurchaseCurrency =
-  (typeof UserProductPurchaseCurrency)[keyof typeof UserProductPurchaseCurrency];
-/** Product purchase lifecycle status */
-export const UserProductPurchaseStatus = {
-  CANCELLED: "CANCELLED",
-  FAILED: "FAILED",
-  PAID: "PAID",
-  PENDING: "PENDING",
-  PENDING_GATEWAY: "PENDING_GATEWAY",
-  REFUNDED: "REFUNDED",
-} as const;
-
-export type UserProductPurchaseStatus =
-  (typeof UserProductPurchaseStatus)[keyof typeof UserProductPurchaseStatus];
-/** Actor that changed a product purchase status */
-export const PurchaseStatusChangedBy = {
-  ADMIN: "ADMIN",
-  SYSTEM: "SYSTEM",
-} as const;
-
-export type PurchaseStatusChangedBy =
-  (typeof PurchaseStatusChangedBy)[keyof typeof PurchaseStatusChangedBy];
-export type UserProductReviewAuthorGqlResponse = {
-  __typename?: "UserProductReviewAuthorGqlResponse";
-  /** Review author's first name only */
-  firstName: Scalars["String"]["output"];
-};
-
-export type UserProductReviewListCursorPageOptionsParamsInput = {
-  /** Maximum number of records to return */
-  limit?: InputMaybe<Scalars["Int"]["input"]>;
-  /** Sort options as a map of field names to sort order */
-  sort?: InputMaybe<UserProductReviewListSortOptionInput>;
-  /** Cursor to start after. Uses the beginning if omitted */
-  startCursor?: InputMaybe<Scalars["ID"]["input"]>;
-};
-
-export type UserProductReviewListFilterInput = {
-  /** Product ID to list reviews for */
-  productId: Scalars["ID"]["input"];
-  /** Filter reviews by exact star rating */
-  stars?: InputMaybe<Scalars["Int"]["input"]>;
-};
-
-export type UserProductReviewListGqlInput = {
-  /** Filter options for narrowing down the product review list */
-  filters: UserProductReviewListFilterInput;
-  /** Cursor pagination and sorting options */
-  options?: InputMaybe<UserProductReviewListCursorPageOptionsParamsInput>;
-};
-
-export type UserProductReviewListGqlResponse = {
-  __typename?: "UserProductReviewListGqlResponse";
-  /** Sanitized review author information */
-  author: UserProductReviewAuthorGqlResponse;
-  /** Product review thread ID */
-  id: Scalars["ID"]["output"];
-  /** Whether this review thread belongs to the current user */
-  isMine: Scalars["Boolean"]["output"];
-  /** Public follow-up comments from the review author plus support messages visible only on the current user's own review */
-  messages: Array<UserProductReviewMessageGqlResponse>;
-  /** Visible rating for this review, if any */
-  rating?: Maybe<UserProductReviewRatingGqlResponse>;
-};
-
-export type UserProductReviewListPaginatedCursorGqlResponse = {
-  __typename?: "UserProductReviewListPaginatedCursorGqlResponse";
-  /** Product reviews visible to the current END_USER */
-  items: Array<UserProductReviewListGqlResponse>;
-  /** Pagination metadata */
-  pagination: PaginationCursorResponse;
-};
-
-export type UserProductReviewListSortOptionInput = {
-  /** Sort by thread creation date */
-  createdAt?: InputMaybe<SortingOrder>;
-  /** Sort by rating submission date */
-  ratedAt?: InputMaybe<SortingOrder>;
-  /** Sort by star rating */
-  stars?: InputMaybe<SortingOrder>;
-  /** Sort by thread last update date */
-  updatedAt?: InputMaybe<SortingOrder>;
-};
-
-export type UserProductReviewMessageGqlResponse = {
-  __typename?: "UserProductReviewMessageGqlResponse";
-  /** Message body */
-  body: Scalars["String"]["output"];
-  /** Stable message key generated by the database */
-  key: Scalars["String"]["output"];
-  /** Sanitized sender information */
-  sender: UserProductReviewMessageSenderGqlResponse;
-  /** Date when the message was sent */
-  sentAt: Scalars["DateTime"]["output"];
-};
-
-export type UserProductReviewMessageSenderGqlResponse = {
-  __typename?: "UserProductReviewMessageSenderGqlResponse";
-  /** Message sender first name or support label */
-  firstName: Scalars["String"]["output"];
-  /** Whether the message was sent by support staff rather than the review author */
-  isSupport: Scalars["Boolean"]["output"];
-};
-
-export type UserProductReviewRatingGqlResponse = {
-  __typename?: "UserProductReviewRatingGqlResponse";
-  /** Optional review comment */
-  comment?: Maybe<Scalars["String"]["output"]>;
-  /** Date when the rating was first submitted */
-  ratedAt: Scalars["DateTime"]["output"];
-  /** Star rating from 1 to 5 */
-  stars: Scalars["Int"]["output"];
-  /** Date when the rating was last updated */
-  updatedAt?: Maybe<Scalars["DateTime"]["output"]>;
+export type UnregisterPushSubscriptionGqlInput = {
+  /** Push service endpoint URL to remove */
+  endpoint: Scalars["String"]["input"];
 };
 
 export type UserCreateGqlInput = {
@@ -3156,6 +3267,257 @@ export type UserPreferencesGqlResponse = {
   theme?: Maybe<Scalars["String"]["output"]>;
   /** User's timezone */
   timezone?: Maybe<Scalars["String"]["output"]>;
+};
+
+export type UserProductDetailChapterGqlResponse = {
+  __typename?: "UserProductDetailChapterGqlResponse";
+  /** Chapter description */
+  description?: Maybe<Scalars["String"]["output"]>;
+  /** Whether the authenticated learner has confirmed completion of this chapter */
+  isCompleted: Scalars["Boolean"]["output"];
+  /** Whether this chapter is free to access */
+  isFree: Scalars["Boolean"]["output"];
+  /** Whether this chapter content is hidden from the current viewer */
+  isLocked: Scalars["Boolean"]["output"];
+  /** Chapter items. Null when the chapter is locked for the current viewer. */
+  items?: Maybe<Array<UserProductDetailItemGqlResponse>>;
+  /** Stable chapter key */
+  key: Scalars["String"]["output"];
+  /** Chapter title */
+  title: Scalars["String"]["output"];
+  /** When this chapter becomes available for a paid viewer under gradual release */
+  unlocksAt?: Maybe<Scalars["DateTime"]["output"]>;
+  /** When the learner confirmed completion of this chapter */
+  userCompletedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  /** Number of minutes after purchase/enrollment when visible */
+  visibleAfterMinutes?: Maybe<Scalars["Int"]["output"]>;
+};
+
+export type UserProductDetailGqlInput = {
+  /** Product ID */
+  id: Scalars["ID"]["input"];
+};
+
+export type UserProductDetailGqlResponse = {
+  __typename?: "UserProductDetailGqlResponse";
+  /** Number of chapters currently unlocked and eligible for completion */
+  accessibleChapterCount: Scalars["Int"]["output"];
+  /** Product chapters with locked content redacted */
+  chapters: Array<UserProductDetailChapterGqlResponse>;
+  /** Number of unlocked chapters the learner has confirmed complete */
+  completedChapterCount: Scalars["Int"]["output"];
+  /** Signed access descriptor for the product cover image */
+  coverImageAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
+  /** Product description */
+  description?: Maybe<Scalars["String"]["output"]>;
+  /** Optional public product discount */
+  discount?: Maybe<UserProductListDiscountGqlResponse>;
+  /** Product ID */
+  id: Scalars["ID"]["output"];
+  /** Whether this product is free to access */
+  isFree: Scalars["Boolean"]["output"];
+  /** Whether the current END_USER has a paid purchase for this product */
+  isPurchased: Scalars["Boolean"]["output"];
+  /** Whether learners can submit reviews for this product */
+  isReviewSubmissionEnabled: Scalars["Boolean"]["output"];
+  /** Whether the reviews section is visible on the product detail page */
+  isReviewsSectionVisible: Scalars["Boolean"]["output"];
+  /** Product price in IRT */
+  priceIrt?: Maybe<Scalars["Float"]["output"]>;
+  /** Current END_USER purchase status for this product, if any */
+  purchaseStatus?: Maybe<UserProductPurchaseStatus>;
+  /** Calculated release strategy. GRADUAL means at least one chapter has visibleAfterMinutes. */
+  releaseType: ProductReleaseType;
+  /** Product tags */
+  tags: Array<Scalars["String"]["output"]>;
+  /** Product title */
+  title: Scalars["String"]["output"];
+};
+
+export type UserProductDetailItemGqlResponse = {
+  __typename?: "UserProductDetailItemGqlResponse";
+  /** Article body for unlocked text-based items */
+  article?: Maybe<Scalars["String"]["output"]>;
+  /** Signed access descriptor for an unlocked file-backed item */
+  fileAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
+  /** Product item title */
+  title: Scalars["String"]["output"];
+  /** Calculated item content type */
+  type: ProductItemType;
+};
+
+export type UserProductListDiscountGqlResponse = {
+  __typename?: "UserProductListDiscountGqlResponse";
+  /** Discount calculation type */
+  type: ProductDiscountType;
+  /** Discount value. Percentage for PERCENTAGE, IRT amount for FIXED_AMOUNT_IRT */
+  value: Scalars["Float"]["output"];
+};
+
+export type UserProductListGqlResponse = {
+  __typename?: "UserProductListGqlResponse";
+  /** Number of chapters in the product */
+  chapterCount: Scalars["Int"]["output"];
+  /** Signed access descriptor for the product cover image */
+  coverImageAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
+  /** Product description */
+  description?: Maybe<Scalars["String"]["output"]>;
+  /** Optional public product discount */
+  discount?: Maybe<UserProductListDiscountGqlResponse>;
+  /** Product ID */
+  id: Scalars["ID"]["output"];
+  /** Whether the current END_USER has a paid purchase for this product */
+  isPurchased: Scalars["Boolean"]["output"];
+  /** Number of items in the product */
+  itemCount: Scalars["Int"]["output"];
+  /** Calculated content types available in this product */
+  itemTypes: Array<ProductItemType>;
+  /** Product price in IRT */
+  priceIrt?: Maybe<Scalars["Float"]["output"]>;
+  /** Calculated release strategy. GRADUAL means at least one chapter has visibleAfterMinutes. */
+  releaseType: ProductReleaseType;
+  /** Product tags */
+  tags: Array<Scalars["String"]["output"]>;
+  /** Product title */
+  title: Scalars["String"]["output"];
+};
+
+export type UserProductListPaginatedCursorGqlResponse = {
+  __typename?: "UserProductListPaginatedCursorGqlResponse";
+  /** List of products for anonymous and end-user views */
+  items: Array<UserProductListGqlResponse>;
+  /** Pagination metadata */
+  pagination: PaginationCursorResponse;
+};
+
+/** Supported product payment methods */
+export const UserProductPaymentMethod = {
+  CARD_TO_CARD: "CARD_TO_CARD",
+  CRYPTOCURRENCY: "CRYPTOCURRENCY",
+  FREE: "FREE",
+  GATEWAY: "GATEWAY",
+} as const;
+
+export type UserProductPaymentMethod =
+  (typeof UserProductPaymentMethod)[keyof typeof UserProductPaymentMethod];
+/** Currency used for product purchases */
+export const UserProductPurchaseCurrency = {
+  IRT: "IRT",
+  USDT: "USDT",
+} as const;
+
+export type UserProductPurchaseCurrency =
+  (typeof UserProductPurchaseCurrency)[keyof typeof UserProductPurchaseCurrency];
+/** Product purchase lifecycle status */
+export const UserProductPurchaseStatus = {
+  CANCELLED: "CANCELLED",
+  FAILED: "FAILED",
+  PAID: "PAID",
+  PENDING: "PENDING",
+  PENDING_GATEWAY: "PENDING_GATEWAY",
+  REFUNDED: "REFUNDED",
+} as const;
+
+export type UserProductPurchaseStatus =
+  (typeof UserProductPurchaseStatus)[keyof typeof UserProductPurchaseStatus];
+export type UserProductReviewAuthorGqlResponse = {
+  __typename?: "UserProductReviewAuthorGqlResponse";
+  /** Review author's first name from the user profile */
+  firstName: Scalars["String"]["output"];
+};
+
+export type UserProductReviewListCursorPageOptionsParamsInput = {
+  /** Maximum number of records to return */
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  /** Sort options as a map of field names to sort order */
+  sort?: InputMaybe<UserProductReviewListSortOptionInput>;
+  /** Cursor to start after. Uses the beginning if omitted */
+  startCursor?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type UserProductReviewListFilterInput = {
+  /** Product ID to list reviews for */
+  productId: Scalars["ID"]["input"];
+  /** Filter reviews by exact star rating */
+  stars?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type UserProductReviewListGqlInput = {
+  /** Filter options for narrowing down the product review list */
+  filters: UserProductReviewListFilterInput;
+  /** Cursor pagination and sorting options */
+  options?: InputMaybe<UserProductReviewListCursorPageOptionsParamsInput>;
+};
+
+export type UserProductReviewListGqlResponse = {
+  __typename?: "UserProductReviewListGqlResponse";
+  /** Sanitized review author information */
+  author: UserProductReviewAuthorGqlResponse;
+  /** Product review thread ID */
+  id: Scalars["ID"]["output"];
+  /** Whether this review thread belongs to the current user */
+  isMine: Scalars["Boolean"]["output"];
+  /** Whether the current user's rating exists but is hidden from their view */
+  isRatingHidden: Scalars["Boolean"]["output"];
+  /** Whether the current user is blocked from submitting updates because the review thread is hidden */
+  isSubmissionBlocked: Scalars["Boolean"]["output"];
+  /** Public follow-up comments and support messages with PUBLIC moderation */
+  messages: Array<UserProductReviewMessageGqlResponse>;
+  /** Rating visible when its moderation visibility is PUBLIC */
+  rating?: Maybe<UserProductReviewRatingGqlResponse>;
+};
+
+export type UserProductReviewListPaginatedCursorGqlResponse = {
+  __typename?: "UserProductReviewListPaginatedCursorGqlResponse";
+  /** Product reviews visible to the current END_USER */
+  items: Array<UserProductReviewListGqlResponse>;
+  /** Pagination metadata */
+  pagination: PaginationCursorResponse;
+  /** Aggregated public rating summary excluding hidden reviews and hidden ratings */
+  summary: ProductReviewRatingSummaryGqlResponse;
+};
+
+export type UserProductReviewListSortOptionInput = {
+  /** Sort by thread creation date */
+  createdAt?: InputMaybe<SortingOrder>;
+  /** Sort by rating submission date */
+  ratedAt?: InputMaybe<SortingOrder>;
+  /** Sort by star rating */
+  stars?: InputMaybe<SortingOrder>;
+  /** Sort by thread last update date */
+  updatedAt?: InputMaybe<SortingOrder>;
+};
+
+export type UserProductReviewMessageGqlResponse = {
+  __typename?: "UserProductReviewMessageGqlResponse";
+  /** Message body */
+  body: Scalars["String"]["output"];
+  /** Stable message key generated by the database */
+  key: Scalars["String"]["output"];
+  /** Sanitized sender information */
+  sender: UserProductReviewMessageSenderGqlResponse;
+  /** Date when the message was sent */
+  sentAt: Scalars["DateTime"]["output"];
+};
+
+export type UserProductReviewMessageSenderGqlResponse = {
+  __typename?: "UserProductReviewMessageSenderGqlResponse";
+  /** Message sender first name from the user profile */
+  firstName: Scalars["String"]["output"];
+  /** Whether the message was sent by support staff rather than the review author */
+  isSupport: Scalars["Boolean"]["output"];
+};
+
+export type UserProductReviewRatingGqlResponse = {
+  __typename?: "UserProductReviewRatingGqlResponse";
+  /** Optional review comment */
+  comment?: Maybe<Scalars["String"]["output"]>;
+  /** Date when the rating was first submitted */
+  ratedAt: Scalars["DateTime"]["output"];
+  /** Star rating from 1 to 5 */
+  stars: Scalars["Int"]["output"];
+  /** Date when the rating was last updated */
+  updatedAt?: Maybe<Scalars["DateTime"]["output"]>;
 };
 
 export type UserProfileMinimalGqlResponse = {
@@ -3490,6 +3852,19 @@ export type UserVerifyLoginCodeGqlResponse = {
   userId?: Maybe<Scalars["ID"]["output"]>;
 };
 
+/** Supported video output container formats */
+export const VideoOutputExtension = {
+  AVI: "AVI",
+  FLV: "FLV",
+  M4V: "M4V",
+  MKV: "MKV",
+  MOV: "MOV",
+  MP4: "MP4",
+  TS: "TS",
+  WEBM: "WEBM",
+} as const;
+
+export type VideoOutputExtension = (typeof VideoOutputExtension)[keyof typeof VideoOutputExtension];
 export type AppSettingUpdateMutationVariables = Exact<{
   input: AppSettingUpdateGqlInput;
 }>;
@@ -3507,6 +3882,34 @@ export type AppSettingUpdateMutation = {
     isActive: boolean;
     createdAt?: any | null;
     updatedAt?: any | null;
+  };
+};
+
+export type BackupRunMutationVariables = Exact<{
+  input: BackupRunGqlInput;
+}>;
+
+export type BackupRunMutation = {
+  __typename?: "Mutation";
+  backupRun: {
+    __typename?: "BackupRunGqlResponse";
+    items: Array<{
+      __typename?: "BackupRunItemGqlResponse";
+      target: BackupTarget;
+      archiveFileName: string;
+      archiveFormat: string;
+      archivePartCount: number;
+      formattedArchiveSize: string;
+      durationMs: number;
+      createdAt: any;
+      telegramDelivered: boolean;
+      telegramMessageId?: number | null;
+      telegramDeliveryNote?: string | null;
+      collectionCount?: number | null;
+      documentCount?: number | null;
+      objectCount?: number | null;
+      fileRecordCount?: number | null;
+    }>;
   };
 };
 
@@ -3532,6 +3935,40 @@ export type CouponUpdateMutationVariables = Exact<{
 export type CouponUpdateMutation = {
   __typename?: "Mutation";
   couponUpdate: { __typename?: "CouponListGqlResponse"; id: string };
+};
+
+export type GlobalAnouncementSendMutationVariables = Exact<{
+  input: GlobalAnouncementSendGqlInput;
+}>;
+
+export type GlobalAnouncementSendMutation = {
+  __typename?: "Mutation";
+  globalAnouncementSend: {
+    __typename?: "GlobalAnouncementSendGqlResponse";
+    deliveredUsers: number;
+    activeSubscribedUsers: number;
+  };
+};
+
+export type RegisterNativePushTokenMutationVariables = Exact<{
+  input: RegisterNativePushTokenGqlInput;
+}>;
+
+export type RegisterNativePushTokenMutation = {
+  __typename?: "Mutation";
+  registerNativePushToken: { __typename?: "PushSubscriptionMutationGqlResponse"; success: boolean };
+};
+
+export type UnregisterNativePushTokenMutationVariables = Exact<{
+  input: UnregisterNativePushTokenGqlInput;
+}>;
+
+export type UnregisterNativePushTokenMutation = {
+  __typename?: "Mutation";
+  unregisterNativePushToken: {
+    __typename?: "PushSubscriptionMutationGqlResponse";
+    success: boolean;
+  };
 };
 
 export type ProductChapterCompleteMutationVariables = Exact<{
@@ -3658,16 +4095,27 @@ export type ProductUpdateMutation = {
   productUpdate: { __typename?: "ProductListGqlResponse"; id: string };
 };
 
-export type GlobalAnouncementSendMutationVariables = Exact<{
-  input: GlobalAnouncementSendGqlInput;
+export type RegisterPushSubscriptionMutationVariables = Exact<{
+  input: RegisterPushSubscriptionGqlInput;
 }>;
 
-export type GlobalAnouncementSendMutation = {
+export type RegisterPushSubscriptionMutation = {
   __typename?: "Mutation";
-  globalAnouncementSend: {
-    __typename?: "GlobalAnouncementSendGqlResponse";
-    deliveredUsers: number;
-    activeSubscribedUsers: number;
+  registerPushSubscription: {
+    __typename?: "PushSubscriptionMutationGqlResponse";
+    success: boolean;
+  };
+};
+
+export type UnregisterPushSubscriptionMutationVariables = Exact<{
+  input: UnregisterPushSubscriptionGqlInput;
+}>;
+
+export type UnregisterPushSubscriptionMutation = {
+  __typename?: "Mutation";
+  unregisterPushSubscription: {
+    __typename?: "PushSubscriptionMutationGqlResponse";
+    success: boolean;
   };
 };
 
@@ -4046,6 +4494,39 @@ export type CouponValidateQuery = {
   };
 };
 
+export type PaymentCheckoutConfigQueryVariables = Exact<{ [key: string]: never }>;
+
+export type PaymentCheckoutConfigQuery = {
+  __typename?: "Query";
+  paymentCheckoutConfig: {
+    __typename?: "PaymentCheckoutConfigGqlResponse";
+    paymentCards: Array<{
+      __typename?: "PaymentCheckoutCardGqlResponse";
+      cardNumber: string;
+      holderName: string;
+      bankName: string;
+    }>;
+    cryptoWallets: Array<{
+      __typename?: "PaymentCheckoutCryptoWalletGqlResponse";
+      address: string;
+      network: string;
+    }>;
+    paymentMethods: Array<{
+      __typename?: "PaymentCheckoutMethodGqlResponse";
+      method: UserProductPaymentMethod;
+      isVisible: boolean;
+      isActive: boolean;
+      isRecommended: boolean;
+    }>;
+    usdtIrtRate: {
+      __typename?: "PaymentCheckoutUsdtIrtRateGqlResponse";
+      valueIrt: number;
+      feeUsdt: number;
+      coefficient: number;
+    };
+  };
+};
+
 export type ProductDeleteDependenciesQueryVariables = Exact<{
   input: ProductDeleteGqlInput;
 }>;
@@ -4150,36 +4631,15 @@ export type ProductPaymentListQuery = {
   };
 };
 
-export type PaymentCheckoutConfigQueryVariables = Exact<{ [key: string]: never }>;
+export type PushNotificationConfigQueryVariables = Exact<{ [key: string]: never }>;
 
-export type PaymentCheckoutConfigQuery = {
+export type PushNotificationConfigQuery = {
   __typename?: "Query";
-  paymentCheckoutConfig: {
-    __typename?: "PaymentCheckoutConfigGqlResponse";
-    paymentCards: Array<{
-      __typename?: "PaymentCheckoutCardGqlResponse";
-      cardNumber: string;
-      holderName: string;
-      bankName: string;
-    }>;
-    cryptoWallets: Array<{
-      __typename?: "PaymentCheckoutCryptoWalletGqlResponse";
-      address: string;
-      network: string;
-    }>;
-    paymentMethods: Array<{
-      __typename?: "PaymentCheckoutMethodGqlResponse";
-      method: UserProductPaymentMethod;
-      isVisible: boolean;
-      isActive: boolean;
-      isRecommended: boolean;
-    }>;
-    usdtIrtRate: {
-      __typename?: "PaymentCheckoutUsdtIrtRateGqlResponse";
-      valueIrt: number;
-      feeUsdt: number;
-      coefficient: number;
-    };
+  pushNotificationConfig: {
+    __typename?: "PushNotificationConfigGqlResponse";
+    enabled: boolean;
+    publicKey?: string | null;
+    nativePushEnabled: boolean;
   };
 };
 
@@ -4303,51 +4763,6 @@ export type TicketListQuery = {
   };
 };
 
-export type UserProductReviewListQueryVariables = Exact<{
-  input: UserProductReviewListGqlInput;
-}>;
-
-export type UserProductReviewListQuery = {
-  __typename?: "Query";
-  userProductReviewList: {
-    __typename?: "UserProductReviewListPaginatedCursorGqlResponse";
-    items: Array<{
-      __typename?: "UserProductReviewListGqlResponse";
-      id: string;
-      isMine: boolean;
-      author: { __typename?: "UserProductReviewAuthorGqlResponse"; firstName: string };
-      rating?: {
-        __typename?: "UserProductReviewRatingGqlResponse";
-        stars: number;
-        comment?: string | null;
-        ratedAt: any;
-        updatedAt?: any | null;
-      } | null;
-      messages: Array<{
-        __typename?: "UserProductReviewMessageGqlResponse";
-        key: string;
-        body: string;
-        sentAt: any;
-        sender: {
-          __typename?: "UserProductReviewMessageSenderGqlResponse";
-          firstName: string;
-          isSupport: boolean;
-        };
-      }>;
-    }>;
-    pagination: {
-      __typename?: "PaginationCursorResponse";
-      limit: number;
-      total: number;
-      count: number;
-      startCursor?: string | null;
-      endCursor?: string | null;
-      hasNextPage: boolean;
-      hasPreviousPage: boolean;
-    };
-  };
-};
-
 export type UserLoginCaptchaQueryVariables = Exact<{ [key: string]: never }>;
 
 export type UserLoginCaptchaQuery = {
@@ -4394,6 +4809,64 @@ export type UserNotificationListQuery = {
       endCursor?: string | null;
       hasNextPage: boolean;
       hasPreviousPage: boolean;
+    };
+  };
+};
+
+export type UserProductReviewListQueryVariables = Exact<{
+  input: UserProductReviewListGqlInput;
+}>;
+
+export type UserProductReviewListQuery = {
+  __typename?: "Query";
+  userProductReviewList: {
+    __typename?: "UserProductReviewListPaginatedCursorGqlResponse";
+    items: Array<{
+      __typename?: "UserProductReviewListGqlResponse";
+      id: string;
+      isMine: boolean;
+      isSubmissionBlocked: boolean;
+      isRatingHidden: boolean;
+      author: { __typename?: "UserProductReviewAuthorGqlResponse"; firstName: string };
+      rating?: {
+        __typename?: "UserProductReviewRatingGqlResponse";
+        stars: number;
+        comment?: string | null;
+        ratedAt: any;
+        updatedAt?: any | null;
+      } | null;
+      messages: Array<{
+        __typename?: "UserProductReviewMessageGqlResponse";
+        key: string;
+        body: string;
+        sentAt: any;
+        sender: {
+          __typename?: "UserProductReviewMessageSenderGqlResponse";
+          firstName: string;
+          isSupport: boolean;
+        };
+      }>;
+    }>;
+    pagination: {
+      __typename?: "PaginationCursorResponse";
+      limit: number;
+      total: number;
+      count: number;
+      startCursor?: string | null;
+      endCursor?: string | null;
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+    };
+    summary: {
+      __typename?: "ProductReviewRatingSummaryGqlResponse";
+      averageRating?: number | null;
+      ratedCount: number;
+      distribution: Array<{
+        __typename?: "ProductReviewRatingDistributionGqlResponse";
+        stars: number;
+        count: number;
+        percentage: number;
+      }>;
     };
   };
 };
@@ -4496,6 +4969,70 @@ export const AppSettingUpdateDocument = {
     },
   ],
 } as unknown as DocumentNode<AppSettingUpdateMutation, AppSettingUpdateMutationVariables>;
+export const BackupRunDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "BackupRun" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "input" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "BackupRunGqlInput" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "backupRun" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: { kind: "Variable", name: { kind: "Name", value: "input" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "items" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "target" } },
+                      { kind: "Field", name: { kind: "Name", value: "archiveFileName" } },
+                      { kind: "Field", name: { kind: "Name", value: "archiveFormat" } },
+                      { kind: "Field", name: { kind: "Name", value: "archivePartCount" } },
+                      { kind: "Field", name: { kind: "Name", value: "formattedArchiveSize" } },
+                      { kind: "Field", name: { kind: "Name", value: "durationMs" } },
+                      { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                      { kind: "Field", name: { kind: "Name", value: "telegramDelivered" } },
+                      { kind: "Field", name: { kind: "Name", value: "telegramMessageId" } },
+                      { kind: "Field", name: { kind: "Name", value: "telegramDeliveryNote" } },
+                      { kind: "Field", name: { kind: "Name", value: "collectionCount" } },
+                      { kind: "Field", name: { kind: "Name", value: "documentCount" } },
+                      { kind: "Field", name: { kind: "Name", value: "objectCount" } },
+                      { kind: "Field", name: { kind: "Name", value: "fileRecordCount" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<BackupRunMutation, BackupRunMutationVariables>;
 export const CouponCreateDocument = {
   kind: "Document",
   definitions: [
@@ -4612,6 +5149,144 @@ export const CouponUpdateDocument = {
     },
   ],
 } as unknown as DocumentNode<CouponUpdateMutation, CouponUpdateMutationVariables>;
+export const GlobalAnouncementSendDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "GlobalAnouncementSend" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "input" } },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "GlobalAnouncementSendGqlInput" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "globalAnouncementSend" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: { kind: "Variable", name: { kind: "Name", value: "input" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "deliveredUsers" } },
+                { kind: "Field", name: { kind: "Name", value: "activeSubscribedUsers" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GlobalAnouncementSendMutation, GlobalAnouncementSendMutationVariables>;
+export const RegisterNativePushTokenDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "RegisterNativePushToken" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "input" } },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "RegisterNativePushTokenGqlInput" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "registerNativePushToken" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: { kind: "Variable", name: { kind: "Name", value: "input" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [{ kind: "Field", name: { kind: "Name", value: "success" } }],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  RegisterNativePushTokenMutation,
+  RegisterNativePushTokenMutationVariables
+>;
+export const UnregisterNativePushTokenDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "UnregisterNativePushToken" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "input" } },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "UnregisterNativePushTokenGqlInput" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "unregisterNativePushToken" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: { kind: "Variable", name: { kind: "Name", value: "input" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [{ kind: "Field", name: { kind: "Name", value: "success" } }],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UnregisterNativePushTokenMutation,
+  UnregisterNativePushTokenMutationVariables
+>;
 export const ProductChapterCompleteDocument = {
   kind: "Document",
   definitions: [
@@ -5002,13 +5677,13 @@ export const ProductUpdateDocument = {
     },
   ],
 } as unknown as DocumentNode<ProductUpdateMutation, ProductUpdateMutationVariables>;
-export const GlobalAnouncementSendDocument = {
+export const RegisterPushSubscriptionDocument = {
   kind: "Document",
   definitions: [
     {
       kind: "OperationDefinition",
       operation: "mutation",
-      name: { kind: "Name", value: "GlobalAnouncementSend" },
+      name: { kind: "Name", value: "RegisterPushSubscription" },
       variableDefinitions: [
         {
           kind: "VariableDefinition",
@@ -5017,7 +5692,7 @@ export const GlobalAnouncementSendDocument = {
             kind: "NonNullType",
             type: {
               kind: "NamedType",
-              name: { kind: "Name", value: "GlobalAnouncementSendGqlInput" },
+              name: { kind: "Name", value: "RegisterPushSubscriptionGqlInput" },
             },
           },
         },
@@ -5027,7 +5702,7 @@ export const GlobalAnouncementSendDocument = {
         selections: [
           {
             kind: "Field",
-            name: { kind: "Name", value: "globalAnouncementSend" },
+            name: { kind: "Name", value: "registerPushSubscription" },
             arguments: [
               {
                 kind: "Argument",
@@ -5037,17 +5712,63 @@ export const GlobalAnouncementSendDocument = {
             ],
             selectionSet: {
               kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "deliveredUsers" } },
-                { kind: "Field", name: { kind: "Name", value: "activeSubscribedUsers" } },
-              ],
+              selections: [{ kind: "Field", name: { kind: "Name", value: "success" } }],
             },
           },
         ],
       },
     },
   ],
-} as unknown as DocumentNode<GlobalAnouncementSendMutation, GlobalAnouncementSendMutationVariables>;
+} as unknown as DocumentNode<
+  RegisterPushSubscriptionMutation,
+  RegisterPushSubscriptionMutationVariables
+>;
+export const UnregisterPushSubscriptionDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "UnregisterPushSubscription" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "input" } },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "UnregisterPushSubscriptionGqlInput" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "unregisterPushSubscription" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: { kind: "Variable", name: { kind: "Name", value: "input" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [{ kind: "Field", name: { kind: "Name", value: "success" } }],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UnregisterPushSubscriptionMutation,
+  UnregisterPushSubscriptionMutationVariables
+>;
 export const ResolveAuthIdentityDocument = {
   kind: "Document",
   definitions: [
@@ -6088,6 +6809,78 @@ export const CouponValidateDocument = {
     },
   ],
 } as unknown as DocumentNode<CouponValidateQuery, CouponValidateQueryVariables>;
+export const PaymentCheckoutConfigDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "PaymentCheckoutConfig" },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "paymentCheckoutConfig" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "paymentCards" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "cardNumber" } },
+                      { kind: "Field", name: { kind: "Name", value: "holderName" } },
+                      { kind: "Field", name: { kind: "Name", value: "bankName" } },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "cryptoWallets" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "address" } },
+                      { kind: "Field", name: { kind: "Name", value: "network" } },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "paymentMethods" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "method" } },
+                      { kind: "Field", name: { kind: "Name", value: "isVisible" } },
+                      { kind: "Field", name: { kind: "Name", value: "isActive" } },
+                      { kind: "Field", name: { kind: "Name", value: "isRecommended" } },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "usdtIrtRate" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "valueIrt" } },
+                      { kind: "Field", name: { kind: "Name", value: "feeUsdt" } },
+                      { kind: "Field", name: { kind: "Name", value: "coefficient" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<PaymentCheckoutConfigQuery, PaymentCheckoutConfigQueryVariables>;
 export const ProductDeleteDependenciesDocument = {
   kind: "Document",
   definitions: [
@@ -6331,70 +7124,25 @@ export const ProductPaymentListDocument = {
     },
   ],
 } as unknown as DocumentNode<ProductPaymentListQuery, ProductPaymentListQueryVariables>;
-export const PaymentCheckoutConfigDocument = {
+export const PushNotificationConfigDocument = {
   kind: "Document",
   definitions: [
     {
       kind: "OperationDefinition",
       operation: "query",
-      name: { kind: "Name", value: "PaymentCheckoutConfig" },
+      name: { kind: "Name", value: "PushNotificationConfig" },
       selectionSet: {
         kind: "SelectionSet",
         selections: [
           {
             kind: "Field",
-            name: { kind: "Name", value: "paymentCheckoutConfig" },
+            name: { kind: "Name", value: "pushNotificationConfig" },
             selectionSet: {
               kind: "SelectionSet",
               selections: [
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "paymentCards" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "cardNumber" } },
-                      { kind: "Field", name: { kind: "Name", value: "holderName" } },
-                      { kind: "Field", name: { kind: "Name", value: "bankName" } },
-                    ],
-                  },
-                },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "cryptoWallets" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "address" } },
-                      { kind: "Field", name: { kind: "Name", value: "network" } },
-                    ],
-                  },
-                },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "paymentMethods" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "method" } },
-                      { kind: "Field", name: { kind: "Name", value: "isVisible" } },
-                      { kind: "Field", name: { kind: "Name", value: "isActive" } },
-                      { kind: "Field", name: { kind: "Name", value: "isRecommended" } },
-                    ],
-                  },
-                },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "usdtIrtRate" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "valueIrt" } },
-                      { kind: "Field", name: { kind: "Name", value: "feeUsdt" } },
-                      { kind: "Field", name: { kind: "Name", value: "coefficient" } },
-                    ],
-                  },
-                },
+                { kind: "Field", name: { kind: "Name", value: "enabled" } },
+                { kind: "Field", name: { kind: "Name", value: "publicKey" } },
+                { kind: "Field", name: { kind: "Name", value: "nativePushEnabled" } },
               ],
             },
           },
@@ -6402,7 +7150,7 @@ export const PaymentCheckoutConfigDocument = {
       },
     },
   ],
-} as unknown as DocumentNode<PaymentCheckoutConfigQuery, PaymentCheckoutConfigQueryVariables>;
+} as unknown as DocumentNode<PushNotificationConfigQuery, PushNotificationConfigQueryVariables>;
 export const SupportContactConfigDocument = {
   kind: "Document",
   definitions: [
@@ -6640,123 +7388,6 @@ export const TicketListDocument = {
     },
   ],
 } as unknown as DocumentNode<TicketListQuery, TicketListQueryVariables>;
-export const UserProductReviewListDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "query",
-      name: { kind: "Name", value: "UserProductReviewList" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "input" } },
-          type: {
-            kind: "NonNullType",
-            type: {
-              kind: "NamedType",
-              name: { kind: "Name", value: "UserProductReviewListGqlInput" },
-            },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "userProductReviewList" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "input" },
-                value: { kind: "Variable", name: { kind: "Name", value: "input" } },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "items" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                      { kind: "Field", name: { kind: "Name", value: "isMine" } },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "author" },
-                        selectionSet: {
-                          kind: "SelectionSet",
-                          selections: [
-                            { kind: "Field", name: { kind: "Name", value: "firstName" } },
-                          ],
-                        },
-                      },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "rating" },
-                        selectionSet: {
-                          kind: "SelectionSet",
-                          selections: [
-                            { kind: "Field", name: { kind: "Name", value: "stars" } },
-                            { kind: "Field", name: { kind: "Name", value: "comment" } },
-                            { kind: "Field", name: { kind: "Name", value: "ratedAt" } },
-                            { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
-                          ],
-                        },
-                      },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "messages" },
-                        selectionSet: {
-                          kind: "SelectionSet",
-                          selections: [
-                            { kind: "Field", name: { kind: "Name", value: "key" } },
-                            { kind: "Field", name: { kind: "Name", value: "body" } },
-                            { kind: "Field", name: { kind: "Name", value: "sentAt" } },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "sender" },
-                              selectionSet: {
-                                kind: "SelectionSet",
-                                selections: [
-                                  { kind: "Field", name: { kind: "Name", value: "firstName" } },
-                                  { kind: "Field", name: { kind: "Name", value: "isSupport" } },
-                                ],
-                              },
-                            },
-                          ],
-                        },
-                      },
-                    ],
-                  },
-                },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "pagination" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "limit" } },
-                      { kind: "Field", name: { kind: "Name", value: "total" } },
-                      { kind: "Field", name: { kind: "Name", value: "count" } },
-                      { kind: "Field", name: { kind: "Name", value: "startCursor" } },
-                      { kind: "Field", name: { kind: "Name", value: "endCursor" } },
-                      { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
-                      { kind: "Field", name: { kind: "Name", value: "hasPreviousPage" } },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<UserProductReviewListQuery, UserProductReviewListQueryVariables>;
 export const UserLoginCaptchaDocument = {
   kind: "Document",
   definitions: [
@@ -6864,6 +7495,148 @@ export const UserNotificationListDocument = {
     },
   ],
 } as unknown as DocumentNode<UserNotificationListQuery, UserNotificationListQueryVariables>;
+export const UserProductReviewListDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "UserProductReviewList" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "input" } },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "UserProductReviewListGqlInput" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "userProductReviewList" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: { kind: "Variable", name: { kind: "Name", value: "input" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "items" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      { kind: "Field", name: { kind: "Name", value: "isMine" } },
+                      { kind: "Field", name: { kind: "Name", value: "isSubmissionBlocked" } },
+                      { kind: "Field", name: { kind: "Name", value: "isRatingHidden" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "author" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "firstName" } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "rating" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "stars" } },
+                            { kind: "Field", name: { kind: "Name", value: "comment" } },
+                            { kind: "Field", name: { kind: "Name", value: "ratedAt" } },
+                            { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "messages" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "key" } },
+                            { kind: "Field", name: { kind: "Name", value: "body" } },
+                            { kind: "Field", name: { kind: "Name", value: "sentAt" } },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "sender" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  { kind: "Field", name: { kind: "Name", value: "firstName" } },
+                                  { kind: "Field", name: { kind: "Name", value: "isSupport" } },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "pagination" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "limit" } },
+                      { kind: "Field", name: { kind: "Name", value: "total" } },
+                      { kind: "Field", name: { kind: "Name", value: "count" } },
+                      { kind: "Field", name: { kind: "Name", value: "startCursor" } },
+                      { kind: "Field", name: { kind: "Name", value: "endCursor" } },
+                      { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
+                      { kind: "Field", name: { kind: "Name", value: "hasPreviousPage" } },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "summary" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "averageRating" } },
+                      { kind: "Field", name: { kind: "Name", value: "ratedCount" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "distribution" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "stars" } },
+                            { kind: "Field", name: { kind: "Name", value: "count" } },
+                            { kind: "Field", name: { kind: "Name", value: "percentage" } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<UserProductReviewListQuery, UserProductReviewListQueryVariables>;
 export const UserTicketListDocument = {
   kind: "Document",
   definitions: [

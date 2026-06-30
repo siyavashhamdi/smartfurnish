@@ -26,6 +26,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { GLOBAL_ANOUNCEMENT_SEND_MUTATION } from "../../graphql/mutations/globalAnouncementSend.mutation";
 import { useMutationWithSnackbar } from "../../hooks/useMutationWithSnackbar";
 import { APP_SHELL_ROUTES } from "../../routing/app-shell-routes";
+import { UserRole } from "../../lib/graphql/generated";
 import {
   MULTILINE_TEXTAREA_MIN_ROWS,
   MULTILINE_TEXTAREA_MAX_ROWS,
@@ -76,7 +77,7 @@ const ANOUNCEMENT_MESSAGE_TYPE_OPTIONS: readonly {
 
 const GlobalAnouncement = (): ReactElement => {
   const { user } = useAuth();
-  const isSuperAdmin = user?.roles?.includes("SUPER_ADMIN") === true;
+  const isSuperAdmin = user?.roles?.includes(UserRole.SUPER_ADMIN) === true;
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [mode, setMode] = useState<NotificationMode>("INFO");

@@ -3,8 +3,10 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import { RouteLoadingFallback } from "../components/RouteLoadingFallback";
 import { PageSeoProvider } from "../contexts/PageSeoProvider";
+import { useAuth } from "../contexts/AuthContext";
 import { useScrollToTop } from "../hooks/useScrollToTop";
-import { APP_SHELL_ROUTES } from "./app-shell-routes";
+import { isSuperAdminRole } from "../utils/authRole.util";
+import { APP_SHELL_ROUTES, resolveDefaultAppShellRoute } from "./app-shell-routes";
 import { PAYMENTS_ENABLED } from "../constants/payments.constants";
 import { LEGACY_PRODUCTS_ROUTE_REDIRECT_PREFIX, PRODUCT_ROUTE_ID_PARAM } from "./product-route-path";
 import { API_CONFIG } from "../config";
@@ -77,6 +79,30 @@ const LegacyProductsRouteRedirect = (): ReactElement => {
 const PaymentsDisabledRedirect = (): ReactElement => (
   <Navigate to={APP_SHELL_ROUTES.products} replace />
 );
+
+const ShellDefaultRedirect = (): ReactElement => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <RouteLoadingFallback />;
+  }
+
+  return <Navigate to={resolveDefaultAppShellRoute(user?.roles ?? [])} replace />;
+};
+
+const LandingRoute = (): ReactElement => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <RouteLoadingFallback />;
+  }
+
+  if (isSuperAdminRole(user?.roles ?? [])) {
+    return <Navigate to={APP_SHELL_ROUTES.products} replace />;
+  }
+
+  return <Landing />;
+};
 
 const DashboardAppRoutesContent = (): ReactElement => {
   useScrollToTop();
@@ -177,18 +203,18 @@ const DashboardAppRoutesContent = (): ReactElement => {
           path={`${APP_SHELL_ROUTES.users}/*`}
           element={wrapProtected(<UsersManagementIndex />)}
         />
-        <Route path={APP_SHELL_ROUTES.landing} element={<Landing />} />
+        <Route path={APP_SHELL_ROUTES.landing} element={<LandingRoute />} />
         <Route
           path={APP_SHELL_ROUTES.home}
           element={
             API_CONFIG.UNDER_CONSTRUCTION ? (
               <UnderConstruction />
             ) : (
-              <Navigate to={APP_SHELL_ROUTES.landing} replace />
+              <ShellDefaultRedirect />
             )
           }
         />
-        <Route path="*" element={<Navigate to={APP_SHELL_ROUTES.landing} replace />} />
+        <Route path="*" element={<ShellDefaultRedirect />} />
       </Routes>
     </Suspense>
   );

@@ -120,9 +120,9 @@ import {
   type UserListQuery,
   type UserListQueryVariables,
   type UserDetailRow,
-  type UserRole,
   type UserStatus,
 } from "./users-management-list.api";
+import { UserRole } from "../../lib/graphql/generated";
 import { APP_SHELL_ROUTES } from "../../routing/app-shell-routes";
 import confirmDialogStyles from "./styles/users-management-confirm.module.scss";
 import AppTooltip from "../../shared/AppTooltip";
@@ -182,12 +182,12 @@ const persianFieldInputProps = {
   dir: "rtl",
 } as const;
 
-const ROLE_OPTIONS: readonly UserRole[] = ["SUPER_ADMIN", "END_USER"];
+const ROLE_OPTIONS: readonly UserRole[] = [UserRole.SUPER_ADMIN, UserRole.END_USER];
 const STATUS_OPTIONS: readonly UserStatus[] = ["ACTIVE", "DEACTIVE", "SUSPENDED", "BANNED"];
 
 const ROLE_LABEL: Record<UserRole, string> = {
-  SUPER_ADMIN: "سوپر ادمین",
-  END_USER: "کاربر",
+  [UserRole.SUPER_ADMIN]: "سوپر ادمین",
+  [UserRole.END_USER]: "کاربر",
 };
 
 const STATUS_LABEL: Record<UserStatus, string> = {
@@ -289,7 +289,7 @@ function buildCreateFormState(): UserEditFormState {
     phoneNumber: "",
     avatarAccessUrl: null,
     bio: "",
-    roles: ["END_USER"],
+    roles: [UserRole.END_USER],
     status: "ACTIVE",
     password: "",
   };

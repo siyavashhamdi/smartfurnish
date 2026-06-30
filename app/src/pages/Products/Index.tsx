@@ -45,6 +45,7 @@ import { useBadgeCountFirstPageReload } from "../../hooks/useBadgeCountFirstPage
 import { useProductPaymentStatusNotificationRefetch } from "../../hooks/useProductPaymentStatusNotificationRefetch";
 import { useCursorScrollLoadMore } from "../../hooks/useCursorScrollLoadMore";
 import { useAuth } from "../../contexts/AuthContext";
+import { UserRole } from "../../lib/graphql/generated";
 import { API_CONFIG } from "../../config";
 import { useMutationWithSnackbar } from "../../hooks/useMutationWithSnackbar";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -152,7 +153,7 @@ const ProductsIndex = (): ReactElement => {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useMediaQuery("(max-width:600px)");
-  const isEndUser = authUser?.roles?.includes("END_USER") === true;
+  const isEndUser = authUser?.roles?.includes(UserRole.END_USER) === true;
   const isPublicProductView = !authUser || isEndUser;
 
   const [filters, setFilters] = useState<ProductListFilters>(DEFAULT_PRODUCT_LIST_FILTERS);

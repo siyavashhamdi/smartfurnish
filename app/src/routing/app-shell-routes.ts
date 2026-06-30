@@ -1,3 +1,4 @@
+import { isSuperAdminRole } from "../utils/authRole.util";
 import {
   PRODUCT_DETAIL_ROUTE_PATTERN,
   PRODUCTS_ROUTE_PATH,
@@ -57,6 +58,10 @@ export const isStandaloneShellRoute = (pathname: string): boolean => {
 
 export const isLandingRoute = (pathname: string): boolean =>
   normalizeShellPathname(pathname) === APP_SHELL_ROUTES.landing;
+
+export function resolveDefaultAppShellRoute(roles: readonly string[]): string {
+  return isSuperAdminRole(roles) ? APP_SHELL_ROUTES.products : APP_SHELL_ROUTES.landing;
+}
 
 export const isProductDetailRoute = (pathname: string): boolean =>
   isProductDetailRoutePathname(normalizeShellPathname(pathname));

@@ -29,6 +29,7 @@ import {
 } from "@tanstack/react-table";
 
 import { useAuth } from "../../contexts/AuthContext";
+import { UserRole } from "../../lib/graphql/generated";
 import { APP_SETTING_KEY_LIST_QUERY } from "../../graphql/queries/appSettingKeyList.query";
 import { useDebounce } from "../../hooks/useDebounce";
 import {
@@ -152,7 +153,7 @@ const SystemSettingsIndex = (): ReactElement => {
   const { t } = useTranslation();
   const { showError } = useSnackbar();
   const hasShownLoadErrorRef = useRef(false);
-  const isSuperAdmin = user?.roles?.includes("SUPER_ADMIN") === true;
+  const isSuperAdmin = user?.roles?.includes(UserRole.SUPER_ADMIN) === true;
 
   const [sorting, setSorting] = useState<SortingState>([{ id: "createdAt", desc: true }]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({

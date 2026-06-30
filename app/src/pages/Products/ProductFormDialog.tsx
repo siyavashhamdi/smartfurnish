@@ -15,6 +15,7 @@ import { useMutationWithSnackbar } from "../../hooks/useMutationWithSnackbar";
 import { useSnackbar } from "../../hooks/useSnackbar";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useAuth } from "../../contexts/AuthContext";
+import { UserRole } from "../../lib/graphql/generated";
 import EntityConfirmDialogShell from "../../shared/crud/EntityConfirmDialogShell";
 import EntityModalShell from "../../shared/crud/EntityModalShell";
 import { PRODUCT_CREATE_MUTATION } from "../../graphql/mutations/productCreate.mutation";
@@ -431,7 +432,7 @@ const ProductFormDialog = ({
   const { user } = useAuth();
   const { showError, updateUploadProgress, hideUploadProgress } = useSnackbar();
   const isEditMode = Boolean(productId);
-  const isSuperAdmin = user?.roles?.includes("SUPER_ADMIN") === true;
+  const isSuperAdmin = user?.roles?.includes(UserRole.SUPER_ADMIN) === true;
   const useEditSectionTabs = isEditMode && isSuperAdmin;
   const [activeFormSectionTab, setActiveFormSectionTab] = useState<ProductSectionTab>("intro");
   const [reviewsRefreshToken, setReviewsRefreshToken] = useState(0);

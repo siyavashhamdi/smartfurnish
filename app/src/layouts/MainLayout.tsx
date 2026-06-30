@@ -25,6 +25,7 @@ import { Link as RouterLink, NavLink, useLocation } from "react-router-dom";
 import Footer from "../components/layout/Footer";
 import { AvatarInitial } from "../shared/display/AvatarInitial";
 import { useAuth } from "../contexts/AuthContext";
+import { UserRole } from "../lib/graphql/generated";
 import { useThemeMode } from "../contexts/ThemeContext";
 import { BADGE_COUNT_QUERY } from "../graphql/queries/badgeCount.query";
 import { useMe } from "../hooks/useMe";
@@ -264,7 +265,7 @@ export function MainLayout({
   const userPopoverId = isUserOpen ? "main-layout-user-popover" : undefined;
   const roles = authUser?.roles ?? [];
   const isAuthenticated = Boolean(authUser);
-  const isEndUser = roles.includes("END_USER");
+  const isEndUser = roles.includes(UserRole.END_USER);
   const appShellNavContext = useMemo(
     () => ({
       roles,
@@ -491,8 +492,8 @@ export function MainLayout({
 
   const fallbackUser = t("layout.mainLayout.fallbackUser");
 
-  const userRoleTitle = user?.roles?.filter((role) => role !== "END_USER").join("، ") ?? "";
-  const adminRoleBadgeLabel = authUser?.roles?.includes("SUPER_ADMIN")
+  const userRoleTitle = user?.roles?.filter((role) => role !== UserRole.END_USER).join("، ") ?? "";
+  const adminRoleBadgeLabel = authUser?.roles?.includes(UserRole.SUPER_ADMIN)
     ? SUPER_ADMIN_ROLE_BADGE_LABEL
     : null;
 

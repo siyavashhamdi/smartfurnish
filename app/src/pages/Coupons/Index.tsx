@@ -41,6 +41,7 @@ import { COUPON_UPDATE_MUTATION } from "../../graphql/mutations/couponUpdate.mut
 import { COUPON_LIST_QUERY } from "../../graphql/queries/couponList.query";
 import { COUPON_DETAIL_QUERY } from "../../graphql/queries/couponDetail.query";
 import { useAuth } from "../../contexts/AuthContext";
+import { UserRole } from "../../lib/graphql/generated";
 import { useDebounce } from "../../hooks/useDebounce";
 import { useMutationWithSnackbar } from "../../hooks/useMutationWithSnackbar";
 import {
@@ -228,7 +229,7 @@ const CouponsIndex = (): ReactElement => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const { showError } = useSnackbar();
-  const isSuperAdmin = user?.roles?.includes("SUPER_ADMIN") === true;
+  const isSuperAdmin = user?.roles?.includes(UserRole.SUPER_ADMIN) === true;
   const hasShownLoadErrorRef = useRef(false);
   const isCreateRoute = location.pathname === `${APP_SHELL_ROUTES.moreCoupons}/new`;
   const editCouponId = useMemo(() => {
