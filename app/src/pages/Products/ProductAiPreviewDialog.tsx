@@ -6,9 +6,9 @@ import type { ReactElement } from "react";
 import { FabricSelector } from "./FabricSelector";
 import {
   IN_PERSON_VISIT_BUTTON_LABEL,
-  PRODUCT_AI_PREVIEW_BUTTON_LABEL,
 } from "./product-ai-preview.constants";
 import type { FabricSelectionController } from "./useFabricSelection";
+import { useTranslation } from "../../hooks/useTranslation";
 import EntityModalShell from "../../shared/crud/EntityModalShell";
 import ModalFooterActions from "../../shared/crud/ModalFooterActions";
 import styles from "./styles/ProductAiPreviewDialog.module.scss";
@@ -26,11 +26,13 @@ export function ProductAiPreviewDialog({
   fabricSelection,
   onInPersonVisitClick,
 }: ProductAiPreviewDialogProps): ReactElement {
+  const { t } = useTranslation();
+
   return (
     <EntityModalShell
       open={open}
       onClose={onClose}
-      title={PRODUCT_AI_PREVIEW_BUTTON_LABEL}
+      title={t("app.pageTitles.productAiPreview")}
       maxWidth="sm"
       footer={
         <ModalFooterActions

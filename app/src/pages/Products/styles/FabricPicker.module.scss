@@ -15,7 +15,7 @@
   padding: 0.42rem 0.8rem;
   border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 80%, transparent);
   border-radius: 999rem;
-  background: color-mix(in srgb, #ffffff 84%, var(--app-surface-bg));
+  background: color-mix(in srgb, var(--app-surface-bg) 86%, #ffffff);
   color: var(--text-primary);
   font: inherit;
   font-size: 0.84rem;
@@ -33,7 +33,7 @@
 
 .patternChipActive {
   border-color: color-mix(in srgb, variables.$color-info-dark 58%, var(--app-surface-border));
-  background: color-mix(in srgb, variables.$color-info-dark 12%, #ffffff);
+  background: color-mix(in srgb, variables.$color-info-dark 12%, var(--app-surface-bg));
 }
 
 .colors {
@@ -57,6 +57,7 @@
   cursor: pointer;
   transition:
     border-color 0.2s ease,
+    background 0.2s ease,
     transform 0.2s ease;
 }
 
@@ -65,21 +66,24 @@
 }
 
 .colorSwatchActive {
-  border-color: color-mix(in srgb, variables.$color-info-dark 62%, #ffffff);
-  background: color-mix(in srgb, #ffffff 88%, var(--app-surface-bg));
+  border-color: color-mix(in srgb, variables.$color-info-dark 62%, var(--app-surface-border));
+  background: color-mix(in srgb, var(--app-surface-bg) 90%, #ffffff);
 }
 
 .colorSwatchInner {
   inline-size: 2rem;
   block-size: 2rem;
   border-radius: 999rem;
-  border: 0.0625rem solid rgba(15, 23, 42, 0.12);
-  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+  border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 72%, rgba(15, 23, 42, 0.12));
   box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.65);
 }
 
+.colorSwatchInner:not(.colorSwatchInnerFilled) {
+  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+}
+
 .colorSwatchInnerFilled {
-  background: var(--fabric-swatch-color);
+  box-shadow: inset 0 0.0625rem 0 rgba(15, 23, 42, 0.12);
 }
 
 .colorSwatchLabel {
@@ -89,4 +93,32 @@
   font-weight: 800;
   line-height: 1.3;
   text-align: center;
+}
+
+body[data-theme="dark"] {
+  .patternChip {
+    background: color-mix(in srgb, var(--app-surface-bg) 90%, #0b100c);
+    border-color: color-mix(in srgb, var(--app-surface-border) 84%, rgba(255, 255, 255, 0.1));
+  }
+
+  .patternChipActive {
+    border-color: color-mix(in srgb, variables.$color-primary-main 52%, rgba(255, 255, 255, 0.14));
+    background: color-mix(in srgb, variables.$color-primary-main 18%, var(--app-surface-bg));
+    color: var(--text-primary);
+  }
+
+  .colorSwatchActive {
+    border-color: color-mix(in srgb, variables.$color-primary-main 55%, rgba(255, 255, 255, 0.12));
+    background: color-mix(in srgb, var(--app-surface-bg) 86%, #141a15);
+  }
+
+  .colorSwatchInner:not(.colorSwatchInnerFilled) {
+    border-color: rgba(255, 255, 255, 0.14);
+    background: linear-gradient(135deg, #334155, #1e293b);
+    box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .colorSwatchInnerFilled {
+    box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.1);
+  }
 }

@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactElement } from "react";
+import type { ReactElement } from "react";
 
 import { normalizeFabricHexColor } from "./fabric-selection.util";
 import type { ProductFabricColorRow, ProductFabricRow } from "./product-list.api";
@@ -24,9 +24,7 @@ function FabricColorSwatch({
   readonly onSelect: () => void;
 }): ReactElement {
   const swatchColor = normalizeFabricHexColor(color.hexCode);
-  const swatchStyle = swatchColor
-    ? ({ "--fabric-swatch-color": swatchColor } as CSSProperties)
-    : undefined;
+  const swatchStyle = swatchColor ? { backgroundColor: swatchColor } : undefined;
 
   return (
     <button

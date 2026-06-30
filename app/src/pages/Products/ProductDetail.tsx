@@ -66,7 +66,6 @@ import {
   ProductAiPreviewButton,
   ProductInPersonVisitButton,
 } from "./ProductAiPreviewButtons";
-import { PRODUCT_AI_PREVIEW_BUTTON_LABEL } from "./product-ai-preview.constants";
 import { useProductAiPreviewRoute } from "./useProductAiPreviewRoute";
 import { ProductSetPiecesGallery } from "./ProductSetPiecesGallery";
 import { useFabricSelection } from "./useFabricSelection";
@@ -202,6 +201,8 @@ function MaterialProfileCard({
 }: {
   readonly materialProfile: ProductMaterialProfileRow;
 }): ReactElement {
+  const careInstructions = materialProfile.careInstructions?.trim() ?? "";
+
   return (
     <Paper className={styles.catalogCard} elevation={0}>
       <dl className={styles.catalogCardList}>
@@ -218,8 +219,11 @@ function MaterialProfileCard({
           </div>
         ) : null}
       </dl>
-      {materialProfile.careInstructions?.trim() ? (
-        <p className={styles.catalogCardNote}>{materialProfile.careInstructions.trim()}</p>
+      {careInstructions ? (
+        <div className={styles.catalogCardNoteBlock}>
+          <p className={styles.catalogCardNoteTitle}>دستور نگهداری</p>
+          <p className={styles.catalogCardNote}>{careInstructions}</p>
+        </div>
       ) : null}
     </Paper>
   );
@@ -351,7 +355,7 @@ const ProductDetail = (): ReactElement => {
       title: isPurchaseDialogOpen
         ? `${product.title} — تکمیل خرید`
         : isAiPreviewDialogOpen
-          ? `${product.title} — ${PRODUCT_AI_PREVIEW_BUTTON_LABEL}`
+          ? `${product.title} — ${t("app.pageTitles.productAiPreview")}`
           : product.title,
       description: seoDescription,
       keywords: [product.title, ...product.tags, "نمایشگاه مجازی مبلمان", "محصول دکوراسیون"].join(

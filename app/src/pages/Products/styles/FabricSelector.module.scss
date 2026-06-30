@@ -25,4 +25,20 @@
 
 .aiPreviewAction {
   padding-block-start: 0.1rem;
+  margin-inline: -0.35rem;
+
+  :global(.MuiButton-root) {
+    padding-inline: 0.75rem;
+  }
+}
+
+body[data-theme="dark"] {
+  .shell {
+    border-color: color-mix(in srgb, #94a3b8 18%, transparent);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, #141a15 86%, var(--app-surface-bg)),
+      color-mix(in srgb, #0b100c 88%, #1a2e1f)
+    );
+  }
 }

@@ -508,16 +508,16 @@ export const createAppTheme = (mode: PaletteMode): Theme => {
               backgroundColor: alpha(colors.primary.main, isDark ? 0.14 : 0.1),
               color: isDark ? colors.primary.light : colors.primary.dark,
             },
-          },
-          selected: {
-            color: colors.primary.contrastText,
-            backgroundColor: colors.primary.main,
-            backgroundImage: isDark
-              ? `linear-gradient(135deg, ${colors.primary.dark} 0%, ${colors.primary.main} 50%, ${colors.primary.light} 100%)`
-              : `linear-gradient(135deg, ${colors.primary.dark} 0%, ${colors.primary.main} 48%, ${colors.primary.light} 100%)`,
-            "&:hover": {
+            "&.Mui-selected": {
               color: colors.primary.contrastText,
-              backgroundColor: colors.primary.dark,
+              backgroundColor: colors.primary.main,
+              backgroundImage: isDark
+                ? `linear-gradient(135deg, ${colors.primary.dark} 0%, ${colors.primary.main} 50%, ${colors.primary.light} 100%)`
+                : `linear-gradient(135deg, ${colors.primary.dark} 0%, ${colors.primary.main} 48%, ${colors.primary.light} 100%)`,
+              "&:hover": {
+                color: colors.primary.contrastText,
+                backgroundColor: colors.primary.dark,
+              },
             },
           },
         },

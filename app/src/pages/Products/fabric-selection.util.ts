@@ -7,7 +7,7 @@ export function normalizeFabricHexColor(hexCode?: string | null): string | null 
   }
 
   const withHash = trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
-  return /^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/.test(withHash) ? withHash : null;
+  return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/.test(withHash) ? withHash : null;
 }
 
 export function getActiveFabrics(fabrics: readonly ProductFabricRow[]): ProductFabricRow[] {
