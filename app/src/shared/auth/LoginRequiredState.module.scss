@@ -51,7 +51,6 @@
 
 .eyebrow {
   margin: 0;
-  color: variables.$color-primary-dark;
   font-size: 0.78rem;
   font-weight: variables.$font-weight-semibold;
 }
@@ -99,10 +98,6 @@ body[data-theme="dark"] {
   }
 
   .iconWrap {
-    color: variables.$color-dark-primary-light;
-  }
-
-  .eyebrow {
     color: variables.$color-dark-primary-light;
   }
 }

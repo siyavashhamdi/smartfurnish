@@ -642,7 +642,6 @@
 
 .androidHomeInstallDialogEyebrow {
   margin: 0 0 0.2rem;
-  color: #3da169;
   font-size: 0.74rem;
   font-weight: variables.$font-weight-semibold;
 }
@@ -753,7 +752,6 @@
 
 .iosInstallDialogEyebrow {
   margin: 0 0 0.2rem;
-  color: #2563eb;
   font-size: 0.74rem;
   font-weight: variables.$font-weight-semibold;
 }
@@ -1373,11 +1371,6 @@ body[data-theme="dark"] {
 
   .preferenceIcon {
     background: color-mix(in srgb, variables.$color-primary-main 18%, transparent);
-    color: variables.$color-dark-primary-light;
-  }
-
-  .iosInstallDialogEyebrow,
-  .androidHomeInstallDialogEyebrow {
     color: variables.$color-dark-primary-light;
   }
 

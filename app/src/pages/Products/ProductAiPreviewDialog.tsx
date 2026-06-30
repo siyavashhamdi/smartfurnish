@@ -1,6 +1,5 @@
 import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
-import StorefrontRoundedIcon from "@mui/icons-material/StorefrontRounded";
 import { Alert, Typography } from "@mui/material";
 import {
   useCallback,
@@ -24,7 +23,6 @@ import {
   type ProductAiPreviewStageResult,
 } from "./product-ai-preview.api";
 import {
-  IN_PERSON_VISIT_BUTTON_LABEL,
   PRODUCT_AI_PREVIEW_GENERATE_LABEL,
 } from "./product-ai-preview.constants";
 import type { FabricSelectionController } from "./useFabricSelection";
@@ -207,14 +205,6 @@ export function ProductAiPreviewDialog({
           <ModalFooterActions
             actions={[
               { key: "close", isCloseButton: true, onClick: onClose },
-              {
-                key: "in-person-visit",
-                label: IN_PERSON_VISIT_BUTTON_LABEL,
-                variant: "outlined",
-                color: "primary",
-                icon: <StorefrontRoundedIcon />,
-                onClick: onInPersonVisitClick,
-              },
               ...(result
                 ? [
                     {
@@ -248,6 +238,7 @@ export function ProductAiPreviewDialog({
             <ProductAiPreviewResult
               fabricLabel={result.fabric.label}
               imageUrl={result.image}
+              onInPersonVisitClick={onInPersonVisitClick}
               productTitle={result.product.title}
             />
           ) : (

@@ -9,13 +9,16 @@ import {
 } from "./product-ai-preview.constants";
 
 type ProductAiPreviewButtonProps = {
+  readonly className?: string;
   readonly fullWidth?: boolean;
   readonly onClick: () => void;
   readonly size?: "small" | "medium" | "large";
   readonly tabIndex?: number;
+  readonly variant?: "contained" | "outlined";
 };
 
 export function ProductAiPreviewButton({
+  className,
   fullWidth = false,
   onClick,
   size = "large",
@@ -23,6 +26,7 @@ export function ProductAiPreviewButton({
 }: ProductAiPreviewButtonProps): ReactElement {
   return (
     <Button
+      className={className}
       variant="contained"
       size={size}
       fullWidth={fullWidth}
@@ -36,14 +40,18 @@ export function ProductAiPreviewButton({
 }
 
 export function ProductInPersonVisitButton({
+  className,
   fullWidth = false,
   onClick,
   size = "large",
   tabIndex,
+  variant = "outlined",
 }: ProductAiPreviewButtonProps): ReactElement {
   return (
     <Button
-      variant="outlined"
+      className={className}
+      variant={variant}
+      color="primary"
       size={size}
       fullWidth={fullWidth}
       startIcon={<StorefrontRoundedIcon />}

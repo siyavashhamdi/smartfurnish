@@ -3,6 +3,12 @@
 .root {
   display: flex;
   flex-direction: column;
+  gap: 1rem;
+}
+
+.resultCard {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--app-surface-border);
   border-radius: variables.$border-radius-lg;
@@ -63,4 +69,73 @@
   object-fit: contain;
   border: 2px solid color-mix(in srgb, variables.$color-secondary-main 28%, transparent);
   border-radius: variables.$border-radius-md;
+}
+
+.disclaimerBanner {
+  margin: 0;
+  border-block-start: 1px solid var(--app-surface-border);
+  border-radius: 0;
+  background: color-mix(in srgb, variables.$color-primary-main 8%, var(--app-surface-elevated)) !important;
+  color: var(--app-text-secondary) !important;
+  font-size: 0.8125rem;
+  line-height: 1.65;
+
+  :global(.MuiAlert-icon) {
+    color: variables.$color-secondary-main;
+    align-self: flex-start;
+    margin-block-start: 0.1rem;
+  }
+
+  :global(.MuiAlert-message) {
+    padding-block: 0.15rem;
+  }
+}
+
+.inPersonVisitSection {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, variables.$color-secondary-main 22%, transparent);
+  border-radius: variables.$border-radius-lg;
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, variables.$color-primary-main 10%, var(--app-surface-elevated)) 0%,
+      color-mix(in srgb, variables.$color-secondary-main 8%, var(--app-surface-elevated)) 100%
+    );
+}
+
+.inPersonVisitCopy {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1.1rem 1.15rem 0;
+}
+
+.inPersonVisitEyebrow {
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.inPersonVisitTitle {
+  margin: 0;
+  color: var(--app-text-primary);
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.inPersonVisitDescription {
+  margin: 0;
+  color: var(--app-text-secondary) !important;
+  line-height: 1.75;
+}
+
+.inPersonVisitButtonWrap {
+  padding: 0;
+
+  :global(.MuiButton-root) {
+    border-radius: variables.$border-radius-md;
+    border: none;
+  }
 }

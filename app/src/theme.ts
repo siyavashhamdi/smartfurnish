@@ -241,6 +241,7 @@ export const createAppTheme = (mode: PaletteMode): Theme => {
         lineHeight: 1.4,
         textTransform: "uppercase",
         letterSpacing: "0.1em",
+        color: isDark ? darkColors.primary.light : lightColors.primary.dark,
       },
     },
     shape: {

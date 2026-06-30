@@ -447,6 +447,12 @@
   }
 }
 
+@mixin eyebrow-text {
+  color: var(--app-eyebrow-color);
+  font-size: 0.78rem;
+  font-weight: variables.$font-weight-semibold;
+}
+
 @mixin surface-hero($glow-position: top right) {
   @include surface-panel-border;
   background-color: #ffffff;

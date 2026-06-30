@@ -286,7 +286,6 @@
   font-size: 0.8rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: variables.$color-primary-main;
   font-weight: 600;
 }
 
@@ -428,7 +427,6 @@
   font-size: 0.78rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: variables.$color-primary-dark;
   font-weight: 600;
   margin-bottom: 0.5rem;
 }
@@ -988,10 +986,6 @@ body[data-theme="dark"] {
         transparent 50%
       ),
       var(--app-layout-bg);
-  }
-
-  .sectionEyebrow {
-    color: variables.$color-dark-primary-light;
   }
 
   .navLink:hover {

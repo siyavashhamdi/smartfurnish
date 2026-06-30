@@ -54,6 +54,7 @@ body {
   --app-focus-ring: #c9a66b;
   --app-icon-button-color: #9a7848;
   --app-icon-button-hover-color: #c9a66b;
+  --app-eyebrow-color: #9a7848;
   --text-primary: #171717;
   --text-secondary: #5c5c5c;
   --divider: rgba(23, 23, 23, 0.08);
@@ -127,6 +128,7 @@ body {
   --app-focus-ring: #d9c39a;
   --app-icon-button-color: #e8d3ae;
   --app-icon-button-hover-color: #f0ddb8;
+  --app-eyebrow-color: #e8d3ae;
 }
 
 [data-theme="dark"] ::-webkit-scrollbar-track {
@@ -144,6 +146,12 @@ body {
 [dir="rtl"] {
   direction: rtl;
   text-align: right;
+}
+
+// Section kickers / eyebrows (e.g. «قدم بعدی») — theme-aware contrast in light and dark.
+[class*="Eyebrow_"]:not([class*="purchaseEyebrow"]),
+[class*="_eyebrow_"] {
+  color: var(--app-eyebrow-color);
 }
 
 ::-webkit-scrollbar {

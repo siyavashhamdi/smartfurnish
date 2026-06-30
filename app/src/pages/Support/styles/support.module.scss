@@ -84,9 +84,7 @@
 .heroText p,
 .sectionHeading p,
 .panelIntro p {
-  color: variables.$color-primary-main;
-  font-size: 0.78rem;
-  font-weight: variables.$font-weight-semibold;
+  @include mixins.eyebrow-text;
 }
 
 .heroText h2 {
@@ -181,9 +179,7 @@
 }
 
 .contactSectionIntro p {
-  color: variables.$color-primary-main;
-  font-size: 0.78rem;
-  font-weight: variables.$font-weight-semibold;
+  @include mixins.eyebrow-text;
 }
 
 .contactSectionIntro h3 {
@@ -516,9 +512,7 @@
 
 .faqHeroEyebrow {
   margin: 0;
-  color: variables.$color-primary-main;
-  font-size: 0.78rem;
-  font-weight: variables.$font-weight-semibold;
+  @include mixins.eyebrow-text;
 }
 
 .faqHeroHeading {
