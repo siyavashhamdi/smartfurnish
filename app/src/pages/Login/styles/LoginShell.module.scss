@@ -329,3 +329,16 @@
     }
   }
 }
+
+body[data-theme="dark"] {
+  .welcomeTitle {
+    background: linear-gradient(
+      135deg,
+      variables.$color-dark-primary-light 0%,
+      variables.$color-primary-main 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}

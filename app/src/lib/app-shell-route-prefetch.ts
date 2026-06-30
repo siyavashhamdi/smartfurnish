@@ -7,6 +7,7 @@ import {
   type AppShellNavItemId,
 } from "../layouts/app-shell-nav-items";
 import {
+  importLanding,
   importProductsIndex,
   importMoreIndex,
   importNotificationsIndex,
@@ -20,6 +21,7 @@ import { APP_SHELL_ROUTES } from "../routing/app-shell-routes";
 type RouteLoader = () => Promise<unknown>;
 
 const NAV_ITEM_LOADERS: Record<AppShellNavItemId, RouteLoader> = {
+  ourStory: importLanding,
   products: importProductsIndex,
   payments: importPaymentsIndex,
   notifications: importNotificationsIndex,
@@ -79,13 +81,13 @@ export function scheduleAppShellRoutePrefetch(context: AppShellNavContext): void
     return;
   }
 
-  const productsItem = APP_SHELL_NAV_ITEMS.find((item) => item.id === "products");
-  if (productsItem) {
-    prefetchAppShellNavRoute(productsItem, context);
+  const ourStoryItem = APP_SHELL_NAV_ITEMS.find((item) => item.id === "ourStory");
+  if (ourStoryItem) {
+    prefetchAppShellNavRoute(ourStoryItem, context);
   }
 
   const visibleItems = filterAppShellNavItems(APP_SHELL_NAV_ITEMS, context);
-  const remainingItems = visibleItems.filter((item) => item.id !== "products");
+  const remainingItems = visibleItems.filter((item) => item.id !== "ourStory");
   if (remainingItems.length === 0) {
     return;
   }

@@ -3,19 +3,19 @@ import { alpha, createTheme, type SxProps, type Theme } from "@mui/material/styl
 
 type PaletteMode = "light" | "dark";
 
-/** Forest + brass palette — light mode uses forest primary, dark mode uses brass primary. */
+/** Gold primary + forest secondary — premium brass CTAs in both modes. */
 const lightColors = {
   primary: {
-    main: "#1a2e1f",
-    light: "#2a4530",
-    dark: "#0f1a12",
-    contrastText: "#faf8f5",
-  },
-  secondary: {
     main: "#c9a66b",
     light: "#e8d3ae",
     dark: "#9a7848",
     contrastText: "#1a2e1f",
+  },
+  secondary: {
+    main: "#1a2e1f",
+    light: "#2a4530",
+    dark: "#0f1a12",
+    contrastText: "#faf8f5",
   },
   success: {
     main: "#2f6b4f",
@@ -54,15 +54,15 @@ const lightColors = {
 const darkColors = {
   primary: {
     main: "#d9c39a",
-    light: "#e8d3ae",
-    dark: "#9a7848",
+    light: "#f0ddb8",
+    dark: "#c9a66b",
     contrastText: "#0b100c",
   },
   secondary: {
-    main: "#c9a66b",
-    light: "#e8d3ae",
-    dark: "#9a7848",
-    contrastText: "#0b100c",
+    main: "#2a4530",
+    light: "#4a6b52",
+    dark: "#1a2e1f",
+    contrastText: "#f5f1eb",
   },
   success: {
     main: "#7fbf98",
@@ -107,10 +107,10 @@ const FONT_FAMILY_STACK = [
 ].join(",");
 
 const lightShadows = {
-  sm: "0 0.0625rem 0.125rem 0 rgba(26, 46, 31, 0.04)",
-  md: "0 0.125rem 0.5rem rgba(26, 46, 31, 0.06)",
-  lg: "0 0.25rem 1rem rgba(26, 46, 31, 0.08)",
-  xl: "0 0.625rem 1.5rem rgba(26, 46, 31, 0.12)",
+  sm: "0 0.0625rem 0.125rem 0 rgba(154, 120, 72, 0.08)",
+  md: "0 0.125rem 0.5rem rgba(154, 120, 72, 0.12)",
+  lg: "0 0.25rem 1rem rgba(154, 120, 72, 0.16)",
+  xl: "0 0.625rem 1.5rem rgba(154, 120, 72, 0.2)",
 } as const;
 
 const darkShadows = {
@@ -319,21 +319,28 @@ export const createAppTheme = (mode: PaletteMode): Theme => {
           },
           contained: {
             boxShadow: isDark
-              ? "0 4px 14px rgba(201, 166, 107, 0.18)"
-              : "0 4px 14px rgba(26, 46, 31, 0.22)",
+              ? "0 4px 14px rgba(201, 166, 107, 0.22)"
+              : "0 4px 14px rgba(201, 166, 107, 0.28)",
             "&:hover": {
               boxShadow: isDark
-                ? "0 6px 20px rgba(201, 166, 107, 0.24)"
-                : "0 6px 20px rgba(26, 46, 31, 0.28)",
+                ? "0 6px 20px rgba(201, 166, 107, 0.3)"
+                : "0 6px 20px rgba(201, 166, 107, 0.36)",
             },
           },
           containedPrimary: {
             color: colors.primary.contrastText,
+            background: isDark
+              ? `linear-gradient(135deg, ${colors.primary.dark} 0%, ${colors.primary.main} 50%, ${colors.primary.light} 100%)`
+              : `linear-gradient(135deg, ${colors.primary.dark} 0%, ${colors.primary.main} 48%, ${colors.primary.light} 100%)`,
             "&:hover": {
               color: colors.primary.contrastText,
+              background: isDark
+                ? `linear-gradient(135deg, ${colors.primary.main} 0%, ${colors.primary.light} 100%)`
+                : `linear-gradient(135deg, ${colors.primary.main} 0%, ${colors.primary.light} 100%)`,
             },
             "&.Mui-disabled": {
               color: alpha(colors.primary.contrastText, 0.45),
+              background: alpha(colors.primary.main, 0.35),
             },
           },
           containedSecondary: {
@@ -376,11 +383,11 @@ export const createAppTheme = (mode: PaletteMode): Theme => {
             },
           },
           outlinedSecondary: {
-            color: colors.secondary.dark,
-            borderColor: alpha(colors.secondary.main, 0.45),
+            color: isDark ? colors.secondary.light : colors.secondary.main,
+            borderColor: alpha(colors.secondary.main, isDark ? 0.4 : 0.35),
             "&:hover": {
-              color: colors.secondary.main,
-              backgroundColor: alpha(colors.secondary.main, 0.08),
+              color: isDark ? colors.secondary.contrastText : colors.secondary.dark,
+              backgroundColor: alpha(colors.secondary.main, isDark ? 0.14 : 0.08),
             },
           },
           text: {
@@ -412,15 +419,16 @@ export const createAppTheme = (mode: PaletteMode): Theme => {
         styleOverrides: {
           root: {
             borderRadius: "0.625rem",
-            color: isDark ? alpha("#f5f1eb", 0.78) : alpha("#171717", 0.72),
+            color: isDark ? colors.primary.light : colors.primary.dark,
             transition:
               "color 180ms ease, background-color 180ms ease, transform 180ms ease, border-color 180ms ease",
             "& .MuiSvgIcon-root": {
               fontSize: "1.25rem",
+              opacity: 1,
             },
             "&:hover": {
-              color: isDark ? colors.primary.light : colors.primary.main,
-              backgroundColor: alpha(colors.primary.main, isDark ? 0.14 : 0.08),
+              color: isDark ? colors.primary.main : colors.primary.main,
+              backgroundColor: alpha(colors.primary.main, isDark ? 0.16 : 0.1),
             },
             "&:active": {
               transform: "scale(0.96)",
@@ -434,14 +442,14 @@ export const createAppTheme = (mode: PaletteMode): Theme => {
             },
           },
           colorSecondary: {
-            color: colors.secondary.dark,
+            color: isDark ? colors.secondary.light : colors.secondary.main,
             "&:hover": {
-              color: colors.secondary.main,
+              color: isDark ? colors.secondary.contrastText : colors.secondary.dark,
               backgroundColor: alpha(colors.secondary.main, 0.12),
             },
           },
           colorInherit: {
-            color: isDark ? alpha("#f5f1eb", 0.82) : alpha("#171717", 0.78),
+            color: isDark ? alpha("#f5f1eb", 0.88) : alpha("#171717", 0.78),
           },
           colorError: {
             color: colors.error.main,
@@ -458,11 +466,59 @@ export const createAppTheme = (mode: PaletteMode): Theme => {
       },
       MuiSvgIcon: {
         styleOverrides: {
+          root: {
+            color: isDark ? alpha(colors.primary.light, 0.92) : alpha(colors.primary.dark, 0.88),
+          },
+          colorPrimary: {
+            color: colors.primary.main,
+          },
+          colorSecondary: {
+            color: isDark ? colors.secondary.light : colors.secondary.main,
+          },
+          colorAction: {
+            color: isDark ? alpha("#f5f1eb", 0.78) : alpha("#171717", 0.62),
+          },
+          colorDisabled: {
+            color: colors.grey[400],
+          },
           fontSizeSmall: {
             fontSize: "1.125rem",
           },
           fontSizeMedium: {
             fontSize: "1.25rem",
+          },
+        },
+      },
+      MuiListItemIcon: {
+        styleOverrides: {
+          root: {
+            color: isDark ? colors.primary.light : colors.primary.dark,
+            minWidth: "2.5rem",
+            "& .MuiSvgIcon-root": {
+              opacity: 1,
+            },
+          },
+        },
+      },
+      MuiPaginationItem: {
+        styleOverrides: {
+          root: {
+            color: isDark ? alpha("#f5f1eb", 0.78) : colors.grey[600],
+            "&:hover": {
+              backgroundColor: alpha(colors.primary.main, isDark ? 0.14 : 0.1),
+              color: isDark ? colors.primary.light : colors.primary.dark,
+            },
+          },
+          selected: {
+            color: colors.primary.contrastText,
+            backgroundColor: colors.primary.main,
+            backgroundImage: isDark
+              ? `linear-gradient(135deg, ${colors.primary.dark} 0%, ${colors.primary.main} 50%, ${colors.primary.light} 100%)`
+              : `linear-gradient(135deg, ${colors.primary.dark} 0%, ${colors.primary.main} 48%, ${colors.primary.light} 100%)`,
+            "&:hover": {
+              color: colors.primary.contrastText,
+              backgroundColor: colors.primary.dark,
+            },
           },
         },
       },
@@ -638,7 +694,7 @@ export const createAppTheme = (mode: PaletteMode): Theme => {
             backgroundColor: isDark ? "#141a15" : "#ffffff",
             color: isDark ? "#f5f1eb" : "#171717",
             "& .MuiIconButton-root": {
-              color: isDark ? "#f5f1eb" : "#171717",
+              color: isDark ? colors.primary.light : colors.primary.dark,
             },
             "& .MuiTypography-root": {
               color: isDark ? "#f5f1eb" : "#171717",
@@ -788,7 +844,7 @@ export const createAppTheme = (mode: PaletteMode): Theme => {
         styleOverrides: {
           root: {
             borderRadius: 4,
-            bgcolor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(26, 46, 31, 0.08)",
+            bgcolor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(201, 166, 107, 0.12)",
           },
         },
       },

@@ -1,5 +1,6 @@
 @use "../../../styles/variables" as variables;
 @use "../../../styles/mixins" as mixins;
+@use "../../../styles/buttons" as buttons;
 
 .credentialHeader {
   display: flex;
@@ -71,7 +72,8 @@
   min-height: 2.75rem;
 }
 
-.sendCodeButton {
+.sendCodeButton:global(.MuiButton-root) {
+  @include buttons.branded-contained-button;
   align-self: stretch;
   text-transform: none;
   border-radius: variables.$border-radius-md;

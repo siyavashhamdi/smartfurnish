@@ -1,44 +1,24 @@
 import {
   useCallback,
-  useEffect,
   useMemo,
-  useState,
   type KeyboardEvent,
   type ReactElement,
   type ReactNode,
 } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  AutoStoriesRounded,
-  DarkMode,
-  FavoriteRounded,
-  LightMode,
-  LocalFloristRounded,
-  LockRounded,
-  MenuRounded,
+  AutoAwesomeRounded,
+  MenuBookRounded,
+  PersonRounded,
+  PhotoCameraRounded,
   PlayCircleOutlineRounded,
-  SchoolRounded,
   SecurityRounded,
-  SpaRounded,
   SupportAgentRounded,
   VerifiedUserRounded,
 } from "@mui/icons-material";
-import {
-  Avatar,
-  Box,
-  Button,
-  Drawer,
-  IconButton,
-  List,
-  ListItemButton,
-  ListItemText,
-  Skeleton,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Skeleton, Typography } from "@mui/material";
 import { useAuth } from "../../contexts/AuthContext";
-import { useThemeMode } from "../../contexts/ThemeContext";
 import { API_CONFIG } from "../../config";
-import { useMe } from "../../hooks/useMe";
 import { usePageSeoOverride } from "../../hooks/usePageSeoOverride";
 import { useScrollReveal } from "../../hooks/useScrollReveal";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -49,14 +29,7 @@ import {
 } from "../../seo/build-structured-data";
 import { resolveAppBaseUrl } from "../../seo/build-page-seo";
 import { buildSeoDescription, resolveAbsoluteUrl } from "../../seo/seo-text.util";
-import AppTooltip from "../../shared/AppTooltip";
-import { AvatarInitial } from "../../shared/display/AvatarInitial";
 import EnamadTrustSeal from "../../shared/EnamadTrustSeal";
-import {
-  resolveAvatarInitial,
-  resolveMeUserDisplayName,
-  resolveStoredUserDisplayName,
-} from "../../utils/storedUser.util";
 import ProductCard from "../Products/ProductCard";
 import { useLandingFeaturedProducts } from "./useLandingFeaturedProducts";
 import styles from "./styles/landing.module.scss";
@@ -119,24 +92,30 @@ const SectionHeader = ({
   </Box>
 );
 
+type NavCardProps = {
+  readonly to: string;
+  readonly className?: string;
+  readonly style?: React.CSSProperties;
+  readonly children: ReactNode;
+};
+
+const NavCard = ({ to, className, style, children }: NavCardProps): ReactElement => (
+  <Box
+    component={Link}
+    to={to}
+    className={[styles.navCard, className].filter(Boolean).join(" ")}
+    style={style}
+  >
+    {children}
+  </Box>
+);
+
 const Landing = (): ReactElement => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { isAuthenticated, user: authUser } = useAuth();
-  const { user: meUser, avatarUrl, loading: userLoading } = useMe();
-  const { mode, toggleTheme } = useThemeMode();
-  const [navScrolled, setNavScrolled] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   const { products: featuredProducts, loading: productsLoading } = useLandingFeaturedProducts();
-
-  const { displayName, avatarLetter } = useMemo(() => {
-    const name =
-      userLoading || !meUser
-        ? resolveStoredUserDisplayName(authUser, authUser?.username ?? "")
-        : resolveMeUserDisplayName(meUser, authUser?.username ?? "");
-    return { displayName: name, avatarLetter: resolveAvatarInitial(name) };
-  }, [authUser, meUser, userLoading]);
 
   const pageSeoOverride = useMemo(() => {
     const appUrl = resolveAppBaseUrl(API_CONFIG.APP_URL);
@@ -147,7 +126,7 @@ const Landing = (): ReactElement => {
     const logoUrl = buildStructuredDataLogoUrl(appUrl, "/icons/icon-512.png");
 
     return {
-      title: t("pages.landing.pageTitle"),
+      title: t("app.pageTitles.landing"),
       description,
       canonicalPath,
       robots: t("seo.pages.landing.robots"),
@@ -164,25 +143,6 @@ const Landing = (): ReactElement => {
   }, [t]);
 
   usePageSeoOverride(pageSeoOverride);
-
-  useEffect(() => {
-    const handleScroll = (): void => {
-      setNavScrolled(window.scrollY > 24);
-    };
-
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
-
-  const scrollToSection = useCallback((sectionId: string): void => {
-    setMobileNavOpen(false);
-    const element = document.getElementById(sectionId);
-    element?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
 
   const handleProductOpen = useCallback(
     (productId: string): void => {
@@ -205,59 +165,59 @@ const Landing = (): ReactElement => {
     ? t("pages.landing.nav.myProducts")
     : t("pages.landing.hero.ctaPrimary");
 
-  const navLinks = [
-    { id: "features", label: t("pages.landing.nav.features") },
-    { id: "products", label: t("pages.landing.nav.products") },
-    { id: "steps", label: t("pages.landing.nav.howItWorks") },
-    { id: "support", label: t("pages.landing.nav.support"), href: APP_SHELL_ROUTES.support },
-  ] as const;
-
   const featureItems = [
     {
       key: "products",
-      icon: <SchoolRounded />,
+      to: APP_SHELL_ROUTES.products,
+      icon: <MenuBookRounded />,
       title: t("pages.landing.features.items.products.title"),
       description: t("pages.landing.features.items.products.description"),
     },
     {
       key: "path",
-      icon: <AutoStoriesRounded />,
+      to: APP_SHELL_ROUTES.products,
+      icon: <AutoAwesomeRounded />,
       title: t("pages.landing.features.items.path.title"),
       description: t("pages.landing.features.items.path.description"),
     },
     {
       key: "support",
+      to: APP_SHELL_ROUTES.support,
       icon: <SupportAgentRounded />,
       title: t("pages.landing.features.items.support.title"),
       description: t("pages.landing.features.items.support.description"),
     },
     {
-      key: "payment",
-      icon: <LockRounded />,
-      title: t("pages.landing.features.items.payment.title"),
-      description: t("pages.landing.features.items.payment.description"),
+      key: "profile",
+      to: APP_SHELL_ROUTES.profile,
+      icon: <PersonRounded />,
+      title: t("pages.landing.features.items.profile.title"),
+      description: t("pages.landing.features.items.profile.description"),
     },
   ] as const;
 
   const stepItems = [
     {
       key: "signup",
+      to: isAuthenticated ? APP_SHELL_ROUTES.profile : APP_SHELL_ROUTES.profileSignup,
       number: "۰۱",
-      icon: <FavoriteRounded />,
+      icon: <PersonRounded />,
       title: t("pages.landing.steps.items.signup.title"),
       description: t("pages.landing.steps.items.signup.description"),
     },
     {
       key: "browse",
+      to: APP_SHELL_ROUTES.products,
       number: "۰۲",
-      icon: <LocalFloristRounded />,
+      icon: <MenuBookRounded />,
       title: t("pages.landing.steps.items.browse.title"),
       description: t("pages.landing.steps.items.browse.description"),
     },
     {
       key: "learn",
+      to: APP_SHELL_ROUTES.products,
       number: "۰۳",
-      icon: <SpaRounded />,
+      icon: <PhotoCameraRounded />,
       title: t("pages.landing.steps.items.learn.title"),
       description: t("pages.landing.steps.items.learn.description"),
     },
@@ -266,224 +226,29 @@ const Landing = (): ReactElement => {
   const trustItems = [
     {
       key: "privacy",
+      to: APP_SHELL_ROUTES.morePrivacyPolicy,
       icon: <SecurityRounded />,
       title: t("pages.landing.trust.items.privacy.title"),
       description: t("pages.landing.trust.items.privacy.description"),
     },
     {
-      key: "secure",
+      key: "support",
+      to: APP_SHELL_ROUTES.support,
       icon: <VerifiedUserRounded />,
-      title: t("pages.landing.trust.items.secure.title"),
-      description: t("pages.landing.trust.items.secure.description"),
+      title: t("pages.landing.trust.items.support.title"),
+      description: t("pages.landing.trust.items.support.description"),
     },
     {
-      key: "verified",
+      key: "more",
+      to: APP_SHELL_ROUTES.more,
       icon: <PlayCircleOutlineRounded />,
-      title: t("pages.landing.trust.items.verified.title"),
-      description: t("pages.landing.trust.items.verified.description"),
+      title: t("pages.landing.trust.items.more.title"),
+      description: t("pages.landing.trust.items.more.description"),
     },
   ] as const;
 
   return (
-    <Box className={styles.page} aria-label={t("pages.landing.pageTitle")}>
-      <Box className={styles.ambientGlow} aria-hidden />
-      <Box className={styles.orbOne} aria-hidden />
-      <Box className={styles.orbTwo} aria-hidden />
-      <Box className={styles.orbThree} aria-hidden />
-      <Box className={styles.sparkleField} aria-hidden>
-        {Array.from({ length: 12 }, (_, index) => (
-          <span
-            key={`sparkle-${index}`}
-            className={styles.sparkle}
-            style={{ "--i": index } as React.CSSProperties}
-          />
-        ))}
-      </Box>
-      <Box className={styles.petalField} aria-hidden>
-        {Array.from({ length: 6 }, (_, index) => (
-          <span
-            key={`petal-${index}`}
-            className={styles.petal}
-            style={{ "--i": index } as React.CSSProperties}
-          />
-        ))}
-      </Box>
-
-      <Box
-        component="header"
-        className={[styles.header, navScrolled ? styles.headerScrolled : ""]
-          .filter(Boolean)
-          .join(" ")}
-      >
-        <Box className={styles.headerInner}>
-          <Link to={APP_SHELL_ROUTES.landing} className={styles.brandLink}>
-            <Box
-              component="img"
-              src="/logo.png"
-              alt={t("layout.header.brand.title")}
-              className={styles.brandLogo}
-            />
-            <Box className={styles.brandText}>
-              <Typography component="span" className={styles.brandName}>
-                {t("layout.header.brand.title")}
-              </Typography>
-              <Typography component="span" className={styles.brandTagline}>
-                {t("layout.header.brand.publicTagline")}
-              </Typography>
-            </Box>
-          </Link>
-
-          <Box
-            component="nav"
-            className={styles.desktopNav}
-            aria-label={t("pages.landing.pageTitle")}
-          >
-            {navLinks.map((link) =>
-              "href" in link && link.href ? (
-                <Link key={link.id} to={link.href} className={styles.navLink}>
-                  {link.label}
-                </Link>
-              ) : (
-                <button
-                  key={link.id}
-                  type="button"
-                  className={styles.navLink}
-                  onClick={() => scrollToSection(link.id)}
-                >
-                  {link.label}
-                </button>
-              )
-            )}
-          </Box>
-
-          <Box className={styles.headerActions}>
-            <AppTooltip
-              title={
-                mode === "light"
-                  ? t("auth.login.theme.enableDarkMode")
-                  : t("auth.login.theme.enableLightMode")
-              }
-            >
-              <IconButton
-                onClick={toggleTheme}
-                className={styles.iconButton}
-                aria-label={t("auth.login.theme.toggleTheme")}
-              >
-                {mode === "light" ? <DarkMode /> : <LightMode />}
-              </IconButton>
-            </AppTooltip>
-
-            {isAuthenticated ? (
-              <AppTooltip title={t("app.pageTitles.profile")}>
-                <Link
-                  to={APP_SHELL_ROUTES.profile}
-                  className={styles.userProfileChip}
-                  aria-label={t("app.pageTitles.profile")}
-                >
-                  <Avatar
-                    className={styles.userProfileAvatar}
-                    src={avatarUrl ?? undefined}
-                    alt={displayName}
-                  >
-                    <AvatarInitial initial={avatarLetter} />
-                  </Avatar>
-                  <span className={styles.userProfileName}>{displayName}</span>
-                </Link>
-              </AppTooltip>
-            ) : null}
-
-            {!isAuthenticated ? (
-              <>
-                <Button
-                  component={Link}
-                  to={APP_SHELL_ROUTES.profileLogin}
-                  className={styles.navGhostButton}
-                >
-                  {t("pages.landing.nav.login")}
-                </Button>
-                <Button
-                  component={Link}
-                  to={APP_SHELL_ROUTES.profileSignup}
-                  variant="contained"
-                  className={styles.navPrimaryButton}
-                >
-                  {t("pages.landing.nav.signup")}
-                </Button>
-              </>
-            ) : (
-              <Button
-                component={Link}
-                to={APP_SHELL_ROUTES.products}
-                variant="contained"
-                className={styles.navPrimaryButton}
-              >
-                {t("pages.landing.nav.viewProducts")}
-              </Button>
-            )}
-
-            <IconButton
-              className={[styles.iconButton, styles.mobileMenuButton].join(" ")}
-              aria-label={t("pages.landing.nav.features")}
-              onClick={() => setMobileNavOpen(true)}
-            >
-              <MenuRounded />
-            </IconButton>
-          </Box>
-        </Box>
-      </Box>
-
-      <Drawer
-        anchor="left"
-        open={mobileNavOpen}
-        onClose={() => setMobileNavOpen(false)}
-        PaperProps={{ className: styles.mobileDrawer }}
-      >
-        <List className={styles.mobileNavList}>
-          {navLinks.map((link) =>
-            "href" in link && link.href ? (
-              <ListItemButton
-                key={link.id}
-                component={Link}
-                to={link.href}
-                onClick={() => setMobileNavOpen(false)}
-              >
-                <ListItemText primary={link.label} />
-              </ListItemButton>
-            ) : (
-              <ListItemButton key={link.id} onClick={() => scrollToSection(link.id)}>
-                <ListItemText primary={link.label} />
-              </ListItemButton>
-            )
-          )}
-          {!isAuthenticated ? (
-            <>
-              <ListItemButton
-                component={Link}
-                to={APP_SHELL_ROUTES.profileLogin}
-                onClick={() => setMobileNavOpen(false)}
-              >
-                <ListItemText primary={t("pages.landing.nav.login")} />
-              </ListItemButton>
-              <ListItemButton
-                component={Link}
-                to={APP_SHELL_ROUTES.profileSignup}
-                onClick={() => setMobileNavOpen(false)}
-              >
-                <ListItemText primary={t("pages.landing.nav.signup")} />
-              </ListItemButton>
-            </>
-          ) : (
-            <ListItemButton
-              component={Link}
-              to={APP_SHELL_ROUTES.profile}
-              onClick={() => setMobileNavOpen(false)}
-            >
-              <ListItemText primary={displayName} secondary={t("app.pageTitles.profile")} />
-            </ListItemButton>
-          )}
-        </List>
-      </Drawer>
-
+    <Box className={[styles.page, styles.pageEmbedded].join(" ")} aria-label={t("app.pageTitles.landing")}>
       <Box component="main" className={styles.main}>
         <Box component="section" className={styles.hero} aria-labelledby="landing-hero-title">
           <Box className={styles.heroContent}>
@@ -546,16 +311,10 @@ const Landing = (): ReactElement => {
 
           <Box className={styles.heroVisual} aria-hidden>
             <Box className={styles.heroCard}>
-              <Box className={styles.heroCardGlow} />
               <Box component="img" src="/logo.png" alt="" className={styles.heroCardLogo} />
               <Typography className={styles.heroCardBadge}>
                 {t("pages.landing.hero.badge")}
               </Typography>
-              <Box className={styles.heroCardRings}>
-                <span className={styles.heroRing} />
-                <span className={styles.heroRing} />
-                <span className={styles.heroRing} />
-              </Box>
             </Box>
           </Box>
         </Box>
@@ -568,8 +327,9 @@ const Landing = (): ReactElement => {
           />
           <Box className={styles.featureGrid}>
             {featureItems.map((item, index) => (
-              <Box
+              <NavCard
                 key={item.key}
+                to={item.to}
                 className={styles.featureCard}
                 style={{ "--card-index": index } as React.CSSProperties}
               >
@@ -580,7 +340,7 @@ const Landing = (): ReactElement => {
                 <Typography variant="body2" className={styles.featureDescription}>
                   {item.description}
                 </Typography>
-              </Box>
+              </NavCard>
             ))}
           </Box>
         </RevealSection>
@@ -593,8 +353,9 @@ const Landing = (): ReactElement => {
           />
           <Box className={styles.stepsTrack}>
             {stepItems.map((step, index) => (
-              <Box
+              <NavCard
                 key={step.key}
+                to={step.to}
                 className={styles.stepCard}
                 style={{ "--card-index": index } as React.CSSProperties}
               >
@@ -606,7 +367,7 @@ const Landing = (): ReactElement => {
                 <Typography variant="body2" className={styles.stepDescription}>
                   {step.description}
                 </Typography>
-              </Box>
+              </NavCard>
             ))}
           </Box>
         </RevealSection>
@@ -666,8 +427,9 @@ const Landing = (): ReactElement => {
           />
           <Box className={styles.trustGrid}>
             {trustItems.map((item, index) => (
-              <Box
+              <NavCard
                 key={item.key}
+                to={item.to}
                 className={styles.trustCard}
                 style={{ "--card-index": index } as React.CSSProperties}
               >
@@ -676,7 +438,7 @@ const Landing = (): ReactElement => {
                   {item.title}
                 </Typography>
                 <Typography variant="body2">{item.description}</Typography>
-              </Box>
+              </NavCard>
             ))}
           </Box>
           <Box className={styles.enamadWrap}>
@@ -686,7 +448,6 @@ const Landing = (): ReactElement => {
 
         <RevealSection className={styles.ctaSection} delay={200}>
           <Box className={styles.ctaCard}>
-            <Box className={styles.ctaGlow} aria-hidden />
             <Typography variant="h4" component="h2" className={styles.ctaTitle}>
               {t("pages.landing.cta.title")}
             </Typography>
@@ -717,42 +478,6 @@ const Landing = (): ReactElement => {
             </Box>
           </Box>
         </RevealSection>
-      </Box>
-
-      <Box component="footer" className={styles.footer}>
-        <Box className={styles.footerInner}>
-          <Box className={styles.footerBrand}>
-            <Box component="img" src="/logo.png" alt="" className={styles.footerLogo} />
-            <Typography className={styles.footerBrandName}>
-              {t("layout.header.brand.title")}
-            </Typography>
-            <Typography className={styles.footerTagline}>
-              {t("pages.landing.footer.tagline")}
-            </Typography>
-          </Box>
-          <Box
-            component="nav"
-            className={styles.footerLinks}
-            aria-label={t("layout.footer.ariaLabel")}
-          >
-            <Link to={APP_SHELL_ROUTES.products} className={styles.footerLink}>
-              {t("pages.landing.footer.links.products")}
-            </Link>
-            <Link to={APP_SHELL_ROUTES.support} className={styles.footerLink}>
-              {t("pages.landing.footer.links.support")}
-            </Link>
-            <Link to={APP_SHELL_ROUTES.moreAbout} className={styles.footerLink}>
-              {t("pages.landing.footer.links.about")}
-            </Link>
-            <Link to={APP_SHELL_ROUTES.morePrivacyPolicy} className={styles.footerLink}>
-              {t("pages.landing.footer.links.privacy")}
-            </Link>
-            <Link to={APP_SHELL_ROUTES.moreTermsOfUse} className={styles.footerLink}>
-              {t("pages.landing.footer.links.terms")}
-            </Link>
-          </Box>
-          <Typography className={styles.footerCopyright}>{t("layout.footer.copyright")}</Typography>
-        </Box>
       </Box>
     </Box>
   );

@@ -1,4 +1,5 @@
 @use "../../../styles/variables" as variables;
+@use "../../../styles/buttons" as buttons;
 
 // 56.25rem ≈ 900px — brand row vs two-column header
 $layout-break: 56.25rem;
@@ -42,8 +43,9 @@ $hairline: 0.0625rem solid;
 }
 
 .logo {
-  inline-size: 3rem;
-  block-size: 3rem;
+  block-size: clamp(3.75rem, 5.8vw, 5rem);
+  inline-size: auto;
+  aspect-ratio: 847 / 822;
   object-fit: contain;
   border-radius: variables.$brand-logo-radius;
 }
@@ -94,8 +96,8 @@ $hairline: 0.0625rem solid;
   padding-inline: 0.3rem;
 }
 
-.iconButton {
-  color: var(--text-secondary);
+.iconButton:global(.MuiIconButton-root) {
+  @include buttons.panel-icon-button;
 }
 
 .userChip {
@@ -121,7 +123,8 @@ $hairline: 0.0625rem solid;
   block-size: variables.$spacing-4;
 }
 
-.signoutButton {
+.signoutButton:global(.MuiButton-root) {
+  @include buttons.branded-outlined-button;
   min-width: 5.8rem;
 }
 
@@ -151,8 +154,8 @@ $hairline: 0.0625rem solid;
 
 body[data-theme="dark"] {
   .titleBadge {
-    border-color: color-mix(in srgb, var(--app-surface-border) 80%, #c9a66b);
-    background: color-mix(in srgb, var(--app-surface-bg) 85%, #0ea5e9 15%);
-    color: #bae6fd;
+    border-color: color-mix(in srgb, variables.$color-primary-main 35%, transparent);
+    background: color-mix(in srgb, variables.$color-primary-main 16%, var(--app-surface-bg));
+    color: variables.$color-dark-primary-light;
   }
 }

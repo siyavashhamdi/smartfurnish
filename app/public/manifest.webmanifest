@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Smart Furnish",
   "short_name": "Smart Furnish",
-  "description": "فروشگاه هوشمند مبلمان و دکوراسیون — پیش‌نمایش واقعی در فضای منزل با هوش مصنوعی",
+  "description": "نمایشگاه هوشمند مبلمان — عکس فضایت را بده و مبلمان را در منزلت ببین",
   "theme_color": "#1a2e1f",
   "background_color": "#ffffff",
   "display": "standalone",

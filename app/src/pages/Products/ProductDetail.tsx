@@ -426,7 +426,7 @@ const ProductDetail = (): ReactElement => {
     return {
       title: isPurchaseDialogOpen ? `${product.title} — تکمیل خرید` : product.title,
       description: seoDescription,
-      keywords: [product.title, ...product.tags, "Smart Furnish", "محصول دکوراسیون"].join(", "),
+      keywords: [product.title, ...product.tags, "نمایشگاه مجازی مبلمان", "محصول دکوراسیون"].join(", "),
       image: coverImageNetworkUrl ?? undefined,
       imageAlt: product.title,
       canonicalPath,

@@ -49,7 +49,7 @@ import {
 import { subscribeGeneralUpdates } from "../lib/general-updates-listeners";
 import { subscribePushNotificationOpen } from "../lib/push-open-listeners";
 import { useGeneralUpdatesOnline } from "../hooks/useGeneralUpdatesOnline";
-import { APP_SHELL_ROUTES, isProductDetailRoute } from "../routing/app-shell-routes";
+import { APP_SHELL_ROUTES, isLandingRoute, isProductDetailRoute } from "../routing/app-shell-routes";
 import { resolveNotificationActionPayload } from "../utilities/notification-action.util";
 import { deliverNotificationPushIfEnabled } from "../utils/browserNotification.util";
 import { scrollToTopOnMobile } from "../utils/scrollToTopOnMobile.util";
@@ -70,6 +70,8 @@ import {
 } from "./header-panel-items";
 import { useAppShellNavPrefetch } from "../hooks/useAppShellNavPrefetch";
 import { useAppShellRoutePrefetch } from "../hooks/useAppShellRoutePrefetch";
+import { useMobileAppLayout } from "../hooks/useMobileAppLayout";
+import { useProgressiveHeaderReveal } from "../hooks/useProgressiveHeaderReveal";
 import { useAfterLogoutCacheCleanup } from "../hooks/useAfterLogoutCacheCleanup";
 import { isLogoutCacheCleanupInProgress } from "../lib/app-shell-nav-prefetch";
 import { warmAppShellNavTarget } from "../lib/app-shell-nav-warm";
@@ -89,8 +91,6 @@ const HEADER_SX = {
   px: { xs: 1.25, sm: 1.45 },
 } as const;
 const BRAND_LOGO_SX = {
-  width: "3.5rem",
-  height: "3.5rem",
   flexShrink: 0,
   display: "block",
   objectFit: "contain",
@@ -231,6 +231,14 @@ export function MainLayout({
   const [userAnchorEl, setUserAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [isSideMenuCollapsed, setIsSideMenuCollapsed] = useState(false);
   const [generalUpdatePopup, setGeneralUpdatePopup] = useState<GeneralUpdatePopup | null>(null);
+  const isMobileLayout = useMobileAppLayout();
+  const progressiveHeader = isMobileLayout && showHeader && isLandingRoute(location.pathname);
+  const headerRef = useRef<HTMLElement>(null);
+  const { offset: headerOffset, headerHeight } = useProgressiveHeaderReveal(
+    headerRef,
+    progressiveHeader,
+    location.pathname
+  );
 
   const handleShowGeneralUpdatePopup = useCallback((popup: GeneralUpdatePopup): void => {
     setGeneralUpdatePopup(popup);
@@ -257,7 +265,6 @@ export function MainLayout({
   const roles = authUser?.roles ?? [];
   const isAuthenticated = Boolean(authUser);
   const isEndUser = roles.includes("END_USER");
-  const usesPublicProductList = !authUser || isEndUser;
   const appShellNavContext = useMemo(
     () => ({
       roles,
@@ -305,9 +312,7 @@ export function MainLayout({
     warmAppShellNavTarget(productsItem, appShellNavContext, appShellNavDataContext);
   }, [appShellNavContext, appShellNavDataContext, location.pathname]);
 
-  const brandTagline = usesPublicProductList
-    ? t("layout.header.brand.publicTagline")
-    : t("layout.header.brand.tagline");
+  const brandTagline = t("layout.header.brand.publicTagline");
 
   const { data: badgeCountData, refetch: refetchBadgeCount } = useQuery<BadgeCountQuery>(
     BADGE_COUNT_QUERY,
@@ -525,7 +530,11 @@ export function MainLayout({
   return (
     <Box
       component="main"
-      className={["main-layout", isSideMenuCollapsed ? "main-layout--side-menu-collapsed" : ""]
+      className={[
+        "main-layout",
+        isSideMenuCollapsed ? "main-layout--side-menu-collapsed" : "",
+        progressiveHeader ? "main-layout--progressive-header" : "",
+      ]
         .filter(Boolean)
         .join(" ")}
     >
@@ -592,9 +601,26 @@ export function MainLayout({
           </IconButton>
         </aside>
       ) : null}
-      <Container maxWidth={false} className="main-layout__container" sx={LAYOUT_CONTAINER_SX}>
+      <Container
+        maxWidth={false}
+        className="main-layout__container"
+        sx={LAYOUT_CONTAINER_SX}
+        style={
+          progressiveHeader && headerHeight > 0
+            ? ({ "--main-layout-header-height": `${headerHeight}px` } as React.CSSProperties)
+            : undefined
+        }
+      >
         {showHeader ? (
-          <Box component="header" className="main-layout__header" sx={HEADER_SX}>
+          <Box
+            component="header"
+            ref={headerRef}
+            className="main-layout__header"
+            style={
+              progressiveHeader ? { transform: `translate3d(0, ${headerOffset}px, 0)` } : undefined
+            }
+            sx={HEADER_SX}
+          >
             <div className="main-layout__brand">
               <RouterLink
                 to="/"

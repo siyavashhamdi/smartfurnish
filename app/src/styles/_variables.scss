@@ -1,18 +1,18 @@
 // ============================================
-// SCSS Variables — forest + brass palette
+// SCSS Variables — gold primary + forest brand
 // ============================================
 
-// Primary colors (forest green — warm, confident, interior-studio feel)
-$color-primary-main: #1a2e1f;
-$color-primary-light: #2a4530;
-$color-primary-dark: #0f1a12;
-$color-primary-contrast: #faf8f5;
+// Primary colors (warm brass / gold — CTAs, buttons, active states)
+$color-primary-main: #c9a66b;
+$color-primary-light: #e8d3ae;
+$color-primary-dark: #9a7848;
+$color-primary-contrast: #1a2e1f;
 
-// Secondary colors (warm brass / gold)
-$color-secondary-main: #c9a66b;
-$color-secondary-light: #e8d3ae;
-$color-secondary-dark: #9a7848;
-$color-secondary-contrast: #1a2e1f;
+// Secondary colors (forest green — brand structure, headers)
+$color-secondary-main: #1a2e1f;
+$color-secondary-light: #2a4530;
+$color-secondary-dark: #0f1a12;
+$color-secondary-contrast: #faf8f5;
 
 // Accent tints for badges, highlights, and soft surfaces
 $color-accent-soft-bg: rgba(201, 166, 107, 0.14);
@@ -66,22 +66,22 @@ $color-text-disabled: $color-grey-400;
 $color-divider: rgba(23, 23, 23, 0.08);
 
 // Action colors
-$color-action-hover: rgba(26, 46, 31, 0.04);
+$color-action-hover: rgba(201, 166, 107, 0.08);
 $color-backdrop: rgba(11, 16, 12, 0.72);
 
 // Layout glow accents (brass + forest)
 $color-layout-glow: #c9a66b;
 $color-layout-glow-2: #2a4530;
 
-// Gradient stops for CTAs and hero elements
-$color-gradient-start: #1a2e1f;
-$color-gradient-mid: #2a4530;
-$color-gradient-end: #c9a66b;
+// Gradient stops for CTAs and hero elements (gold shimmer)
+$color-gradient-start: #9a7848;
+$color-gradient-mid: #c9a66b;
+$color-gradient-end: #e8d3ae;
 
-// Dark-mode palette tokens — brass primary, charcoal surfaces
+// Dark-mode palette tokens — brighter brass primary, charcoal surfaces
 $color-dark-primary-main: #d9c39a;
-$color-dark-primary-light: #e8d3ae;
-$color-dark-primary-dark: #9a7848;
+$color-dark-primary-light: #f0ddb8;
+$color-dark-primary-dark: #c9a66b;
 $color-dark-info-light: #8fae95;
 
 // Spacing (0.5rem base unit)
@@ -102,12 +102,12 @@ $border-radius-xl: 1rem;
 $border-radius-full: 3.125rem;
 $brand-logo-radius: $border-radius-lg;
 
-// Shadows (forest-tinted)
-$shadow-sm: 0 0.0625rem 0.125rem 0 rgba(26, 46, 31, 0.04);
-$shadow-md: 0 0.125rem 0.5rem rgba(26, 46, 31, 0.06);
-$shadow-lg: 0 0.25rem 1rem rgba(26, 46, 31, 0.08);
-$shadow-xl: 0 0.625rem 1.5rem rgba(26, 46, 31, 0.12);
-$shadow-drawer-mobile: 0.125rem 0 0.5rem rgba(26, 46, 31, 0.12);
+// Shadows (gold-tinted)
+$shadow-sm: 0 0.0625rem 0.125rem 0 rgba(154, 120, 72, 0.08);
+$shadow-md: 0 0.125rem 0.5rem rgba(154, 120, 72, 0.12);
+$shadow-lg: 0 0.25rem 1rem rgba(154, 120, 72, 0.16);
+$shadow-xl: 0 0.625rem 1.5rem rgba(154, 120, 72, 0.2);
+$shadow-drawer-mobile: 0.125rem 0 0.5rem rgba(154, 120, 72, 0.14);
 
 // Transitions
 $transition-duration-shortest: 150ms;

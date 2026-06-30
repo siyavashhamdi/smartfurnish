@@ -49,7 +49,6 @@ function normalizeShellPathname(pathname: string): string {
 export const isStandaloneShellRoute = (pathname: string): boolean => {
   const normalized = normalizeShellPathname(pathname);
   return (
-    normalized === APP_SHELL_ROUTES.landing ||
     normalized === APP_SHELL_ROUTES.login ||
     normalized === APP_SHELL_ROUTES.resetPassword ||
     normalized === APP_SHELL_ROUTES.activateAccount

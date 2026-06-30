@@ -296,8 +296,12 @@
 }
 
 .inputIcon {
-  color: variables.$color-primary-main;
+  color: variables.$color-primary-dark;
   font-size: 1.25rem !important;
+
+  [data-theme="dark"] & {
+    color: variables.$color-dark-primary-light;
+  }
 }
 
 .passwordInputField {
@@ -366,12 +370,21 @@
 
 .formTextButton:global(.MuiButton-root) {
   align-self: center;
-  color: variables.$color-primary-main;
+  color: variables.$color-primary-dark;
   font-weight: variables.$font-weight-semibold;
   text-transform: none;
 
   :global(.MuiButton-startIcon) {
     margin-inline: 0 0.25rem;
+  }
+
+  [data-theme="dark"] & {
+    color: variables.$color-dark-primary-light;
+
+    &:hover {
+      color: variables.$color-dark-primary-main;
+      background: color-mix(in srgb, variables.$color-primary-main 10%, transparent);
+    }
   }
 }
 

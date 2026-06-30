@@ -1,4 +1,5 @@
 @use "../../../styles/variables" as variables;
+@use "../../../styles/buttons" as buttons;
 @use "../../../styles/mixins" as mixins;
 
 .page {
@@ -97,7 +98,7 @@
   border: 0.0625rem solid color-mix(in srgb, #d9c39a 28%, var(--app-surface-border));
   border-radius: 999rem;
   background: color-mix(in srgb, var(--text-secondary) 15%, transparent);
-  color: #64748b;
+  color: var(--text-secondary);
   cursor: pointer;
   transition:
     border-color 160ms ease,
@@ -348,30 +349,18 @@
 }
 
 .notificationCalloutButton {
+  @include buttons.native-gold-button;
   justify-self: start;
   min-block-size: 2.35rem;
   padding: 0.45rem 0.95rem;
-  border: 0;
-  border-radius: 999rem;
-  background: variables.$color-primary-main;
-  color: #ffffff;
-  font: inherit;
   font-size: 0.82rem;
-  font-weight: variables.$font-weight-semibold;
-  cursor: pointer;
-  transition:
-    transform 140ms ease,
-    box-shadow 140ms ease,
-    opacity 140ms ease;
 }
 
 .notificationCalloutButton:hover:not(:disabled) {
-  box-shadow: 0 0.45rem 1.1rem color-mix(in srgb, variables.$color-primary-main 28%, transparent);
   transform: translateY(-0.0625rem);
 }
 
 .notificationCalloutButton:focus-visible {
-  outline: 0.16rem solid color-mix(in srgb, variables.$color-primary-main 42%, transparent);
   outline-offset: 0.16rem;
 }
 
@@ -453,21 +442,14 @@
 }
 
 .iosInstallButton {
+  @include buttons.native-gold-button;
   justify-self: start;
   min-block-size: 2.35rem;
   padding: 0.45rem 0.95rem;
-  border: 0;
-  border-radius: 999rem;
-  background: #2563eb;
-  color: #ffffff;
-  font: inherit;
   font-size: 0.82rem;
-  font-weight: variables.$font-weight-semibold;
-  cursor: pointer;
 }
 
 .iosInstallButton:focus-visible {
-  outline: 0.16rem solid color-mix(in srgb, #2563eb 42%, transparent);
   outline-offset: 0.16rem;
 }
 
@@ -549,28 +531,21 @@
 }
 
 .androidInstallButton {
+  @include buttons.native-gold-button;
   justify-self: start;
   min-block-size: 2.35rem;
   padding: 0.45rem 0.95rem;
-  border: 0;
-  border-radius: 999rem;
-  background: #3da169;
-  color: #ffffff;
-  font: inherit;
   font-size: 0.82rem;
-  font-weight: variables.$font-weight-semibold;
-  text-decoration: none;
-  cursor: pointer;
 }
 
 .androidInstallButtonSecondary {
-  border: 0.0625rem solid color-mix(in srgb, #3da169 42%, var(--app-surface-border));
-  background: color-mix(in srgb, #3da169 10%, transparent);
-  color: #2f8557;
+  @include buttons.native-gold-outlined-button;
+  min-block-size: 2.35rem;
+  padding: 0.45rem 0.95rem;
+  font-size: 0.82rem;
 }
 
 .androidInstallButton:focus-visible {
-  outline: 0.16rem solid color-mix(in srgb, #3da169 42%, transparent);
   outline-offset: 0.16rem;
 }
 
@@ -632,27 +607,21 @@
 }
 
 .androidHomeInstallButton {
+  @include buttons.native-gold-button;
   justify-self: start;
   min-block-size: 2.35rem;
   padding: 0.45rem 0.95rem;
-  border: 0;
-  border-radius: 999rem;
-  background: #3da169;
-  color: #ffffff;
-  font: inherit;
   font-size: 0.82rem;
-  font-weight: variables.$font-weight-semibold;
-  cursor: pointer;
 }
 
 .androidHomeInstallButtonSecondary {
-  border: 0.0625rem solid color-mix(in srgb, #3da169 42%, var(--app-surface-border));
-  background: color-mix(in srgb, #3da169 10%, transparent);
-  color: #2f8557;
+  @include buttons.native-gold-outlined-button;
+  min-block-size: 2.35rem;
+  padding: 0.45rem 0.95rem;
+  font-size: 0.82rem;
 }
 
 .androidHomeInstallButton:focus-visible {
-  outline: 0.16rem solid color-mix(in srgb, #3da169 42%, transparent);
   outline-offset: 0.16rem;
 }
 
@@ -762,15 +731,9 @@
 }
 
 .androidHomeInstallDialogButton {
+  @include buttons.native-gold-button;
   min-block-size: 2.45rem;
-  border: 0;
-  border-radius: 999rem;
-  background: variables.$color-primary-main;
-  color: #ffffff;
-  font: inherit;
   font-size: 0.84rem;
-  font-weight: variables.$font-weight-semibold;
-  cursor: pointer;
 }
 
 .iosInstallDialogPaper {
@@ -911,15 +874,9 @@
 }
 
 .iosInstallDialogButton {
+  @include buttons.native-gold-button;
   min-block-size: 2.45rem;
-  border: 0;
-  border-radius: 999rem;
-  background: variables.$color-primary-main;
-  color: #ffffff;
-  font: inherit;
   font-size: 0.84rem;
-  font-weight: variables.$font-weight-semibold;
-  cursor: pointer;
 }
 
 .preferenceIcon {
@@ -928,8 +885,13 @@
   inline-size: 2.35rem;
   block-size: 2.35rem;
   border-radius: 0.85rem;
-  background: color-mix(in srgb, #d9c39a 11%, transparent);
-  color: #d9c39a;
+  background: color-mix(in srgb, variables.$color-primary-main 14%, transparent);
+  color: variables.$color-primary-dark;
+
+  svg {
+    color: inherit;
+    opacity: 1;
+  }
 }
 
 .preferenceText {
@@ -1034,7 +996,7 @@ a.linkCard {
 }
 
 .backupCard svg {
-  color: #1a2e1f;
+  color: variables.$color-secondary-main;
 }
 
 .backupIcon {
@@ -1043,8 +1005,8 @@ a.linkCard {
   inline-size: 3rem;
   block-size: 3rem;
   border-radius: 1rem;
-  background: color-mix(in srgb, #1a2e1f 12%, transparent);
-  color: #1a2e1f;
+  background: color-mix(in srgb, variables.$color-secondary-main 12%, transparent);
+  color: variables.$color-secondary-main;
   flex-shrink: 0;
 }
 
@@ -1406,7 +1368,22 @@ body[data-theme="dark"] {
 
   .backupCard svg,
   .backupIcon {
-    color: #5eead4;
+    color: variables.$color-dark-primary-light;
+  }
+
+  .preferenceIcon {
+    background: color-mix(in srgb, variables.$color-primary-main 18%, transparent);
+    color: variables.$color-dark-primary-light;
+  }
+
+  .iosInstallDialogEyebrow,
+  .androidHomeInstallDialogEyebrow {
+    color: variables.$color-dark-primary-light;
+  }
+
+  .iosInstallStepNumber {
+    background: color-mix(in srgb, variables.$color-primary-main 18%, transparent);
+    color: variables.$color-dark-primary-light;
   }
 
   .globalAnouncementPreview {

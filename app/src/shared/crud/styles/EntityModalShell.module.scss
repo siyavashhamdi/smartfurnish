@@ -1,5 +1,6 @@
 @use "../../../styles/variables" as variables;
 @use "../../../styles/mixins" as mixins;
+@use "../../../styles/buttons" as buttons;
 
 .modalFormRootMobile {
   display: flex;
@@ -23,6 +24,13 @@
   align-items: flex-start;
   padding-bottom: variables.$spacing-2;
   flex-shrink: 0;
+
+  :global(.MuiIconButton-root) {
+    @include buttons.panel-icon-button;
+    inline-size: 2rem;
+    block-size: 2rem;
+    padding: 0.25rem;
+  }
 }
 
 .modalDialogTitleRelaxed {
@@ -77,6 +85,10 @@ body[data-theme="dark"] {
     &::-webkit-scrollbar-thumb:hover {
       background: #c9a66b;
     }
+  }
+
+  .modalDialogTitle :global(.MuiIconButton-root) {
+    color: var(--app-icon-button-color);
   }
 }
 

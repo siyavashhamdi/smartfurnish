@@ -39,7 +39,7 @@ const TermsOfUsePage = (): ReactElement => {
       <div className={styles.hero} {...opaqueShellProps}>
         <p>شرایط استفاده</p>
         <h2>شرایط استفاده از سامانه</h2>
-        <span>قواعد استفاده از حساب، محصولات، پیش‌نمایش AI، پرداخت‌ها و پشتیبانی Smart Furnish</span>
+        <span>قواعد استفاده از حساب، محصولات، پیش‌نمایش AI، پرداخت‌ها و پشتیبانی نمایشگاه مجازی مبلمان</span>
       </div>
 
       <div className={styles.aboutPanel} {...opaqueShellProps}>

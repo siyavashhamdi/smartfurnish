@@ -1,5 +1,6 @@
 @use "../../styles/variables" as variables;
 @use "../../styles/mixins" as mixins;
+@use "../../styles/buttons" as buttons;
 
 .panel {
   display: grid;
@@ -34,11 +35,13 @@
   block-size: 4rem;
   border-radius: 1.15rem;
   background: color-mix(in srgb, variables.$color-primary-main 12%, transparent);
-  color: variables.$color-primary-main;
+  color: variables.$color-primary-dark;
 }
 
 .iconWrap :global(.MuiSvgIcon-root) {
   font-size: 1.85rem;
+  color: inherit;
+  opacity: 1;
 }
 
 .copy {
@@ -48,7 +51,7 @@
 
 .eyebrow {
   margin: 0;
-  color: variables.$color-primary-main;
+  color: variables.$color-primary-dark;
   font-size: 0.78rem;
   font-weight: variables.$font-weight-semibold;
 }
@@ -69,14 +72,14 @@
   text-align-last: start;
 }
 
-.action {
+.action:global(.MuiButton-root) {
+  @include buttons.branded-contained-button;
   min-width: 11.5rem !important;
   margin-top: 0.35rem;
   border-radius: 0.9rem !important;
   padding-inline: 1.35rem !important;
   padding-block: 0.72rem !important;
   font-weight: variables.$font-weight-bold !important;
-  box-shadow: 0 0.75rem 1.5rem color-mix(in srgb, variables.$color-primary-main 24%, transparent) !important;
 }
 
 body[data-theme="dark"] {
@@ -93,5 +96,13 @@ body[data-theme="dark"] {
         ),
         color-mix(in srgb, var(--app-surface-bg) 86%, #0b100c);
     }
+  }
+
+  .iconWrap {
+    color: variables.$color-dark-primary-light;
+  }
+
+  .eyebrow {
+    color: variables.$color-dark-primary-light;
   }
 }

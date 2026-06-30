@@ -1,4 +1,5 @@
 import AccountBalanceWalletRoundedIcon from "@mui/icons-material/AccountBalanceWalletRounded";
+import AutoStoriesRoundedIcon from "@mui/icons-material/AutoStoriesRounded";
 import ConfirmationNumberRoundedIcon from "@mui/icons-material/ConfirmationNumberRounded";
 import MenuBookRoundedIcon from "@mui/icons-material/MenuBookRounded";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
@@ -13,6 +14,7 @@ export type AppShellNavIcon = ComponentType<{ className?: string }>;
 export type AppShellNavBadgeKind = "products" | "payments" | "notifications" | "support";
 
 export type AppShellNavItemId =
+  | "ourStory"
   | "products"
   | "payments"
   | "notifications"
@@ -35,8 +37,15 @@ export type AppShellNavItemDefinition = {
 
 export const APP_SHELL_NAV_ITEMS: readonly AppShellNavItemDefinition[] = [
   {
+    id: "ourStory",
+    title: "داستان ما",
+    path: APP_SHELL_ROUTES.landing,
+    Icon: AutoStoriesRoundedIcon,
+    exactPathMatch: true,
+  },
+  {
     id: "products",
-    title: "محصولات",
+    title: "شو روم",
     path: APP_SHELL_ROUTES.products,
     Icon: MenuBookRoundedIcon,
     badge: "products",

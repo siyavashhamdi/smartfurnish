@@ -708,6 +708,17 @@
 }
 
 body[data-theme="dark"] {
+  .contactIconButton {
+    color: variables.$color-dark-primary-light;
+    background: color-mix(in srgb, var(--app-surface-bg) 90%, #0b100c);
+
+    &:hover,
+    &:focus-visible {
+      color: variables.$color-dark-primary-main;
+      border-color: color-mix(in srgb, variables.$color-primary-main 48%, var(--app-surface-border));
+    }
+  }
+
   .hero,
   .card,
   .contactSection,

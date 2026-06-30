@@ -2,9 +2,9 @@
     "layout": {
         "header": {
             "brand": {
-                "title": "Smart Furnish",
-                "tagline": "فروشگاه و پیش‌نمایش هوشمند منزل",
-                "publicTagline": "پیش‌نمایش واقعی دکوراسیون منزل با هوش مصنوعی",
+                "title": "نمایشگاه مجازی مبلمان",
+                "tagline": "طرح دلخواهت رو انتخاب کن، توی فضای خونه‌ت ببین!",
+                "publicTagline": "طرح دلخواهت رو انتخاب کن، توی فضای خونه‌ت ببین!",
                 "adminPanelBadge": "پنل مدیریت"
             },
             "actions": {
@@ -16,7 +16,7 @@
             "panels": {
                 "notifications": {
                     "popoverTitle": "اعلان‌های جدید",
-                    "panelSubtitle": "مدیریت Smart Furnish",
+                    "panelSubtitle": "مدیریت نمایشگاه مجازی مبلمان",
                     "countLabel": "{{count}} مورد",
                     "viewAll": "مشاهده همه",
                     "markAllRead": "علامت‌گذاری همه",
@@ -28,17 +28,17 @@
                     "popoverContact": "تماس با ما",
                     "popoverNotifications": "تنظیمات اعلان‌ها",
                     "title": "تنظیمات سریع سامانه",
-                    "subtitle": "میانبرهای پرکاربرد مدیریت فروشگاه",
+                    "subtitle": "میانبرهای پرکاربرد مدیریت نمایشگاه",
                     "badgeSuggested": "پیشنهادی",
                     "enterSettings": "ورود به تنظیمات",
                     "customizePanel": "شخصی‌سازی پنل",
                     "items": {
                         "roles": {
-                            "description": "بازنگری سطح دسترسی مدیران، کارشناسان فروشگاه و کاربران"
+                            "description": "بازنگری سطح دسترسی مدیران، کارشناسان نمایشگاه و کاربران"
                         },
                         "systemSettings": {
                             "title": "تنظیمات سامانه",
-                            "description": "پیکربندی عمومی فروشگاه، کاتالوگ و تنظیمات مدیریتی"
+                            "description": "پیکربندی عمومی نمایشگاه، کاتالوگ و تنظیمات مدیریتی"
                         },
                         "notifications": {
                             "description": "فعال‌سازی اعلان‌ها و انتخاب حالت نمایش"
@@ -47,7 +47,7 @@
                 },
                 "help": {
                     "popoverTitle": "راهنمای سریع سامانه",
-                    "popoverRegisterGuide": "راهنمای استفاده از پیش‌نمایش هوشمند",
+                    "popoverRegisterGuide": "راهنمای استفاده از نمایشگاه مجازی",
                     "popoverFaqExperts": "سوالات متداول",
                     "popoverSupportContact": "ارتباط با پشتیبانی سامانه",
                     "subtitle": "پاسخ‌های فوری برای کارهای روزانه",
@@ -55,7 +55,7 @@
                     "supportTicket": "تیکت پشتیبانی",
                     "items": {
                         "faq": {
-                            "description": "پاسخ سریع به خطاهای رایج و نکات کار با فروشگاه و پیش‌نمایش AI."
+                            "description": "پاسخ سریع به خطاهای رایج و نکات کار با نمایشگاه مجازی و دیدن طرح در خانه."
                         },
                         "support": {
                             "description": "راه‌های ارتباطی با پشتیبانی و اطلاعات تماس سامانه."
@@ -112,7 +112,7 @@
         },
         "footer": {
             "ariaLabel": "پاورقی سامانه",
-            "copyright": "Smart Furnish | ۱۴۰۵",
+            "copyright": "نمایشگاه مجازی مبلمان | ۱۴۰۵",
             "version": "نسخه {{version}}",
             "links": {
                 "helpCenter": "مرکز راهنما",

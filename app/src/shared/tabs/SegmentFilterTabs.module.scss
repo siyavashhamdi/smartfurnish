@@ -125,6 +125,11 @@
 }
 
 body[data-theme="dark"] {
+  .filterTab:hover,
+  .filterTabActive {
+    color: variables.$color-dark-primary-light;
+  }
+
   @media (max-width: (variables.$breakpoint-sm - 0.0625rem)) {
     .filterTabsPinned {
       @include mixins.dark-floating-shell-gradient;

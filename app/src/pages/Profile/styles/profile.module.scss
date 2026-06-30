@@ -53,7 +53,7 @@
   border: 0.1rem solid var(--app-surface-bg) !important;
   background: variables.$color-primary-main !important;
   color: variables.$color-primary-contrast !important;
-  box-shadow: 0 0.3rem 0.65rem rgba(26, 46, 31, 0.18) !important;
+  box-shadow: 0 0.3rem 0.65rem rgba(201, 166, 107, 0.22) !important;
 }
 
 .avatarAddNewButton:disabled {
@@ -121,9 +121,30 @@
 }
 
 .eyebrow {
-  color: variables.$color-primary-main;
+  color: variables.$color-primary-dark;
   font-size: 0.78rem;
   font-weight: variables.$font-weight-semibold;
+}
+
+body[data-theme="dark"] {
+  .eyebrow {
+    color: variables.$color-dark-primary-light;
+  }
+
+  .hero,
+  .actionCard {
+    @include mixins.surface-panel-dark;
+  }
+
+  .actionCard svg {
+    color: variables.$color-dark-primary-light;
+  }
+
+  .roleBadge {
+    border-color: color-mix(in srgb, variables.$color-primary-main 35%, transparent);
+    background: color-mix(in srgb, variables.$color-primary-main 16%, transparent);
+    color: variables.$color-dark-primary-light;
+  }
 }
 
 .cardGrid {
@@ -148,7 +169,7 @@
 
 .actionCard svg {
   flex: 0 0 auto;
-  color: variables.$color-primary-main;
+  color: variables.$color-primary-dark;
 }
 
 .actionCard span {
@@ -204,15 +225,3 @@
   }
 }
 
-body[data-theme="dark"] {
-  .hero,
-  .actionCard {
-    @include mixins.surface-panel-dark;
-  }
-
-  .roleBadge {
-    border-color: variables.$color-accent-soft-fg-dark;
-    background: variables.$color-accent-soft-bg-dark;
-    color: variables.$color-accent-soft-fg-dark;
-  }
-}

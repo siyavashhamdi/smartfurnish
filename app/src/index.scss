@@ -52,8 +52,8 @@ body {
   --app-accent-soft-border: rgba(201, 166, 107, 0.35);
   --app-accent-soft-fg: #9a7848;
   --app-focus-ring: #c9a66b;
-  --app-icon-button-color: #1a2e1f;
-  --app-icon-button-hover-color: #9a7848;
+  --app-icon-button-color: #9a7848;
+  --app-icon-button-hover-color: #c9a66b;
   --text-primary: #171717;
   --text-secondary: #5c5c5c;
   --divider: rgba(23, 23, 23, 0.08);
@@ -126,7 +126,7 @@ body {
   --divider: rgba(255, 255, 255, 0.08);
   --app-focus-ring: #d9c39a;
   --app-icon-button-color: #e8d3ae;
-  --app-icon-button-hover-color: #faf8f5;
+  --app-icon-button-hover-color: #f0ddb8;
 }
 
 [data-theme="dark"] ::-webkit-scrollbar-track {
@@ -305,5 +305,38 @@ body[data-theme="light"] .MuiSnackbar-root .MuiAlert-root.app-snackbar-alert {
   .MuiButton-endIcon,
   .MuiSvgIcon-root {
     color: inherit;
+  }
+}
+
+// Default decorative icons — readable in both themes (MUI color prop overrides still apply).
+.MuiSvgIcon-root:not([class*="color"]) {
+  opacity: 1;
+}
+
+// Modal / dialog close icon buttons
+.MuiDialogTitle-root .MuiIconButton-root,
+.MuiDialog-root .MuiDialogTitle-root + .MuiIconButton-root {
+  color: var(--app-icon-button-color);
+
+  &:hover {
+    color: var(--app-icon-button-hover-color);
+    background: color-mix(in srgb, var(--app-layout-glow) 12%, var(--app-surface-bg));
+  }
+}
+
+// Pagination page numbers — gold selected state backup (theme.ts is primary)
+.MuiPaginationItem-root.Mui-selected {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] {
+  .MuiInputAdornment-root .MuiSvgIcon-root {
+    color: var(--app-icon-button-color);
+    opacity: 1;
+  }
+
+  .MuiInputLabel-root .MuiSvgIcon-root,
+  .MuiFormLabel-root .MuiSvgIcon-root {
+    color: var(--app-icon-button-color);
   }
 }

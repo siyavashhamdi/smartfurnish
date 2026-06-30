@@ -212,11 +212,16 @@ $layout-sm: variables.$breakpoint-sm;
     block-size: 2.85rem;
     flex-shrink: 0;
     border-radius: 0.82rem !important;
-    border: 0.0625rem solid color-mix(in srgb, #ffffff 64%, transparent) !important;
-    color: #ffffff !important;
+    border: 0.0625rem solid color-mix(in srgb, variables.$color-primary-contrast 64%, transparent) !important;
+    color: variables.$color-primary-contrast !important;
     background:
       radial-gradient(circle at 32% 24%, color-mix(in srgb, #ffffff 34%, transparent), transparent 34%),
-      linear-gradient(135deg, var(--app-layout-glow) 0%, var(--app-layout-glow-2) 100%) !important;
+      linear-gradient(
+        135deg,
+        variables.$color-primary-dark 0%,
+        variables.$color-primary-main 55%,
+        variables.$color-primary-light 100%
+      ) !important;
     box-shadow:
       0 0.65rem 1.25rem color-mix(in srgb, var(--app-layout-glow) 34%, transparent),
       inset 0 0.0625rem 0 color-mix(in srgb, #ffffff 54%, transparent);
@@ -265,7 +270,12 @@ $layout-sm: variables.$breakpoint-sm;
     border-radius: 1.1rem !important;
     background:
       radial-gradient(circle at 30% 22%, color-mix(in srgb, #ffffff 38%, transparent), transparent 32%),
-      linear-gradient(135deg, variables.$color-primary-main 0%, variables.$color-primary-light 55%, variables.$color-secondary-main 100%) !important;
+      linear-gradient(
+        135deg,
+        variables.$color-primary-dark 0%,
+        variables.$color-primary-main 55%,
+        variables.$color-primary-light 100%
+      ) !important;
     color: variables.$color-primary-contrast !important;
     box-shadow:
       0 1rem 2rem color-mix(in srgb, var(--app-layout-glow) 38%, transparent),
@@ -296,9 +306,8 @@ $layout-sm: variables.$breakpoint-sm;
       radial-gradient(circle at 30% 22%, color-mix(in srgb, #ffffff 42%, transparent), transparent 32%),
       linear-gradient(
         135deg,
-        variables.$color-primary-light 0%,
-        variables.$color-primary-main 55%,
-        variables.$color-secondary-main 100%
+        variables.$color-primary-main 0%,
+        variables.$color-primary-light 100%
       ) !important;
     color: variables.$color-primary-contrast !important;
     transform: translateY(-0.12rem) scale(1.03);

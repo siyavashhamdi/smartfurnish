@@ -262,3 +262,17 @@
     font-size: 1rem !important;
   }
 }
+
+body[data-theme="dark"] {
+  .heroIcon {
+    color: variables.$color-dark-primary-light;
+  }
+
+  .progressBar :global(.MuiLinearProgress-bar) {
+    background: linear-gradient(
+      90deg,
+      variables.$color-primary-main,
+      variables.$color-primary-light
+    );
+  }
+}

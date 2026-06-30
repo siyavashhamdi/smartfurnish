@@ -1,7 +1,7 @@
 {
     "app": {
         "pageTitles": {
-            "products": "محصولات",
+            "products": "شو روم",
             "more": "سایر",
             "moreAbout": "درباره سامانه",
             "morePrivacyPolicy": "سیاست حریم خصوصی",
@@ -36,7 +36,7 @@
             "systemSettingEdit": "ویرایش تنظیمات سامانه",
             "profileEdit": "ویرایش اطلاعات کاربری",
             "profilePassword": "تغییر گذرواژه",
-            "landing": "اسمارت فرنیش"
+            "landing": "داستان ما"
         }
     }
 }

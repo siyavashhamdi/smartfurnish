@@ -184,11 +184,11 @@ const DashboardAppRoutesContent = (): ReactElement => {
             API_CONFIG.UNDER_CONSTRUCTION ? (
               <UnderConstruction />
             ) : (
-              <Navigate to={APP_SHELL_ROUTES.products} replace />
+              <Navigate to={APP_SHELL_ROUTES.landing} replace />
             )
           }
         />
-        <Route path="*" element={<Navigate to={APP_SHELL_ROUTES.products} replace />} />
+        <Route path="*" element={<Navigate to={APP_SHELL_ROUTES.landing} replace />} />
       </Routes>
     </Suspense>
   );

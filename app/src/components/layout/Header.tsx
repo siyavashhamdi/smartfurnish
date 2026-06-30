@@ -79,10 +79,7 @@ const Header = (): ReactElement => {
   }, [authUser, user, userLoading]);
 
   const brandTitle = t("layout.header.brand.title");
-  const isPublicAudience = !authUser || authUser.roles.includes("END_USER");
-  const brandTagline = isPublicAudience
-    ? t("layout.header.brand.publicTagline")
-    : t("layout.header.brand.tagline");
+  const brandTagline = t("layout.header.brand.publicTagline");
   const adminRoleBadgeLabel = authUser?.roles?.includes("SUPER_ADMIN")
     ? SUPER_ADMIN_ROLE_BADGE_LABEL
     : null;

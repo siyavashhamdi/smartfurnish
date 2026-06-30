@@ -33,8 +33,8 @@ const AboutPage = (): ReactElement => {
     <section className={styles.page} aria-busy={loading}>
       <div className={styles.hero} {...opaqueShellProps}>
         <p>درباره سامانه</p>
-        <h2>Smart Furnish</h2>
-        <span>معرفی فروشگاه هوشمند مبلمان، پیش‌نمایش AI و تجربه خرید</span>
+        <h2>نمایشگاه مجازی مبلمان</h2>
+        <span>نمایشگاه مجازی مبلمان — طرح دلخواهت رو انتخاب کن، توی فضای خونه‌ت ببین!</span>
       </div>
 
       <div className={styles.aboutPanel} {...opaqueShellProps}>

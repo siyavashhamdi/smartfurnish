@@ -1,4 +1,5 @@
 @use "../../../../styles/variables" as variables;
+@use "../../../../styles/buttons" as buttons;
 
 .dialogPaper {
   border-radius: 1rem !important;
@@ -21,6 +22,15 @@
   gap: 0.55rem;
   padding: 0.85rem 1.1rem 1rem !important;
   border-top: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 70%, transparent);
+
+  :global(.MuiButton-containedPrimary) {
+    @include buttons.branded-contained-button;
+  }
+
+  :global(.MuiButton-outlinedPrimary),
+  :global(.MuiButton-textPrimary) {
+    @include buttons.branded-outlined-button;
+  }
 }
 
 @media (max-width: (variables.$breakpoint-sm - 0.0625rem)) {

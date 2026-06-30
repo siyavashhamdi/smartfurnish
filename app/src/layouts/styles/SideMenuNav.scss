@@ -67,8 +67,8 @@
 
 .side-menu-nav__item:hover,
 .side-menu-nav__item--active {
-  color: variables.$color-primary-main;
-  background: color-mix(in srgb, variables.$color-primary-main 11%, transparent);
+  color: variables.$color-primary-dark;
+  background: color-mix(in srgb, variables.$color-primary-main 14%, transparent);
 }
 
 .side-menu-nav__item-icon {
@@ -156,7 +156,7 @@
 body[data-theme="dark"] {
   .side-menu-nav__item:hover,
   .side-menu-nav__item--active {
-    color: #e8d3ae;
-    background: color-mix(in srgb, #c9a66b 22%, transparent);
+    color: variables.$color-dark-primary-light;
+    background: color-mix(in srgb, variables.$color-primary-main 20%, transparent);
   }
 }
