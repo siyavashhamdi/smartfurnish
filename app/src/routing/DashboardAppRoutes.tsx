@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactElement } from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import { RouteLoadingFallback } from "../components/RouteLoadingFallback";
 import { PageSeoProvider } from "../contexts/PageSeoProvider";
@@ -8,7 +8,7 @@ import { useScrollToTop } from "../hooks/useScrollToTop";
 import { isSuperAdminRole } from "../utils/authRole.util";
 import { APP_SHELL_ROUTES, resolveDefaultAppShellRoute } from "./app-shell-routes";
 import { PAYMENTS_ENABLED } from "../constants/payments.constants";
-import { LEGACY_PRODUCTS_ROUTE_REDIRECT_PREFIX, PRODUCT_ROUTE_ID_PARAM } from "./product-route-path";
+import { PRODUCT_ROUTE_ID_PARAM } from "./product-route-path";
 import { API_CONFIG } from "../config";
 import {
   importAboutPage,
@@ -64,18 +64,6 @@ const wrapProtected = (element: ReactElement): ReactElement => (
   <ProtectedRoute>{element}</ProtectedRoute>
 );
 
-const LegacyProductsRouteRedirect = (): ReactElement => {
-  const location = useLocation();
-  const rest = location.pathname.slice(LEGACY_PRODUCTS_ROUTE_REDIRECT_PREFIX.length);
-
-  return (
-    <Navigate
-      to={`${APP_SHELL_ROUTES.products}${rest}${location.search}${location.hash}`}
-      replace
-    />
-  );
-};
-
 const PaymentsDisabledRedirect = (): ReactElement => (
   <Navigate to={APP_SHELL_ROUTES.products} replace />
 );
@@ -110,10 +98,6 @@ const DashboardAppRoutesContent = (): ReactElement => {
   return (
     <Suspense fallback={<RouteLoadingFallback />}>
       <Routes>
-        <Route
-          path={`${LEGACY_PRODUCTS_ROUTE_REDIRECT_PREFIX}/*`}
-          element={<LegacyProductsRouteRedirect />}
-        />
         <Route path={APP_SHELL_ROUTES.login} element={<LoginRoute />} />
         <Route path={APP_SHELL_ROUTES.resetPassword} element={<ResetPassword />} />
         <Route path={APP_SHELL_ROUTES.activateAccount} element={<ActivateAccount />} />
