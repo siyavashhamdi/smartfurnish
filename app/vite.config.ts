@@ -74,7 +74,7 @@ export default defineConfig(({ mode }) => {
           id: "/",
           name: "Smart Furnish",
           short_name: "Smart Furnish",
-          description: "نمایشگاه مجازی مبلمان — طرح دلخواهت رو انتخاب کن، توی فضای خونه‌ت ببین!",
+          description: "نمایشگاه مجازی مبلمان — طرح دلخواهت رو انتخاب کن، همینجا توی فضای خونه‌ت ببین!",
           theme_color: PWA_THEME_COLOR,
           background_color: PWA_BACKGROUND_COLOR,
           display: "standalone",

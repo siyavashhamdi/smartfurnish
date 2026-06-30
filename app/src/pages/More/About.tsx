@@ -34,7 +34,7 @@ const AboutPage = (): ReactElement => {
       <div className={styles.hero} {...opaqueShellProps}>
         <p>درباره سامانه</p>
         <h2>نمایشگاه مجازی مبلمان</h2>
-        <span>نمایشگاه مجازی مبلمان — طرح دلخواهت رو انتخاب کن، توی فضای خونه‌ت ببین!</span>
+        <span>نمایشگاه مجازی مبلمان — طرح دلخواهت رو انتخاب کن، همینجا توی فضای خونه‌ت ببین!</span>
       </div>
 
       <div className={styles.aboutPanel} {...opaqueShellProps}>
