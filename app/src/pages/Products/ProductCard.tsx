@@ -1,68 +1,29 @@
-import { useRef, type KeyboardEvent, type PointerEvent, type ReactElement } from "react";
-import ChairRoundedIcon from "@mui/icons-material/ChairRounded";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactElement } from "react";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import DoNotDisturbOnRoundedIcon from "@mui/icons-material/DoNotDisturbOnRounded";
-import PaletteRoundedIcon from "@mui/icons-material/PaletteRounded";
 import { Chip } from "@mui/material";
 import { OverflowTooltip } from "../../shared/OverflowTooltip";
 import { CachedFileImage } from "../../shared/display/CachedFileImage";
+import { resolveFileAccessUrl } from "../../utils/fileAccessUrl.util";
 import type { FileAccessUrl } from "../../utils/fileAccessUrl.util";
-import {
-  getPrimaryCoverImageAccessUrl,
-  type ProductListRecord,
-} from "./product-list.api";
+import { formatProductPrice, getDiscountedPrice } from "./product-detail.api";
+import { getPrimaryCoverImageAccessUrl, type ProductListRecord } from "./product-list.api";
+import { ProductCardCoverCarousel } from "./ProductCardCoverCarousel";
+import ProductCardWarrantyRibbon from "./ProductCardWarrantyRibbon";
 import { getProductTagChipSx } from "./product-tag-colors.util";
 import styles from "./styles/ProductCard.module.scss";
 import AppTooltip from "../../shared/AppTooltip";
 
 interface ProductCardProps {
   readonly item: ProductListRecord;
-  readonly coverImageUrl?: string;
-  readonly coverImageAccessUrl?: FileAccessUrl | null;
   readonly variant?: "management" | "public";
   readonly onOpen: () => void;
   readonly onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
   readonly onEdit?: (item: ProductListRecord) => void;
 }
 
-function formatProductPrice(priceIrt: number | null): string {
-  if (priceIrt == null || priceIrt === 0) {
-    return "رایگان";
-  }
-  return `${priceIrt.toLocaleString("fa-IR").replace(/\u066c/g, ",")} تومان`;
-}
-
-function getDiscountedPrice(item: ProductListRecord): number | null {
-  const price = item.priceIrt;
-  const discount = item.discount;
-  if (!price || !discount || discount.value <= 0) {
-    return null;
-  }
-
-  const discountAmount =
-    discount.type === "PERCENTAGE" ? price * (Math.min(discount.value, 100) / 100) : discount.value;
-  const discountedPrice = Math.max(0, Math.round(price - discountAmount));
-
-  return discountedPrice < price ? discountedPrice : null;
-}
-
-function formatDiscountLabel(item: ProductListRecord): string | null {
-  const discount = item.discount;
-  if (!discount || discount.value <= 0) {
-    return null;
-  }
-
-  if (discount.type === "PERCENTAGE") {
-    return `${Math.min(discount.value, 100).toLocaleString("fa-IR")}٪ تخفیف`;
-  }
-
-  return `${formatProductPrice(discount.value)} تخفیف`;
-}
-
 const ProductCard = ({
   item,
-  coverImageUrl,
-  coverImageAccessUrl,
   variant = "management",
   onOpen,
   onKeyDown,
@@ -70,7 +31,11 @@ const ProductCard = ({
 }: ProductCardProps): ReactElement => {
   const isManagement = variant === "management";
   const statusChipClass = item.isActive ? styles.statusActive : styles.statusInactive;
-  const primaryCover = coverImageAccessUrl ?? getPrimaryCoverImageAccessUrl(item.coverImageAccessUrls);
+  const coverImageAccessUrls = item.coverImageAccessUrls;
+  const fallbackCover = getPrimaryCoverImageAccessUrl(coverImageAccessUrls);
+  const [activeCover, setActiveCover] = useState<FileAccessUrl | null>(fallbackCover);
+  const suppressCardClickRef = useRef(false);
+  const [carouselDotsMount, setCarouselDotsMount] = useState<HTMLDivElement | null>(null);
   const tagRowRef = useRef<HTMLDivElement>(null);
   const tagDragStateRef = useRef({
     pointerId: -1,
@@ -80,8 +45,26 @@ const ProductCard = ({
     isHorizontalDrag: false,
     decided: false,
   });
-  const discountedPrice = getDiscountedPrice(item);
-  const discountLabel = discountedPrice == null ? null : formatDiscountLabel(item);
+  const discountedPrice = getDiscountedPrice(item.priceIrt, item.discount);
+  const discountLabel =
+    item.discount && discountedPrice != null
+      ? item.discount.type === "PERCENTAGE"
+        ? `${Math.min(item.discount.value, 100).toLocaleString("fa-IR")}٪ تخفیف`
+        : `${formatProductPrice(item.discount.value)} تخفیف`
+      : null;
+  const activeCoverNetworkUrl = resolveFileAccessUrl(activeCover);
+
+  useEffect(() => {
+    setActiveCover(fallbackCover);
+  }, [fallbackCover, item.id]);
+
+  const handleActiveAccessUrlChange = useCallback((accessUrl: FileAccessUrl | null): void => {
+    setActiveCover(accessUrl);
+  }, []);
+
+  const handleCarouselInteraction = useCallback((): void => {
+    suppressCardClickRef.current = true;
+  }, []);
 
   const handleTagPointerDown = (event: PointerEvent<HTMLDivElement>): void => {
     const tagRow = tagRowRef.current;
@@ -154,6 +137,11 @@ const ProductCard = ({
   };
 
   const handleCardClick = (): void => {
+    if (suppressCardClickRef.current) {
+      suppressCardClickRef.current = false;
+      return;
+    }
+
     if (isManagement) {
       onEdit?.(item);
       return;
@@ -176,27 +164,19 @@ const ProductCard = ({
       onKeyDown={onKeyDown}
       aria-label={item.title}
     >
-      <div className={styles.coverWrap}>
-        {primaryCover || coverImageUrl ? (
-          <CachedFileImage
-            accessUrl={primaryCover}
-            networkUrl={coverImageUrl}
-            fileId={primaryCover?.fileId}
-            alt={item.title}
-            className={styles.coverImage}
-            loading="lazy"
-          />
-        ) : (
-          <>
-            <div className={styles.defaultCoverGlow} aria-hidden="true" />
-            <span className={styles.defaultCoverIcon}>
-              <ChairRoundedIcon />
-            </span>
-          </>
-        )}
+      {!isManagement ? <ProductCardWarrantyRibbon /> : null}
 
-        <div className={styles.topChipsRow} onClick={(event) => event.stopPropagation()}>
-          {isManagement ? (
+      <div className={styles.coverWrap}>
+        <ProductCardCoverCarousel
+          title={item.title}
+          coverImageAccessUrls={coverImageAccessUrls}
+          onActiveAccessUrlChange={handleActiveAccessUrlChange}
+          onCarouselInteraction={handleCarouselInteraction}
+          dotsContainer={carouselDotsMount}
+        />
+
+        {isManagement ? (
+          <div className={styles.topChipsRow} onClick={(event) => event.stopPropagation()}>
             <AppTooltip
               title={item.isActive ? "وضعیت فعال" : "وضعیت غیرفعال"}
               arrow
@@ -217,8 +197,8 @@ const ProductCard = ({
                 />
               </span>
             </AppTooltip>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
 
         <div className={styles.coverContent}>
           <h3>
@@ -232,24 +212,6 @@ const ProductCard = ({
                 {item.summary.trim()}
               </OverflowTooltip>
             </p>
-          ) : null}
-          <div className={styles.coverMeta}>
-            <span>{item.setPieceCount} قطعه</span>
-            <span className={styles.coverMetaSeparator}>/</span>
-            <span>{item.fabricCount} پارچه</span>
-          </div>
-          {item.fabricCount > 0 ? (
-            <div className={styles.itemTypeChipsRow}>
-              <div className={styles.itemTypeChips}>
-                <Chip
-                  size="small"
-                  icon={<PaletteRoundedIcon fontSize="small" />}
-                  label="انتخاب پارچه"
-                  variant="outlined"
-                  className={styles.itemTypeChip}
-                />
-              </div>
-            </div>
           ) : null}
           {item.tags.length > 0 ? (
             <div
@@ -277,15 +239,18 @@ const ProductCard = ({
               ))}
             </div>
           ) : null}
+          {coverImageAccessUrls.length > 1 ? (
+            <div ref={setCarouselDotsMount} className={styles.coverCarouselDotsRow} />
+          ) : null}
         </div>
 
         <div className={styles.priceFooter}>
           <div className={styles.priceBarBackdrop} aria-hidden="true">
-            {primaryCover || coverImageUrl ? (
+            {activeCover ? (
               <CachedFileImage
-                accessUrl={primaryCover}
-                networkUrl={coverImageUrl}
-                fileId={primaryCover?.fileId}
+                accessUrl={activeCover}
+                networkUrl={activeCoverNetworkUrl}
+                fileId={activeCover?.fileId}
                 alt=""
                 className={styles.priceBarCoverImage}
                 loading="eager"

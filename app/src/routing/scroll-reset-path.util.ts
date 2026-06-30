@@ -5,6 +5,7 @@
 export function getPathnameForScrollReset(pathname: string): string {
   return pathname
     .replace(/\/purchase$/, "")
+    .replace(/\/ai-preview$/, "")
     .replace(/\/compress-media$/, "")
     .replace(/\/max$/, "")
     .replace(/\/confirm$/, "");

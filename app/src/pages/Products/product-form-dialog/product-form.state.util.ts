@@ -6,7 +6,6 @@ import type {
   DraftCoverImage,
   DraftFabric,
   DraftFabricColor,
-  DraftMaterialComposition,
   DraftMaterialProfile,
   DraftSetPiece,
   DraftSetPieceDimension,
@@ -25,8 +24,6 @@ export function createEmptyMaterialProfile(): DraftMaterialProfile {
   return {
     texture: "",
     primaryMaterial: "",
-    secondaryMaterials: [],
-    composition: [],
     careInstructions: "",
   };
 }
@@ -103,16 +100,6 @@ export function createDraftFabric(): DraftFabric {
   };
 }
 
-export function createDraftMaterialComposition(): DraftMaterialComposition {
-  return {
-    id: createTempId("composition"),
-    label: "",
-    material: "",
-    texture: "",
-    percentage: "",
-  };
-}
-
 function mapMaterialProfileFromRecord(
   profile: ProductEditRecord["materialProfile"]
 ): DraftMaterialProfile {
@@ -123,15 +110,6 @@ function mapMaterialProfileFromRecord(
   return {
     texture: profile.texture?.trim() || "",
     primaryMaterial: profile.primaryMaterial?.trim() || "",
-    secondaryMaterials: profile.secondaryMaterials ?? [],
-    composition: (profile.composition ?? []).map((entry) => ({
-      id: createTempId("composition"),
-      label: entry.label,
-      material: entry.material?.trim() || "",
-      texture: entry.texture?.trim() || "",
-      percentage:
-        typeof entry.percentage === "number" ? String(entry.percentage) : "",
-    })),
     careInstructions: profile.careInstructions?.trim() || "",
   };
 }
@@ -226,8 +204,6 @@ export function mapMaterialProfileInput(
   const hasContent =
     profile.texture.trim() ||
     profile.primaryMaterial.trim() ||
-    profile.secondaryMaterials.length > 0 ||
-    profile.composition.length > 0 ||
     profile.careInstructions.trim();
 
   if (!hasContent) {
@@ -237,15 +213,6 @@ export function mapMaterialProfileInput(
   return {
     texture: trimToNull(profile.texture),
     primaryMaterial: trimToNull(profile.primaryMaterial),
-    secondaryMaterials: profile.secondaryMaterials,
-    composition: profile.composition
-      .filter((entry) => entry.label.trim())
-      .map((entry) => ({
-        label: entry.label.trim(),
-        material: trimToNull(entry.material),
-        texture: trimToNull(entry.texture),
-        percentage: parseOptionalNumber(entry.percentage) ?? null,
-      })),
     careInstructions: trimToNull(profile.careInstructions),
   };
 }

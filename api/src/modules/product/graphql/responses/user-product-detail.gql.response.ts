@@ -16,7 +16,6 @@ import {
   ProductFabricGqlResponse,
   ProductMaterialProfileGqlResponse,
   ProductSetPieceGqlResponse,
-  ProductVendorGqlResponse,
 } from "./product-list.gql.response";
 import { UserProductListDiscountGqlResponse } from "./user-product-list.gql.response";
 
@@ -57,7 +56,10 @@ export class UserProductDetailGqlResponse {
   @Field(() => [String], { description: "Product tags" })
   tags: string[];
 
-  @Field({ description: "Whether this product is free to access" })
+  @Field({
+    description:
+      "Whether the display price resolves to zero. Does not gate catalog access.",
+  })
   isFree: boolean;
 
   @Field({
@@ -71,12 +73,6 @@ export class UserProductDetailGqlResponse {
     description: "Current END_USER purchase status for this product, if any",
   })
   purchaseStatus?: UserProductPurchaseStatus;
-
-  @Field(() => ProductVendorGqlResponse, {
-    nullable: true,
-    description: "Vendor or seller information",
-  })
-  vendor?: ProductVendorGqlResponse;
 
   @Field(() => ProductMaterialProfileGqlResponse, {
     nullable: true,

@@ -6,19 +6,9 @@ export type DraftCoverImage = {
   readonly accessUrl: import("../../utils/fileAccessUrl.util").FileAccessUrl | null;
 };
 
-export type DraftMaterialComposition = {
-  readonly id: string;
-  readonly label: string;
-  readonly material: string;
-  readonly texture: string;
-  readonly percentage: string;
-};
-
 export type DraftMaterialProfile = {
   readonly texture: string;
   readonly primaryMaterial: string;
-  readonly secondaryMaterials: string[];
-  readonly composition: DraftMaterialComposition[];
   readonly careInstructions: string;
 };
 

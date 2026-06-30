@@ -34,7 +34,6 @@ import {
 } from "../../enums";
 import { FileService, FileAccessUrlDescriptor } from "../file";
 import { resolveAvatarAccessUrl } from "../file/file-access-url.util";
-import { isProductFree } from "../product/product-pricing.util";
 import {
   ProductReviewListGqlInput,
   ProductReviewModerationUpdateGqlInput,
@@ -169,16 +168,6 @@ export class ProductReviewService {
 
     if (!targetUser) {
       throw new BadRequestException(EXCEPTION_CONSTANT.USER_NOT_FOUND);
-    }
-
-    const productIsFree = isProductFree(product);
-    const requiresPaidEnrollment =
-      (!isStaff || isStaffSupportSubmit) && !productIsFree;
-
-    if (!userProduct && requiresPaidEnrollment) {
-      throw new BadRequestException(
-        EXCEPTION_CONSTANT.PRODUCT_REVIEW_PAID_ENROLLMENT_REQUIRED,
-      );
     }
 
     if (needsStaffActor && !actorUser) {

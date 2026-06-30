@@ -39,10 +39,9 @@ export function useLandingFeaturedProducts(): UseLandingFeaturedProductsResult {
         { ...DEFAULT_PRODUCT_LIST_FILTERS, isActive: "ACTIVE" },
         DEFAULT_PRODUCT_LIST_SORT,
         FEATURED_PRODUCT_COUNT,
-        null,
-        { restrictToFreeOnAndroidApk: usePublicList }
+        null
       ),
-    [usePublicList]
+    []
   );
 
   const { data, loading } = useQuery<ProductListQuery, ProductListQueryVariables>(

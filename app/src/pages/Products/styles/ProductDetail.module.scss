@@ -29,6 +29,23 @@
   gap: 1rem;
 }
 
+.detailSection {
+  display: grid;
+  gap: 1rem;
+}
+
+.detailSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.detailSectionHeader h2 {
+  margin: 0;
+  font-size: clamp(1.2rem, 2.4vw, 1.65rem);
+}
+
 .reviewsHeader {
   display: grid;
   gap: 0.35rem;
@@ -115,28 +132,13 @@
 }
 
 .heroCoverImage {
+  position: absolute;
+  inset: 0;
+  display: block;
   inline-size: 100%;
   block-size: 100%;
   object-fit: cover;
-}
-
-.heroStats {
-  position: absolute;
-  inset-inline: 0.75rem;
-  inset-block-end: 0.75rem;
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-}
-
-.heroStats span {
-  padding: 0.34rem 0.7rem;
-  border-radius: 999rem;
-  background: rgba(15, 23, 42, 0.58);
-  color: #ffffff;
-  font-size: 0.78rem;
-  font-weight: 900;
-  backdrop-filter: blur(0.5rem);
+  object-position: center;
 }
 
 .heroBody {
@@ -163,6 +165,12 @@
 
 .heroBody p {
   margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.9;
+  font-size: 1rem;
+}
+
+.heroDescription {
   color: var(--text-secondary);
   line-height: 1.9;
   font-size: 1rem;
@@ -223,56 +231,19 @@
   white-space: nowrap;
 }
 
+.purchaseActions {
+  display: grid;
+  gap: 0.55rem;
+  padding-block-start: 0.15rem;
+  margin-inline: -0.35rem;
+
+  :global(.MuiButton-root) {
+    padding-inline: 0.75rem;
+  }
+}
+
 .mobilePinnedPriceBar {
   display: none;
-}
-
-.mobilePinnedPriceInfo {
-  display: grid;
-  gap: 0.12rem;
-  min-inline-size: 0;
-  padding-inline-start: 0.55rem;
-  flex: 1 1 auto;
-}
-
-.mobilePinnedPriceInfo span {
-  color: var(--text-secondary);
-  font-size: 0.68rem;
-  font-weight: 900;
-  line-height: 1.2;
-}
-
-.mobilePinnedPriceLine {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-inline-size: 0;
-  overflow: hidden;
-  padding-inline-start: 0.15rem;
-}
-
-.mobilePinnedPriceLine strong {
-  flex: 0 1 auto;
-  min-inline-size: 0;
-  color: color-mix(in srgb, variables.$color-info-dark 82%, #0b100c);
-  font-size: 1.1rem;
-  font-weight: 950;
-  line-height: 1.3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.mobilePinnedDiscountBadge {
-  flex: 0 0 auto;
-  padding: 0.08rem 0.34rem;
-  border-radius: 999rem;
-  background: color-mix(in srgb, #16a34a 16%, #ffffff);
-  color: #15803d;
-  font-size: 0.66rem;
-  font-weight: 950;
-  line-height: 1.35;
-  white-space: nowrap;
 }
 
 .contentLayout {
@@ -1035,15 +1006,6 @@ body[data-theme="dark"] {
     }
   }
 
-  .mobilePinnedPriceLine strong {
-    color: #e8d3ae;
-  }
-
-  .mobilePinnedDiscountBadge {
-    background: color-mix(in srgb, #22c55e 20%, #0b100c);
-    color: #bbf7d0;
-  }
-
   .itemCard {
     background: color-mix(in srgb, #0b100c 72%, var(--app-surface-bg));
   }
@@ -1139,12 +1101,10 @@ body[data-theme="dark"] {
       env(safe-area-inset-right)
     );
     z-index: variables.$z-index-app-bar;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    min-block-size: 3.25rem;
-    padding: 0.42rem 0.55rem 0.42rem 0.85rem;
+    display: grid;
+    gap: 0.42rem;
+    min-block-size: 0;
+    padding: 0.42rem 0.55rem;
     border: 0.0625rem solid rgba(61, 44, 53, 0.1);
     border-radius: 1.35rem;
     @include mixins.mobile-floating-shell;
@@ -1169,8 +1129,8 @@ body[data-theme="dark"] {
   }
 
   .mobilePinnedPriceBar :global(.MuiButton-root) {
-    flex: 0 0 auto;
-    min-inline-size: 6.25rem;
+    flex: 1 1 auto;
+    min-inline-size: 0;
     border-radius: 999rem;
     font-weight: 900;
     white-space: nowrap;
@@ -1268,7 +1228,92 @@ body[data-theme="dark"] {
     );
 }
 
+.galleryMainExpandable {
+  cursor: zoom-in;
+}
+
+.galleryCarouselControls {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 0.45rem;
+  pointer-events: none;
+  direction: ltr;
+}
+
+.galleryCarouselNavButton {
+  flex: 0 0 auto;
+  inline-size: 1.85rem;
+  block-size: 1.85rem;
+  padding: 0 !important;
+  color: #ffffff !important;
+  background: rgba(15, 26, 20, 0.42) !important;
+  border: 0.0625rem solid rgba(255, 255, 255, 0.18) !important;
+  backdrop-filter: blur(0.35rem);
+  box-shadow: 0 0.12rem 0.45rem rgba(0, 0, 0, 0.22);
+  pointer-events: auto;
+
+  &:hover {
+    background: rgba(15, 26, 20, 0.58) !important;
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+}
+
+.galleryCarousel {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  touch-action: pan-y;
+  direction: ltr;
+}
+
+.galleryCarouselTrack {
+  display: flex;
+  flex-direction: row;
+  direction: ltr;
+  block-size: 100%;
+  inline-size: max-content;
+  min-inline-size: 100%;
+  will-change: transform;
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.galleryCarouselTrackDragging {
+  transition: none;
+}
+
+.galleryCarouselSlide {
+  position: relative;
+  flex: 0 0 100%;
+  block-size: 100%;
+  min-inline-size: 100%;
+  overflow: hidden;
+  background: color-mix(in srgb, variables.$color-secondary-dark 72%, #0f1a12);
+}
+
+.carouselPlaceholder {
+  display: grid;
+  place-items: center;
+  inline-size: 100%;
+  block-size: 100%;
+  color: color-mix(in srgb, variables.$color-info-dark 58%, #ffffff);
+
+  :global(.MuiSvgIcon-root) {
+    font-size: 2.4rem;
+  }
+}
+
 .galleryThumbnails {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 0.45rem;
@@ -1305,6 +1350,7 @@ body[data-theme="dark"] {
   inline-size: 100%;
   block-size: 100%;
   object-fit: cover;
+  pointer-events: none;
 }
 
 .galleryThumbPlaceholder {
@@ -1314,246 +1360,213 @@ body[data-theme="dark"] {
   background: color-mix(in srgb, var(--app-surface-border) 55%, transparent);
 }
 
-.fabricSelector {
-  display: grid;
-  gap: 0.9rem;
-  padding: 1rem;
-  border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 72%, transparent);
-  border-radius: 1.15rem !important;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, #ffffff 90%, var(--app-surface-bg)),
-    color-mix(in srgb, #f8fafc 72%, var(--app-surface-bg))
-  );
-}
-
-.fabricSelectorHeader {
+.imageViewerDialogLayout {
   display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
-  color: color-mix(in srgb, variables.$color-info-dark 78%, #0b100c);
-
-  h3 {
-    margin: 0;
-    font-size: 1.05rem;
-  }
-
-  p {
-    margin: 0.2rem 0 0;
-    color: var(--text-secondary);
-    line-height: 1.7;
-    font-size: 0.88rem;
-  }
+  flex-direction: column;
+  min-block-size: 100dvh;
 }
 
-.fabricPatterns {
+.imageViewerDialogStage {
+  position: relative;
+  flex: 1 1 auto;
+  min-block-size: 0;
+  padding-block-start: calc(env(safe-area-inset-top, 0rem) + 4.75rem);
+}
+
+.imageViewerCarousel {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  touch-action: pan-y;
+  direction: ltr;
+}
+
+.imageViewerCarouselTrack {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
+  flex-direction: row;
+  direction: ltr;
+  block-size: 100%;
+  inline-size: max-content;
+  min-inline-size: 100%;
+  will-change: transform;
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.fabricPatternChip {
-  padding: 0.42rem 0.8rem;
-  border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 80%, transparent);
-  border-radius: 999rem;
-  background: color-mix(in srgb, #ffffff 84%, var(--app-surface-bg));
-  color: var(--text-primary);
-  font: inherit;
-  font-size: 0.84rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition:
-    border-color 0.2s ease,
-    background 0.2s ease,
-    transform 0.2s ease;
+.imageViewerCarouselTrackDragging {
+  transition: none;
 }
 
-.fabricPatternChip:hover {
-  transform: translateY(-0.06rem);
+.imageViewerCarouselSlide {
+  position: relative;
+  flex: 0 0 100%;
+  block-size: 100%;
+  min-inline-size: 100%;
+  overflow: hidden;
 }
 
-.fabricPatternChipActive {
-  border-color: color-mix(in srgb, variables.$color-info-dark 58%, var(--app-surface-border));
-  background: color-mix(in srgb, variables.$color-info-dark 12%, #ffffff);
+.imageViewerImage {
+  position: absolute;
+  inset: 0;
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+  object-position: center;
 }
 
-.fabricColors {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-}
-
-.fabricColorSwatch {
-  display: grid;
-  justify-items: center;
-  gap: 0.28rem;
-  min-inline-size: 3.4rem;
-  padding: 0.2rem;
-  border: 0.12rem solid transparent;
-  border-radius: 0.85rem;
-  background: transparent;
-  cursor: pointer;
-  transition:
-    border-color 0.2s ease,
-    transform 0.2s ease;
-}
-
-.fabricColorSwatch:hover {
-  transform: translateY(-0.06rem);
-}
-
-.fabricColorSwatchActive {
-  border-color: color-mix(in srgb, variables.$color-info-dark 62%, #ffffff);
-  background: color-mix(in srgb, #ffffff 88%, var(--app-surface-bg));
-}
-
-.fabricColorSwatchInner {
-  inline-size: 2rem;
-  block-size: 2rem;
-  border-radius: 999rem;
-  border: 0.0625rem solid rgba(15, 23, 42, 0.12);
-  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
-  box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.65);
-}
-
-.fabricColorSwatchLabel {
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-  font-weight: 800;
-  line-height: 1.3;
-  text-align: center;
-}
-
-.fabricPreview {
-  display: grid;
-  gap: 0.65rem;
-  padding: 0.75rem;
-  border-radius: 1rem;
-  background: color-mix(in srgb, #ffffff 82%, var(--app-surface-bg));
-  border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 70%, transparent);
-}
-
-.fabricPreviewHeader {
+.imageViewerDialogThumbnails {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-
-  span {
-    color: var(--text-secondary);
-    font-size: 0.78rem;
-    font-weight: 900;
-  }
-
-  strong {
-    color: color-mix(in srgb, variables.$color-info-dark 78%, #0b100c);
-    font-size: 0.9rem;
-  }
+  justify-content: center;
+  gap: 0.45rem;
+  overflow-x: auto;
+  padding: 0.65rem 1rem calc(env(safe-area-inset-bottom, 0rem) + 0.85rem);
+  scrollbar-width: thin;
 }
 
-.fabricPreviewImage {
-  inline-size: 100%;
-  max-block-size: 24rem;
-  object-fit: cover;
-  border-radius: 0.9rem;
-}
-
-.fabricPreviewPlaceholder {
-  display: grid;
-  place-items: center;
-  min-block-size: 12rem;
-  border-radius: 0.9rem;
-  background: color-mix(in srgb, var(--app-surface-border) 35%, transparent);
-}
-
-.setPieceGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr));
-  gap: 0.85rem;
-}
-
-.setPieceCard {
-  display: grid;
-  gap: 0.75rem;
-  padding: 0.8rem;
-  border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 72%, transparent);
-  border-radius: 1.05rem;
-  background: color-mix(in srgb, #ffffff 90%, var(--app-surface-bg));
-  box-shadow: 0 0.65rem 1.35rem rgba(15, 23, 42, 0.06);
-}
-
-.setPieceImageWrap {
-  position: relative;
+.imageViewerDialogThumb {
+  flex: 0 0 auto;
+  inline-size: 4.35rem;
+  block-size: 4.35rem;
+  padding: 0;
+  border: 0.14rem solid rgba(255, 255, 255, 0.18);
+  border-radius: 0.85rem;
   overflow: hidden;
-  border-radius: 0.9rem;
-  aspect-ratio: 4 / 3;
-  background:
-    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.58), transparent 31%),
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, variables.$color-gradient-start 88%, #ffffff),
-      color-mix(in srgb, variables.$color-gradient-mid 72%, #ffffff)
-    );
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.setPieceImage {
+.imageViewerDialogThumb:hover {
+  transform: translateY(-0.08rem);
+}
+
+.imageViewerDialogThumbActive {
+  border-color: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.28);
+}
+
+.imageViewerDialogThumbImage {
   inline-size: 100%;
   block-size: 100%;
   object-fit: cover;
+  pointer-events: none;
 }
 
-.setPieceImagePlaceholder {
-  display: grid;
-  place-items: center;
-  block-size: 100%;
-  color: color-mix(in srgb, variables.$color-info-dark 58%, #ffffff);
-
-  :global(.MuiSvgIcon-root) {
-    font-size: 2.4rem;
-  }
-}
-
-.setPieceBody {
+.setPieceViewerDetails {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
   display: grid;
   gap: 0.45rem;
-
-  h4 {
-    margin: 0;
-    font-size: 1rem;
-    line-height: 1.5;
-  }
+  padding: 0.85rem 1rem calc(env(safe-area-inset-bottom, 0rem) + 0.85rem);
+  border-block-start: 0.0625rem solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 26, 20, 0.72);
+  backdrop-filter: blur(0.55rem) saturate(118%);
+  -webkit-backdrop-filter: blur(0.55rem) saturate(118%);
+  color: #ffffff;
 
   p {
     margin: 0;
-    color: var(--text-secondary);
+    color: rgba(255, 255, 255, 0.88);
     line-height: 1.75;
     font-size: 0.88rem;
   }
 }
 
-.setPieceDimensions {
-  display: grid;
-  gap: 0.35rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.setPieceViewerSpecs {
+  font-size: 0.8rem !important;
+  font-weight: 800;
+  line-height: 1.5 !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
 
-  li {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    color: color-mix(in srgb, variables.$color-info-dark 72%, #0b100c);
-    font-size: 0.82rem;
-    font-weight: 800;
-    line-height: 1.5;
+.setPiecesCoverWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-block-size: 22rem;
+  border-radius: 1.15rem;
+  overflow: hidden;
+  isolation: isolate;
+  border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 72%, transparent);
+  background:
+    radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.2), transparent 34%),
+    linear-gradient(
+      160deg,
+      variables.$color-secondary-main 0%,
+      variables.$color-secondary-light 48%,
+      variables.$color-primary-dark 100%
+    );
+}
+
+.setPiecesGallery {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.setPiecesCarouselControls {
+  @extend .galleryCarouselControls;
+  transform: translateY(-2.75rem);
+}
+
+.setPiecesCarouselNavButton {
+  @extend .galleryCarouselNavButton;
+}
+
+.setPiecesCoverContent {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 0.45rem;
+  margin-block-start: auto;
+  padding: 1.85rem 0.85rem 0.75rem;
+  min-inline-size: 0;
+  color: #ffffff;
+  background: linear-gradient(
+    to top,
+    rgba(15, 26, 20, 0.9) 0%,
+    rgba(15, 26, 20, 0.62) 40%,
+    rgba(15, 26, 20, 0.22) 72%,
+    transparent 100%
+  );
+  pointer-events: none;
+
+  h4,
+  p {
+    pointer-events: auto;
+  }
+
+  h4 {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.55;
+    font-weight: 950;
+  }
+
+  p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.88);
+    line-height: 1.75;
+    font-size: 0.88rem;
   }
 }
 
-.setPieceWeight {
-  color: var(--text-secondary);
-  font-size: 0.8rem;
+.setPiecesCoverSpecs {
+  font-size: 0.8rem !important;
   font-weight: 800;
+  line-height: 1.5 !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .catalogCardsRow {
@@ -1603,32 +1616,6 @@ body[data-theme="dark"] {
     margin: 0;
     line-height: 1.7;
     font-weight: 700;
-  }
-}
-
-.catalogCompositionList {
-  display: grid;
-  gap: 0.45rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-
-  li {
-    display: grid;
-    gap: 0.12rem;
-    padding: 0.55rem 0.65rem;
-    border-radius: 0.75rem;
-    background: color-mix(in srgb, variables.$color-info-dark 6%, #ffffff);
-  }
-
-  strong {
-    font-size: 0.84rem;
-  }
-
-  span {
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-    line-height: 1.6;
   }
 }
 
@@ -1695,15 +1682,5 @@ body[data-theme="dark"] {
 
   .heroMediaWrap {
     min-block-size: 15rem;
-  }
-}
-
-@media (max-width: variables.$breakpoint-sm) {
-  .fabricPreviewImage {
-    max-block-size: 18rem;
-  }
-
-  .setPieceGrid {
-    grid-template-columns: 1fr;
   }
 }

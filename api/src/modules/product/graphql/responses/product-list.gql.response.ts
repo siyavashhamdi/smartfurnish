@@ -35,42 +35,12 @@ export class ProductVendorGqlResponse {
 }
 
 @ObjectType()
-export class ProductMaterialCompositionGqlResponse {
-  @Field({ description: "Composition label" })
-  label: string;
-
-  @Field({ nullable: true, description: "Material name" })
-  material?: string;
-
-  @Field({ nullable: true, description: "Texture name" })
-  texture?: string;
-
-  @Field(() => Float, {
-    nullable: true,
-    description: "Optional percentage share",
-  })
-  percentage?: number;
-}
-
-@ObjectType()
 export class ProductMaterialProfileGqlResponse {
   @Field({ nullable: true, description: "Primary texture" })
   texture?: string;
 
   @Field({ nullable: true, description: "Primary material" })
   primaryMaterial?: string;
-
-  @Field(() => [String], {
-    nullable: true,
-    description: "Secondary materials",
-  })
-  secondaryMaterials?: string[];
-
-  @Field(() => [ProductMaterialCompositionGqlResponse], {
-    nullable: true,
-    description: "Optional material composition breakdown",
-  })
-  composition?: ProductMaterialCompositionGqlResponse[];
 
   @Field({ nullable: true, description: "Care instructions" })
   careInstructions?: string;
@@ -214,14 +184,6 @@ export class ProductListSummaryGqlResponse {
 
   @Field(() => [String], { description: "Product tags" })
   tags: string[];
-
-  @Field(() => Int, { description: "Number of set pieces in the product" })
-  setPieceCount: number;
-
-  @Field(() => Int, {
-    description: "Number of active fabrics in the product",
-  })
-  fabricCount: number;
 }
 
 @ObjectType()

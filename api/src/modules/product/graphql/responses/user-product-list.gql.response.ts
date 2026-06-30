@@ -1,4 +1,4 @@
-import { Field, Float, ID, Int, ObjectType } from "@nestjs/graphql";
+import { Field, Float, ID, ObjectType } from "@nestjs/graphql";
 import { Types } from "mongoose";
 
 import { FileAccessUrlGqlResponse } from "../../../file/graphql/responses";
@@ -39,14 +39,6 @@ export class UserProductListGqlResponse {
 
   @Field(() => [String], { description: "Product tags" })
   tags: string[];
-
-  @Field(() => Int, { description: "Number of set pieces in the product" })
-  setPieceCount: number;
-
-  @Field(() => Int, {
-    description: "Number of active fabrics in the product",
-  })
-  fabricCount: number;
 
   @Field({
     description:

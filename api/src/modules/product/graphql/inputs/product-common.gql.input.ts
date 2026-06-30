@@ -7,7 +7,6 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  Max,
   Min,
   ValidateNested,
 } from "class-validator";
@@ -65,35 +64,6 @@ export class ProductVendorGqlInput {
 }
 
 @InputType()
-export class ProductMaterialCompositionGqlInput {
-  @Field({ description: "Composition label" })
-  @IsString({ message: "Composition label must be a string" })
-  @IsNotEmpty({ message: "Composition label is required" })
-  label: string;
-
-  @Field({ nullable: true, description: "Material name" })
-  @IsOptional()
-  @IsString({ message: "Composition material must be a string" })
-  material?: string | null;
-
-  @Field({ nullable: true, description: "Texture name" })
-  @IsOptional()
-  @IsString({ message: "Composition texture must be a string" })
-  texture?: string | null;
-
-  @Field(() => Float, {
-    nullable: true,
-    description: "Optional percentage share",
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber({}, { message: "Composition percentage must be a number" })
-  @Min(0)
-  @Max(100)
-  percentage?: number | null;
-}
-
-@InputType()
 export class ProductMaterialProfileGqlInput {
   @Field({ nullable: true, description: "Primary texture" })
   @IsOptional()
@@ -104,25 +74,6 @@ export class ProductMaterialProfileGqlInput {
   @IsOptional()
   @IsString({ message: "Primary material must be a string" })
   primaryMaterial?: string | null;
-
-  @Field(() => [String], {
-    nullable: true,
-    description: "Secondary materials",
-  })
-  @IsOptional()
-  @IsArray({ message: "Secondary materials must be an array" })
-  @IsString({ each: true, message: "Each secondary material must be a string" })
-  secondaryMaterials?: string[];
-
-  @Field(() => [ProductMaterialCompositionGqlInput], {
-    nullable: true,
-    description: "Optional material composition breakdown",
-  })
-  @IsOptional()
-  @IsArray({ message: "Composition must be an array" })
-  @ValidateNested({ each: true })
-  @Type(() => ProductMaterialCompositionGqlInput)
-  composition?: ProductMaterialCompositionGqlInput[];
 
   @Field({ nullable: true, description: "Care instructions" })
   @IsOptional()

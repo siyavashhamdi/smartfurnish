@@ -37,7 +37,6 @@ import {
   Product,
   ProductDocument,
   ProductFabric,
-  ProductMaterialComposition,
   ProductMaterialProfile,
   ProductSetPieceDimension,
   ProductReview,
@@ -59,7 +58,6 @@ import {
   ProductDiscountGqlInput,
   ProductFabricColorGqlInput,
   ProductFabricGqlInput,
-  ProductMaterialCompositionGqlInput,
   ProductMaterialProfileGqlInput,
   ProductSetPieceDimensionGqlInput,
   ProductSetPieceGqlInput,
@@ -84,7 +82,6 @@ import {
   ProductListGqlResponse,
   ProductListPaginatedCursorGqlResponse,
   ProductListSummaryGqlResponse,
-  ProductMaterialCompositionGqlResponse,
   ProductMaterialProfileGqlResponse,
   ProductSetPieceDimensionGqlResponse,
   ProductSetPieceGqlResponse,
@@ -1084,7 +1081,6 @@ export class ProductService {
         priceIrt: 1,
         discount: 1,
         tags: 1,
-        vendor: 1,
         materialProfile: 1,
         setPieces: 1,
         fabrics: 1,
@@ -1099,7 +1095,9 @@ export class ProductService {
     const [userProductLookup] = await Promise.all([
       this.buildUserProductLookup(userId, [product]),
     ]);
-    const fileAccessUrlMap = await this.buildFileAccessUrlLookup([product]);
+    const fileAccessUrlMap = await this.buildFileAccessUrlLookup([product], {
+      includeFabricImages: false,
+    });
     const userProduct = userProductLookup.get(product._id.toString());
 
     return this.toUserDetailResponse(product, userProduct, fileAccessUrlMap);
@@ -1479,17 +1477,6 @@ export class ProductService {
     };
   }
 
-  private normalizeMaterialCompositionInput(
-    composition: ProductMaterialCompositionGqlInput,
-  ): ProductMaterialComposition {
-    return {
-      label: composition.label.trim(),
-      material: this.normalizeNullableText(composition.material) ?? undefined,
-      texture: this.normalizeNullableText(composition.texture) ?? undefined,
-      percentage: composition.percentage ?? undefined,
-    };
-  }
-
   private normalizeMaterialProfileInput(
     materialProfile?: ProductMaterialProfileGqlInput | null,
   ): ProductMaterialProfile | null | undefined {
@@ -1504,12 +1491,6 @@ export class ProductService {
       texture: this.normalizeNullableText(materialProfile.texture) ?? undefined,
       primaryMaterial:
         this.normalizeNullableText(materialProfile.primaryMaterial) ?? undefined,
-      secondaryMaterials: this.normalizeStringArray(
-        materialProfile.secondaryMaterials,
-      ),
-      composition: (materialProfile.composition ?? []).map((entry) =>
-        this.normalizeMaterialCompositionInput(entry),
-      ),
       careInstructions:
         this.normalizeNullableText(materialProfile.careInstructions) ??
         undefined,
@@ -1619,15 +1600,22 @@ export class ProductService {
 
   private collectReferencedFileIds(
     input: ProductFileReferenceSource,
+    options?: { includeFabricImages?: boolean },
   ): Types.ObjectId[] {
+    const includeFabricImages = options?.includeFabricImages !== false;
+    const fabricImageFileIds =
+      includeFabricImages ?
+        (input.fabrics ?? []).flatMap((fabric) =>
+          (fabric.colors ?? [])
+            .map((color) => color.aiProductImageFileId)
+            .filter((fileId): fileId is Types.ObjectId => Boolean(fileId)),
+        )
+      : [];
+
     const fileIds = [
       ...(input.coverImageFileIds ?? []),
       ...(input.setPieces ?? []).flatMap((piece) => piece.imageFileIds ?? []),
-      ...(input.fabrics ?? []).flatMap((fabric) =>
-        (fabric.colors ?? [])
-          .map((color) => color.aiProductImageFileId)
-          .filter((fileId): fileId is Types.ObjectId => Boolean(fileId)),
-      ),
+      ...fabricImageFileIds,
     ].filter((fileId): fileId is Types.ObjectId => Boolean(fileId));
 
     return this.collectUniqueFileIds(fileIds);
@@ -2023,12 +2011,13 @@ export class ProductService {
 
   private async buildFileAccessUrlLookup(
     products: ProductDocument[],
+    options?: { includeFabricImages?: boolean },
   ): Promise<Map<string, FileAccessUrlDescriptor>> {
     const fileIds = products.flatMap((product) => {
       const productObj = (product.toObject?.() ||
         product) as ProductFileReferenceSource;
 
-      return this.collectReferencedFileIds(productObj);
+      return this.collectReferencedFileIds(productObj, options);
     });
 
     return this.fileService.getAccessUrlMap(fileIds);
@@ -2050,12 +2039,6 @@ export class ProductService {
     fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
   ): FileAccessUrlDescriptor[] {
     return this.mapCoverImageAccessUrls(fileIds, fileAccessUrlMap);
-  }
-
-  private countActiveFabrics(
-    fabrics: ProductFabric[] | undefined,
-  ): number {
-    return (fabrics ?? []).filter((fabric) => fabric.isActive).length;
   }
 
   private toVendorResponse(
@@ -2083,8 +2066,6 @@ export class ProductService {
     return {
       texture: materialProfile.texture,
       primaryMaterial: materialProfile.primaryMaterial,
-      secondaryMaterials: materialProfile.secondaryMaterials,
-      composition: materialProfile.composition,
       careInstructions: materialProfile.careInstructions,
     };
   }
@@ -2092,6 +2073,7 @@ export class ProductService {
   private toFabricColorResponse(
     color: ProductFabric["colors"][number],
     fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
+    includeFabricImages = true,
   ): ProductFabricColorGqlResponse {
     return {
       key: color.key,
@@ -2099,8 +2081,9 @@ export class ProductService {
       hexCode: color.hexCode,
       sortOrder: color.sortOrder,
       isActive: color.isActive,
-      aiProductImageAccessUrl: color.aiProductImageFileId
-        ? fileAccessUrlMap?.get(color.aiProductImageFileId.toString())
+      aiProductImageAccessUrl:
+        includeFabricImages && color.aiProductImageFileId ?
+          fileAccessUrlMap?.get(color.aiProductImageFileId.toString())
         : undefined,
     };
   }
@@ -2109,6 +2092,7 @@ export class ProductService {
     fabric: ProductFabric,
     activeOnly: boolean,
     fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
+    includeFabricImages = true,
   ): ProductFabricGqlResponse | null {
     if (activeOnly && !fabric.isActive) {
       return null;
@@ -2116,7 +2100,9 @@ export class ProductService {
 
     const colors = (fabric.colors ?? [])
       .filter((color) => !activeOnly || color.isActive)
-      .map((color) => this.toFabricColorResponse(color, fileAccessUrlMap));
+      .map((color) =>
+        this.toFabricColorResponse(color, fileAccessUrlMap, includeFabricImages),
+      );
 
     if (activeOnly && colors.length === 0) {
       return null;
@@ -2135,10 +2121,16 @@ export class ProductService {
     fabrics: ProductFabric[] | undefined,
     activeOnly: boolean,
     fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
+    includeFabricImages = true,
   ): ProductFabricGqlResponse[] {
     return (fabrics ?? [])
       .map((fabric) =>
-        this.toFabricResponse(fabric, activeOnly, fileAccessUrlMap),
+        this.toFabricResponse(
+          fabric,
+          activeOnly,
+          fileAccessUrlMap,
+          includeFabricImages,
+        ),
       )
       .filter((fabric): fabric is ProductFabricGqlResponse => Boolean(fabric));
   }
@@ -2190,8 +2182,6 @@ export class ProductService {
       isActive: productObj.isActive,
       sortOrder: productObj.sortOrder,
       tags: productObj.tags || [],
-      setPieceCount: productObj.setPieces?.length ?? 0,
-      fabricCount: this.countActiveFabrics(productObj.fabrics),
     };
   }
 
@@ -2349,8 +2339,6 @@ export class ProductService {
       priceIrt: productObj.priceIrt,
       discount: productObj.discount,
       tags: productObj.tags || [],
-      setPieceCount: productObj.setPieces?.length ?? 0,
-      fabricCount: this.countActiveFabrics(productObj.fabrics),
       isPurchased:
         userProduct?.purchase?.status === UserProductPurchaseStatus.PAID,
     };
@@ -2379,7 +2367,6 @@ export class ProductService {
       isFree: this.isProductFree(productObj),
       isPurchased: purchaseStatus === UserProductPurchaseStatus.PAID,
       purchaseStatus,
-      vendor: this.toVendorResponse(productObj.vendor),
       materialProfile: this.toMaterialProfileResponse(productObj.materialProfile),
       setPieces: this.toSetPiecesResponse(
         productObj.setPieces,
@@ -2389,6 +2376,7 @@ export class ProductService {
         productObj.fabrics,
         true,
         fileAccessUrlMap,
+        false,
       ),
       isReviewSubmissionEnabled: productObj.isReviewSubmissionEnabled !== false,
       isReviewsSectionVisible: productObj.isReviewsSectionVisible !== false,

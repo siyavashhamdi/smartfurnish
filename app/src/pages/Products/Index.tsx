@@ -51,11 +51,11 @@ import { useMutationWithSnackbar } from "../../hooks/useMutationWithSnackbar";
 import { useTranslation } from "../../hooks/useTranslation";
 import { PRODUCT_LIST_QUERY } from "../../graphql/queries/productList.query";
 import { USER_PRODUCT_LIST_QUERY } from "../../graphql/queries/userProductList.query";
+import { prefetchUserProductDetail } from "../../lib/product-detail-prefetch";
 import { PRODUCT_DELETE_MUTATION } from "../../graphql/mutations/productDelete.mutation";
 import { PRODUCT_DELETE_DEPENDENCIES_QUERY } from "../../graphql/queries/productDeleteDependencies.query";
 import ProductCard from "./ProductCard";
 import ProductFormDialog from "./ProductFormDialog";
-import EndUserProductFilterTabs, { type EndUserProductTab } from "./EndUserProductFilterTabs";
 import {
   buildProductListQueryVariables,
   DEFAULT_PRODUCT_LIST_FILTERS,
@@ -79,7 +79,6 @@ import type {
 import { APP_SHELL_ROUTES } from "../../routing/app-shell-routes";
 import { PRODUCTS_EDIT_PATH_REGEX } from "../../routing/product-route-path";
 import { resolveQueryFetchPolicy } from "../../lib/offline-fetch-policy.util";
-import { isNativeAndroidShell } from "../../utils/nativePlatform.util";
 import { useAfterLogoutCacheCleanup } from "../../hooks/useAfterLogoutCacheCleanup";
 import { getIsBrowserOffline, getIsOfflineMode } from "../../lib/offline-state";
 import { stripOverlayRoutePathname } from "../../routing/max-route.util";
@@ -94,22 +93,6 @@ import styles from "./styles/products.module.scss";
 import AppTooltip from "../../shared/AppTooltip";
 
 const PRODUCT_LIST_PAGE_SIZE = 6;
-
-function getEndUserTabFilters(
-  tab: EndUserProductTab
-): Pick<ProductListFilters, "hasPrice" | "isPurchased"> {
-  switch (tab) {
-    case "FREE":
-      return { hasPrice: "FREE_OR_UNSET", isPurchased: "ALL" };
-    case "PURCHASABLE":
-      return { hasPrice: "WITH_PRICE", isPurchased: "NO" };
-    case "PURCHASED":
-      return { hasPrice: "ALL", isPurchased: "YES" };
-    case "ALL":
-    default:
-      return { hasPrice: "ALL", isPurchased: "ALL" };
-  }
-}
 
 type ProductDeleteMutationResult = {
   productDelete: boolean;
@@ -155,10 +138,6 @@ const ProductsIndex = (): ReactElement => {
   const [deleteTarget, setDeleteTarget] = useState<ProductListRecord | null>(null);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [showFilterSections, setShowFilterSections] = useState(false);
-  const [endUserTab, setEndUserTab] = useState<EndUserProductTab>(() =>
-    isNativeAndroidShell() ? "FREE" : "ALL"
-  );
-  const [productFeedMinHeight, setProductFeedMinHeight] = useState<number | undefined>();
   const [draggedProductId, setDraggedProductId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -307,27 +286,6 @@ const ProductsIndex = (): ReactElement => {
   }, [filters, searchQuery]);
 
   useEffect(() => {
-    if (!isEndUser) {
-      return;
-    }
-
-    const tabFilters = getEndUserTabFilters(endUserTab);
-    setItems([]);
-    setSearchQuery("");
-    setFilters({
-      ...DEFAULT_PRODUCT_LIST_FILTERS,
-      ...tabFilters,
-    });
-  }, [endUserTab, isEndUser]);
-
-  const handleEndUserTabChange = useCallback((tab: EndUserProductTab): void => {
-    if (productFeedRef.current) {
-      setProductFeedMinHeight(productFeedRef.current.offsetHeight);
-    }
-    setEndUserTab(tab);
-  }, []);
-
-  useEffect(() => {
     if (!isMobile || isEndUser) {
       setIsMobileFilterOpen(false);
       return undefined;
@@ -409,11 +367,8 @@ const ProductsIndex = (): ReactElement => {
   }, [filters, sort]);
 
   const productListVariables = useMemo(
-    () =>
-      buildProductListQueryVariables(filters, sort, PRODUCT_LIST_PAGE_SIZE, null, {
-        restrictToFreeOnAndroidApk: isPublicProductView,
-      }),
-    [filters, sort, isPublicProductView]
+    () => buildProductListQueryVariables(filters, sort, PRODUCT_LIST_PAGE_SIZE, null),
+    [filters, sort]
   );
 
   const {
@@ -471,12 +426,6 @@ const ProductsIndex = (): ReactElement => {
       endCursor: page.pagination.endCursor ?? null,
     });
   }, [productListData, networkStatus]);
-
-  useEffect(() => {
-    if (!isEndUser || !isInitialLoading) {
-      setProductFeedMinHeight(undefined);
-    }
-  }, [isEndUser, isInitialLoading, endUserTab]);
 
   const onRefresh = useCallback((): void => {
     void refetchProductList();
@@ -772,13 +721,7 @@ const ProductsIndex = (): ReactElement => {
         </header>
       ) : null}
 
-      {isEndUser ? (
-        <EndUserProductFilterTabs
-          activeTab={endUserTab}
-          onChange={handleEndUserTabChange}
-          hiddenTabs={isNativeAndroidShell() ? ["ALL", "PURCHASABLE"] : []}
-        />
-      ) : (
+      {!isEndUser ? (
         <Paper
           className={`${styles.filterPanel}${
             isMobile && !shouldShowFilterPanelContent ? ` ${styles.filterPanelCollapsed}` : ""
@@ -1042,7 +985,7 @@ const ProductsIndex = (): ReactElement => {
             </Stack>
           ) : null}
         </Paper>
-      )}
+      ) : null}
 
       {error && !getIsOfflineMode() && displayItems.length === 0 ? (
         <Alert severity="error" className={styles.errorAlert}>
@@ -1050,11 +993,7 @@ const ProductsIndex = (): ReactElement => {
         </Alert>
       ) : null}
 
-      <div
-        ref={productFeedRef}
-        className={styles.productFeed}
-        style={isEndUser && productFeedMinHeight ? { minHeight: productFeedMinHeight } : undefined}
-      >
+      <div ref={productFeedRef} className={styles.productFeed}>
         <div className={styles.productGrid}>
           {isInitialLoading
             ? Array.from({ length: 8 }).map((_, index) => (
@@ -1083,6 +1022,12 @@ const ProductsIndex = (): ReactElement => {
                   onDragOver={(event) => handleProductDragOver(event, item.id)}
                   onDrop={handleProductDrop}
                   onDragEnd={() => setDraggedProductId(null)}
+                  onMouseEnter={
+                    isPublicProductView ? () => prefetchUserProductDetail(item.id) : undefined
+                  }
+                  onTouchStart={
+                    isPublicProductView ? () => prefetchUserProductDetail(item.id) : undefined
+                  }
                 >
                   <ProductCard
                     item={item}
@@ -1099,9 +1044,7 @@ const ProductsIndex = (): ReactElement => {
           <div className={styles.emptyState}>
             <Typography variant="h6">محصولی پیدا نشد.</Typography>
             <Typography variant="body2" color="text.secondary">
-              {isEndUser
-                ? "محصولی در این دسته وجود ندارد. دسته دیگری را امتحان کنید."
-                : "فیلترها را تغییر دهید یا پاک کنید تا نتایج بیشتری ببینید."}
+              فیلترها را تغییر دهید یا پاک کنید تا نتایج بیشتری ببینید.
             </Typography>
           </div>
         ) : null}

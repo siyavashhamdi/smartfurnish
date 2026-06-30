@@ -82,7 +82,6 @@ export function buildProductStructuredData(
     description,
     imageUrl,
     keywords,
-    isFree,
     priceIrt,
   } = input;
 
@@ -99,7 +98,7 @@ export function buildProductStructuredData(
     },
     inLanguage: "fa",
     identifier: productId,
-    isAccessibleForFree: isFree,
+    isAccessibleForFree: true,
   };
 
   if (imageUrl) {
@@ -110,7 +109,7 @@ export function buildProductStructuredData(
     productEntity.keywords = keywords;
   }
 
-  if (!isFree && typeof priceIrt === "number" && priceIrt > 0) {
+  if (typeof priceIrt === "number" && priceIrt > 0) {
     productEntity.offers = {
       "@type": "Offer",
       price: priceIrt,

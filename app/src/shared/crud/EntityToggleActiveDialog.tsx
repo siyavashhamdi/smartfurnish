@@ -35,6 +35,7 @@ const EntityToggleActiveDialog = ({
 
   const icon = (
     <Avatar
+      className="app-avatar--plain"
       sx={{
         width: isMobile ? 72 : 56,
         height: isMobile ? 72 : 56,

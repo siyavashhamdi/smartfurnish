@@ -326,11 +326,6 @@ function MessageSenderAvatar({
         color: showSupportIcon ? "common.white" : toneStyle.border,
         fontWeight: 800,
         fontSize: "0.82rem",
-        border: `2px solid ${alpha(toneStyle.border, theme.palette.mode === "dark" ? 0.65 : 0.4)}`,
-        boxShadow:
-          theme.palette.mode === "dark"
-            ? `0 0.25rem 0.75rem ${alpha(toneStyle.border, 0.35)}`
-            : `0 0.25rem 0.75rem ${alpha(toneStyle.border, 0.18)}`,
       }}
     >
       {showSupportIcon ? (

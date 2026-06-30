@@ -23,6 +23,7 @@ import { usePageSeoOverride } from "../../hooks/usePageSeoOverride";
 import { useScrollReveal } from "../../hooks/useScrollReveal";
 import { useTranslation } from "../../hooks/useTranslation";
 import { APP_SHELL_ROUTES } from "../../routing/app-shell-routes";
+import { prefetchUserProductDetail } from "../../lib/product-detail-prefetch";
 import {
   buildDefaultStructuredData,
   buildStructuredDataLogoUrl,
@@ -395,13 +396,18 @@ const Landing = (): ReactElement => {
             ) : null}
             {!productsLoading
               ? featuredProducts.map((product) => (
-                  <ProductCard
+                  <div
                     key={product.id}
-                    item={product}
-                    variant="public"
-                    onOpen={() => handleProductOpen(product.id)}
-                    onKeyDown={(event) => handleProductKeyDown(product.id, event)}
-                  />
+                    onMouseEnter={() => prefetchUserProductDetail(product.id)}
+                    onTouchStart={() => prefetchUserProductDetail(product.id)}
+                  >
+                    <ProductCard
+                      item={product}
+                      variant="public"
+                      onOpen={() => handleProductOpen(product.id)}
+                      onKeyDown={(event) => handleProductKeyDown(product.id, event)}
+                    />
+                  </div>
                 ))
               : null}
           </Box>

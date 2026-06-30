@@ -1,11 +1,13 @@
 import {
   PRODUCT_ROUTE_ID_PARAM,
+  PRODUCT_AI_PREVIEW_ROUTE_SUFFIX,
   PRODUCTS_API_ROUTE_PATH,
   PRODUCTS_ROUTE_PATH,
 } from "./product-route-path.constants.mjs";
 
 export {
   PRODUCT_ROUTE_ID_PARAM,
+  PRODUCT_AI_PREVIEW_ROUTE_SUFFIX,
   PRODUCTS_API_ROUTE_PATH,
   PRODUCTS_ROUTE_PATH,
 };
@@ -20,7 +22,7 @@ const PRODUCTS_ROUTE_PATH_REGEX = PRODUCTS_ROUTE_PATH.replace(/[.*+?^${}()|[\]\\
 export const PRODUCTS_EDIT_PATH_REGEX = new RegExp(`^${PRODUCTS_ROUTE_PATH_REGEX}/edit/([^/]+)$`);
 
 export const PRODUCT_DETAIL_ROUTE_REGEX = new RegExp(
-  `^${PRODUCTS_ROUTE_PATH_REGEX}/[^/]+(?:/(?:purchase|max))?$`
+  `^${PRODUCTS_ROUTE_PATH_REGEX}/[^/]+(?:/(?:purchase|max|ai-preview))?$`
 );
 
 export const PRODUCT_DETAIL_PAGE_ROUTE_REGEX = new RegExp(`^${PRODUCTS_ROUTE_PATH_REGEX}/[^/]+$`);
@@ -43,6 +45,14 @@ export function productsRoutePath(...segments: readonly string[]): string {
 
 export function productDetailPath(productId: string): string {
   return productsRoutePath(productId);
+}
+
+export function isProductAiPreviewRoutePathname(pathname: string): boolean {
+  return pathname.endsWith(PRODUCT_AI_PREVIEW_ROUTE_SUFFIX);
+}
+
+export function productAiPreviewRoutePath(productId: string): string {
+  return `${productDetailPath(productId)}${PRODUCT_AI_PREVIEW_ROUTE_SUFFIX}`;
 }
 
 export function productsPaymentZarinPalVerifyApiPath(): string {

@@ -7,3 +7,6 @@ export const PRODUCTS_ROUTE_PATH = "/products";
 
 /** REST prefix for product payment callbacks (Nest global prefix + controller path). */
 export const PRODUCTS_API_ROUTE_PATH = "/api/v1/products";
+
+/** Product detail overlay route for the AI home-preview dialog. */
+export const PRODUCT_AI_PREVIEW_ROUTE_SUFFIX = "/ai-preview";

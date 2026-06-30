@@ -264,9 +264,6 @@ export function isReviewsSectionVisibleForViewer(input: {
 
 export function resolveCanSubmitProductReview(input: {
   readonly isAuthenticated: boolean;
-  readonly isFree?: boolean | null;
-  readonly isPurchased?: boolean | null;
-  readonly purchaseStatus?: string | null;
   readonly roles?: readonly string[];
   readonly isReviewsSectionVisible?: boolean | null;
   readonly isReviewSubmissionEnabled?: boolean | null;
@@ -287,12 +284,7 @@ export function resolveCanSubmitProductReview(input: {
     return false;
   }
 
-  const hasPendingManualReview = input.isFree !== true && input.purchaseStatus === "PENDING";
-  const hasPendingPurchase = hasPendingManualReview;
-  const canAccessProduct =
-    input.isFree === true || input.isPurchased === true || input.purchaseStatus === "PAID";
-
-  return canAccessProduct && !hasPendingPurchase;
+  return true;
 }
 
 export function findOwnAdminProductReview(

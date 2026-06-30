@@ -1,7 +1,5 @@
-import type { ProductSectionTab } from "./product-section-tabs.shared";
+import type { ProductDetailSectionTab } from "./product-section-tabs.shared";
 import { PRODUCT_DETAIL_SECTION_TARGETS } from "./product-section-tabs.shared";
-
-export type ProductDetailSectionTab = ProductSectionTab;
 
 export { PRODUCT_DETAIL_SECTION_TARGETS };
 

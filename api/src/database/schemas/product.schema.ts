@@ -19,18 +19,9 @@ export type ProductVendor = {
   notes?: string;
 };
 
-export type ProductMaterialComposition = {
-  label: string;
-  material?: string;
-  texture?: string;
-  percentage?: number;
-};
-
 export type ProductMaterialProfile = {
   texture?: string;
   primaryMaterial?: string;
-  secondaryMaterials?: string[];
-  composition?: ProductMaterialComposition[];
   careInstructions?: string;
 };
 
@@ -105,22 +96,10 @@ export const ProductVendorSchema = new MongooseSchema(
   { _id: false },
 );
 
-export const ProductMaterialCompositionSchema = new MongooseSchema(
-  {
-    label: { required: true, trim: true, type: String },
-    material: { trim: true, type: String },
-    texture: { trim: true, type: String },
-    percentage: { max: 100, min: 0, type: Number },
-  },
-  { _id: false },
-);
-
 export const ProductMaterialProfileSchema = new MongooseSchema(
   {
     texture: { trim: true, type: String },
     primaryMaterial: { trim: true, type: String },
-    secondaryMaterials: { default: [], trim: true, type: [String] },
-    composition: { default: [], type: [ProductMaterialCompositionSchema] },
     careInstructions: { trim: true, type: String },
   },
   { _id: false },

@@ -5,12 +5,13 @@ export function isMaxRoutePathname(pathname: string): boolean {
   return /\/max$/.test(pathname);
 }
 
-/** Base pathname without overlay segments (/max, /purchase, /compress-media). */
+/** Base pathname without overlay segments (/max, /purchase, /compress-media, /ai-preview). */
 export function stripOverlayRoutePathname(pathname: string): string {
   return pathname
     .replace(/\/compress-media$/, "")
     .replace(/\/max$/, "")
-    .replace(/\/purchase$/, "");
+    .replace(/\/purchase$/, "")
+    .replace(/\/ai-preview$/, "");
 }
 
 export function buildMaxRoutePathname(pathname: string): string {

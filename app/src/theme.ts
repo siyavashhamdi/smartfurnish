@@ -887,10 +887,19 @@ export const createAppTheme = (mode: PaletteMode): Theme => {
       },
       MuiAvatar: {
         styleOverrides: {
-          root: {
+          root: ({ theme }) => ({
             position: "relative",
             overflow: "hidden",
-          },
+            "&:not(.MuiAvatar-rounded):not(.app-avatar--plain)": {
+              boxShadow: `0 0 0 2px ${alpha(
+                theme.palette.primary.main,
+                theme.palette.mode === "dark" ? 0.55 : 0.42
+              )}`,
+            },
+            "&.app-avatar--plain": {
+              boxShadow: "none",
+            },
+          }),
         },
       },
       MuiAlert: {

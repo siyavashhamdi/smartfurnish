@@ -166,6 +166,10 @@ const DashboardAppRoutesContent = (): ReactElement => {
           path={`${APP_SHELL_ROUTES.products}/:${PRODUCT_ROUTE_ID_PARAM}/purchase`}
           element={<ProductDetail />}
         />
+        <Route
+          path={`${APP_SHELL_ROUTES.products}/:${PRODUCT_ROUTE_ID_PARAM}/ai-preview`}
+          element={<ProductDetail />}
+        />
         <Route path={`${APP_SHELL_ROUTES.products}/new/max`} element={<ProductsIndex />} />
         <Route
           path={`${APP_SHELL_ROUTES.products}/edit/:${PRODUCT_ROUTE_ID_PARAM}/max`}

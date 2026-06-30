@@ -1,13 +1,11 @@
 export type ProductSectionTab = "intro" | "content" | "reviews";
 
-export const PRODUCT_SECTION_TABS: ReadonlyArray<{
-  readonly value: ProductSectionTab;
-  readonly label: string;
-}> = [
-  { value: "intro", label: "معرفی محصول" },
-  { value: "content", label: "کاتالوگ و مشخصات" },
-  { value: "reviews", label: "امتیاز و نظرات" },
-];
+export type ProductDetailSectionTab =
+  | "intro"
+  | "setPieces"
+  | "material"
+  | "fabrics"
+  | "reviews";
 
 export const PRODUCT_FORM_SECTION_TABS: ReadonlyArray<{
   readonly value: ProductSectionTab;
@@ -18,9 +16,22 @@ export const PRODUCT_FORM_SECTION_TABS: ReadonlyArray<{
   { value: "reviews", label: "امتیاز و نظرات" },
 ];
 
-export const PRODUCT_DETAIL_SECTION_TARGETS: Record<ProductSectionTab, string> = {
+export const PRODUCT_DETAIL_SECTION_TABS: ReadonlyArray<{
+  readonly value: ProductDetailSectionTab;
+  readonly label: string;
+}> = [
+  { value: "intro", label: "معرفی" },
+  { value: "setPieces", label: "قطعات" },
+  { value: "material", label: "متریال" },
+  { value: "fabrics", label: "پارچه‌ها" },
+  { value: "reviews", label: "امتیاز و نظرات" },
+];
+
+export const PRODUCT_DETAIL_SECTION_TARGETS: Record<ProductDetailSectionTab, string> = {
   intro: "product-intro",
-  content: "product-content",
+  setPieces: "product-set-pieces",
+  material: "product-material",
+  fabrics: "product-fabrics",
   reviews: "product-reviews",
 };
 
@@ -29,3 +40,38 @@ export const PRODUCT_FORM_SECTION_TARGETS: Record<ProductSectionTab, string> = {
   content: "product-form-content",
   reviews: "product-form-reviews",
 };
+
+type ProductDetailTabVisibilityInput = {
+  readonly fabricsCount: number;
+  readonly setPiecesCount: number;
+  readonly hasMaterialProfile: boolean;
+  readonly showReviews: boolean;
+};
+
+export function buildVisibleProductDetailTabs({
+  fabricsCount,
+  setPiecesCount,
+  hasMaterialProfile,
+  showReviews,
+}: ProductDetailTabVisibilityInput): ProductDetailSectionTab[] {
+  const tabs: ProductDetailSectionTab[] = ["intro"];
+
+  if (setPiecesCount > 0) {
+    tabs.push("setPieces");
+  }
+  if (hasMaterialProfile) {
+    tabs.push("material");
+  }
+  if (fabricsCount > 0) {
+    tabs.push("fabrics");
+  }
+  if (showReviews) {
+    tabs.push("reviews");
+  }
+
+  return tabs;
+}
+
+export function resolveProductDetailSectionTabDefinition(tab: ProductDetailSectionTab) {
+  return PRODUCT_DETAIL_SECTION_TABS.find((entry) => entry.value === tab);
+}

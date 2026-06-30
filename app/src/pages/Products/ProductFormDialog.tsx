@@ -248,8 +248,6 @@ const ProductFormDialog = ({
   const [materialProfile, setMaterialProfile] = useState<DraftMaterialProfile>({
     texture: "",
     primaryMaterial: "",
-    secondaryMaterials: [],
-    composition: [],
     careInstructions: "",
   });
   const [setPieces, setSetPieces] = useState<DraftSetPiece[]>([]);

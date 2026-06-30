@@ -90,7 +90,6 @@ type SeedProductDefinition = {
   materialProfile: {
     texture: string;
     primaryMaterial: string;
-    secondaryMaterials: string[];
     careInstructions: string;
   };
   coverImageSlots: ImageSlot[];
@@ -146,7 +145,6 @@ const PRODUCT_DEFINITIONS: SeedProductDefinition[] = [
     materialProfile: {
       texture: "مخمل نرم",
       primaryMaterial: "چوب روس",
-      secondaryMaterials: ["فوم HR", "پارچه پلی‌استر"],
       careInstructions: "تمیزکاری با جاروبرقی نرم؛ لکه‌گیری با پارچه مرطوب.",
     },
     coverImageSlots: [
@@ -284,7 +282,6 @@ const PRODUCT_DEFINITIONS: SeedProductDefinition[] = [
     materialProfile: {
       texture: "چوب طبیعی مات",
       primaryMaterial: "چوب راش",
-      secondaryMaterials: ["پارچه پلی‌استر", "فوم نشیمن"],
       careInstructions: "گردگیری منظم؛ تمیزکاری پارچه با پارچه مرطوب.",
     },
     coverImageSlots: [
@@ -399,7 +396,6 @@ const PRODUCT_DEFINITIONS: SeedProductDefinition[] = [
     materialProfile: {
       texture: "پارچه مخملی",
       primaryMaterial: "فلز گالوانیزه",
-      secondaryMaterials: ["MDF", "فوم headboard"],
       careInstructions: "گردگیری headboard؛ کشوها را ماهانه بررسی کنید.",
     },
     coverImageSlots: [
@@ -503,7 +499,6 @@ const PRODUCT_DEFINITIONS: SeedProductDefinition[] = [
     materialProfile: {
       texture: "ملامینه مات",
       primaryMaterial: "MDF",
-      secondaryMaterials: ["آینه سکوریت", "یراق آرام‌بند"],
       careInstructions: "تمیزکاری آینه با شیشه‌شور؛ گردگیری سطح کمد.",
     },
     coverImageSlots: [
@@ -587,7 +582,6 @@ const PRODUCT_DEFINITIONS: SeedProductDefinition[] = [
     materialProfile: {
       texture: "مخمل نرم",
       primaryMaterial: "چوب راش",
-      secondaryMaterials: ["فوم HR", "پارچه مخمل"],
       careInstructions: "جاروبرقی نرم؛ لکه‌گیری فوری با پارچه خشک.",
     },
     coverImageSlots: [

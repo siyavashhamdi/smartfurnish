@@ -43,6 +43,7 @@ const ROUTE_TITLE_RULES: readonly RouteTitleRule[] = [
   { match: (p) => /\/compress-media$/.test(p), key: "app.pageTitles.mediaCompress" },
   { match: (p) => /\/max$/.test(p), key: "app.pageTitles.contentViewer" },
   { match: (p) => /\/purchase$/.test(p), key: "app.pageTitles.productPurchase" },
+  { match: (p) => /\/ai-preview$/.test(p), key: "app.pageTitles.productAiPreview" },
   { match: (p) => p === `${PRODUCTS_ROUTE_PATH}/new`, key: "app.pageTitles.productCreate" },
   {
     match: (p) => PRODUCTS_EDIT_PAGE_ROUTE_REGEX.test(p),

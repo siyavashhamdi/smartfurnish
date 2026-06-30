@@ -23,7 +23,6 @@ type ProductReviewsSectionProps = {
   readonly canSubmitReview: boolean;
   readonly isReviewsSectionVisible: boolean;
   readonly isReviewSubmissionEnabled: boolean;
-  readonly isFree?: boolean;
 };
 
 function isOtherUserReview(review: EndUserProductReviewRecord, ownReviewId?: string): boolean {
@@ -44,7 +43,6 @@ const ProductReviewsSection = ({
   canSubmitReview,
   isReviewsSectionVisible,
   isReviewSubmissionEnabled,
-  isFree = false,
 }: ProductReviewsSectionProps): ReactElement => {
   const { user } = useAuth();
   const isStaff = isStaffProductReviewer(user?.roles);
@@ -124,9 +122,9 @@ const ProductReviewsSection = ({
           <Alert severity="info" className={styles.roleNotice}>
             امکان ثبت امتیاز و نظر جدید برای این محصول غیرفعال است.
           </Alert>
-        ) : !canSubmitReview && !isStaff && !isFree ? (
+        ) : !canSubmitReview && !isStaff ? (
           <Alert severity="info" className={styles.roleNotice}>
-            پس از خرید و فعال شدن دسترسی محصول می‌توانید امتیاز و نظر خود را ثبت کنید.
+            برای ثبت امتیاز و نظر، ابتدا وارد حساب کاربری خود شوید.
           </Alert>
         ) : null}
 

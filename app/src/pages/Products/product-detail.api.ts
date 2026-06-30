@@ -3,7 +3,6 @@ import type {
   ProductFabricRow,
   ProductMaterialProfileRow,
   ProductSetPieceRow,
-  ProductVendorRow,
 } from "./product-list.api";
 import type { FileAccessUrl } from "../../utils/fileAccessUrl.util";
 
@@ -22,7 +21,6 @@ export type ProductDetailRecord = {
   readonly isFree: boolean;
   readonly isPurchased: boolean;
   readonly purchaseStatus?: UserProductPurchaseStatus | null;
-  readonly vendor?: ProductVendorRow | null;
   readonly materialProfile?: ProductMaterialProfileRow | null;
   readonly setPieces: ProductSetPieceRow[];
   readonly fabrics: ProductFabricRow[];
@@ -166,13 +164,9 @@ export function getDiscountedPrice(
 
 export function formatProductPrice(priceIrt?: number | null): string {
   if (priceIrt == null || priceIrt === 0) {
-    return "رایگان";
+    return "—";
   }
   return `${priceIrt.toLocaleString("fa-IR").replace(/\u066c/g, ",")} تومان`;
-}
-
-export function getPurchaseCardAccessCaption(): string {
-  return "بعد از خرید، می‌توانید از امکانات محصول و پیش‌نمایش هوشمند استفاده کنید.";
 }
 
 export function formatSetPieceDimensionText(

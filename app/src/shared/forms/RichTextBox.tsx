@@ -55,6 +55,7 @@ type RichTextBoxProps = {
   readonly hideLabel?: boolean;
   readonly renderTitle?: string;
   readonly maximizeLabel?: string;
+  readonly showMaximize?: boolean;
   /** Parent-owned maximize (e.g. product detail item modal). */
   readonly onPreviewMaximize?: () => void;
   /** Stable id for `/max` route ownership in self-managed maximize. */
@@ -113,6 +114,7 @@ function RichTextBoxRender({
   hideLabel,
   renderTitle,
   maximizeLabel = "بزرگ‌نمایی",
+  showMaximize = true,
   previewId,
   onPreviewMaximize,
 }: {
@@ -121,6 +123,7 @@ function RichTextBoxRender({
   readonly hideLabel: boolean;
   readonly renderTitle?: string;
   readonly maximizeLabel?: string;
+  readonly showMaximize?: boolean;
   readonly previewId?: string;
   readonly onPreviewMaximize?: () => void;
 }): ReactElement {
@@ -149,22 +152,24 @@ function RichTextBoxRender({
       <Box className={styles.root}>
         <div className={styles.inputFrame}>
           {!hideLabel && label.trim() ? <span className={styles.label}>{label}</span> : null}
-          <div
-            className={`${styles.modeSwitch} ${styles.modeSwitchSingle}`}
-            aria-label="عملیات نمایش"
-          >
-            <AppTooltip title={maximizeLabel} arrow>
-              <IconButton
-                size="small"
-                className={styles.modeButton}
-                aria-label={maximizeLabel}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={handleMaximize}
-              >
-                <OpenInFullRoundedIcon fontSize="small" />
-              </IconButton>
-            </AppTooltip>
-          </div>
+          {showMaximize ? (
+            <div
+              className={`${styles.modeSwitch} ${styles.modeSwitchSingle}`}
+              aria-label="عملیات نمایش"
+            >
+              <AppTooltip title={maximizeLabel} arrow>
+                <IconButton
+                  size="small"
+                  className={styles.modeButton}
+                  aria-label={maximizeLabel}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={handleMaximize}
+                >
+                  <OpenInFullRoundedIcon fontSize="small" />
+                </IconButton>
+              </AppTooltip>
+            </div>
+          ) : null}
           <div
             className={styles.renderContent}
             dir="rtl"
@@ -217,6 +222,7 @@ const RichTextBox = ({
   hideLabel = false,
   renderTitle,
   maximizeLabel,
+  showMaximize,
   previewId,
   onPreviewMaximize,
 }: RichTextBoxProps): ReactElement | null => {
@@ -232,6 +238,7 @@ const RichTextBox = ({
         hideLabel={hideLabel}
         renderTitle={renderTitle}
         maximizeLabel={maximizeLabel}
+        showMaximize={showMaximize}
         previewId={previewId}
         onPreviewMaximize={onPreviewMaximize}
       />

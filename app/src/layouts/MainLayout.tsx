@@ -75,6 +75,7 @@ import { useMobileAppLayout } from "../hooks/useMobileAppLayout";
 import { useProgressiveHeaderReveal } from "../hooks/useProgressiveHeaderReveal";
 import { useAfterLogoutCacheCleanup } from "../hooks/useAfterLogoutCacheCleanup";
 import { isLogoutCacheCleanupInProgress } from "../lib/app-shell-nav-prefetch";
+import { prefetchAppShellNavRoute } from "../lib/app-shell-route-prefetch";
 import { warmAppShellNavTarget } from "../lib/app-shell-nav-warm";
 import { useHeaderNotificationPreview } from "./useHeaderNotificationPreview";
 import "./styles/MainLayout.scss";
@@ -310,8 +311,8 @@ export function MainLayout({
       return;
     }
 
-    warmAppShellNavTarget(productsItem, appShellNavContext, appShellNavDataContext);
-  }, [appShellNavContext, appShellNavDataContext, location.pathname]);
+    prefetchAppShellNavRoute(productsItem, appShellNavContext);
+  }, [appShellNavContext, location.pathname]);
 
   const brandTagline = t("layout.header.brand.publicTagline");
 

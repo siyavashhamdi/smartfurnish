@@ -12,20 +12,9 @@ export const PRODUCT_VENDOR_FIELDS = `
   notes
 `;
 
-export const PRODUCT_MATERIAL_COMPOSITION_FIELDS = `
-  label
-  material
-  texture
-  percentage
-`;
-
 export const PRODUCT_MATERIAL_PROFILE_FIELDS = `
   texture
   primaryMaterial
-  secondaryMaterials
-  composition {
-    ${PRODUCT_MATERIAL_COMPOSITION_FIELDS}
-  }
   careInstructions
 `;
 
@@ -49,6 +38,14 @@ export const PRODUCT_FABRIC_COLOR_FIELDS = `
   }
 `;
 
+export const PRODUCT_FABRIC_COLOR_USER_FIELDS = `
+  key
+  name
+  hexCode
+  sortOrder
+  isActive
+`;
+
 export const PRODUCT_FABRIC_FIELDS = `
   key
   patternName
@@ -56,6 +53,16 @@ export const PRODUCT_FABRIC_FIELDS = `
   isActive
   colors {
     ${PRODUCT_FABRIC_COLOR_FIELDS}
+  }
+`;
+
+export const PRODUCT_FABRIC_USER_FIELDS = `
+  key
+  patternName
+  sortOrder
+  isActive
+  colors {
+    ${PRODUCT_FABRIC_COLOR_USER_FIELDS}
   }
 `;
 
@@ -88,8 +95,6 @@ export const PRODUCT_LIST_SUMMARY_FIELDS = `
     ${PRODUCT_DISCOUNT_FIELDS}
   }
   tags
-  setPieceCount
-  fabricCount
 `;
 
 export const PRODUCT_ADMIN_LIST_SUMMARY_FIELDS = `
@@ -148,9 +153,6 @@ export const PRODUCT_USER_DETAIL_FIELDS = `
   isFree
   isPurchased
   purchaseStatus
-  vendor {
-    ${PRODUCT_VENDOR_FIELDS}
-  }
   materialProfile {
     ${PRODUCT_MATERIAL_PROFILE_FIELDS}
   }
@@ -158,7 +160,7 @@ export const PRODUCT_USER_DETAIL_FIELDS = `
     ${PRODUCT_SET_PIECE_FIELDS}
   }
   fabrics {
-    ${PRODUCT_FABRIC_FIELDS}
+    ${PRODUCT_FABRIC_USER_FIELDS}
   }
   isReviewSubmissionEnabled
   isReviewsSectionVisible

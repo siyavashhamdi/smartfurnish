@@ -1,21 +1,11 @@
 import type { FileAccessUrl } from "../../utils/fileAccessUrl.util";
-import { isNativeAndroidShell } from "../../utils/nativePlatform.util";
 
 export type ProductDiscountType = "PERCENTAGE" | "FIXED_AMOUNT_IRT";
 export type SortOrder = "ASC" | "DESC";
 
-export type ProductMaterialCompositionRow = {
-  readonly label: string;
-  readonly material?: string | null;
-  readonly texture?: string | null;
-  readonly percentage?: number | null;
-};
-
 export type ProductMaterialProfileRow = {
   readonly texture?: string | null;
   readonly primaryMaterial?: string | null;
-  readonly secondaryMaterials?: string[] | null;
-  readonly composition?: ProductMaterialCompositionRow[] | null;
   readonly careInstructions?: string | null;
 };
 
@@ -76,8 +66,6 @@ export type ProductListItemRow = {
   readonly isActive?: boolean;
   readonly sortOrder?: number | null;
   readonly tags: string[];
-  readonly setPieceCount: number;
-  readonly fabricCount: number;
   readonly isPurchased?: boolean | null;
 };
 
@@ -175,8 +163,6 @@ export type ProductListRecord = {
   readonly isActive: boolean;
   readonly sortOrder: number;
   readonly tags: string[];
-  readonly setPieceCount: number;
-  readonly fabricCount: number;
   readonly isPurchased: boolean;
 };
 
@@ -305,8 +291,6 @@ export function mapProductListRowToRecord(row: ProductListItemRow): ProductListR
     isActive: row.isActive ?? true,
     sortOrder: typeof row.sortOrder === "number" ? row.sortOrder : 0,
     tags: row.tags || [],
-    setPieceCount: row.setPieceCount ?? 0,
-    fabricCount: row.fabricCount ?? 0,
     isPurchased: row.isPurchased === true,
   };
 }
@@ -339,54 +323,24 @@ export function mapProductDetailRowToRecord(row: ProductDetailItemRow): ProductE
   };
 }
 
-export type BuildProductListQueryVariablesOptions = {
-  /** Restrict public product lists to free items on the Android APK. */
-  readonly restrictToFreeOnAndroidApk?: boolean;
-};
-
-/** On Android APK, hide paid catalog entries except on the purchased tab. */
-export function applyAndroidApkFreeProductListFilters(
-  filters: ProductListFilters,
-  enabled = true
-): ProductListFilters {
-  if (!enabled || !isNativeAndroidShell() || filters.isPurchased === "YES") {
-    return filters;
-  }
-
-  return {
-    ...filters,
-    hasPrice: "FREE_OR_UNSET",
-  };
-}
-
 export function buildProductListQueryVariables(
   filters: ProductListFilters,
   sort: ProductListSort,
   pageSize: number,
-  startCursor?: string | null,
-  options?: BuildProductListQueryVariablesOptions
+  startCursor?: string | null
 ): ProductListQueryVariables {
-  const resolvedFilters = applyAndroidApkFreeProductListFilters(
-    filters,
-    options?.restrictToFreeOnAndroidApk ?? false
-  );
-  const query = trimToNull(resolvedFilters.query);
-  const tagsAny = parseTags(resolvedFilters.tagsAny);
-  const minPriceIrt = parseNumber(resolvedFilters.minPriceIrt);
-  const maxPriceIrt = parseNumber(resolvedFilters.maxPriceIrt);
+  const query = trimToNull(filters.query);
+  const tagsAny = parseTags(filters.tagsAny);
+  const minPriceIrt = parseNumber(filters.minPriceIrt);
+  const maxPriceIrt = parseNumber(filters.maxPriceIrt);
 
   return {
     input: {
       filters: {
         query,
-        isActive:
-          resolvedFilters.isActive === "ALL" ? null : resolvedFilters.isActive === "ACTIVE",
-        hasPrice:
-          resolvedFilters.hasPrice === "ALL"
-            ? null
-            : resolvedFilters.hasPrice === "WITH_PRICE",
-        isPurchased:
-          resolvedFilters.isPurchased === "ALL" ? null : resolvedFilters.isPurchased === "YES",
+        isActive: filters.isActive === "ALL" ? null : filters.isActive === "ACTIVE",
+        hasPrice: filters.hasPrice === "ALL" ? null : filters.hasPrice === "WITH_PRICE",
+        isPurchased: filters.isPurchased === "ALL" ? null : filters.isPurchased === "YES",
         minPriceIrt,
         maxPriceIrt,
         tagsAny,

@@ -23,7 +23,6 @@ import {
 import { FILE_UPLOAD_POLICY_MAX_SIZE_BYTES } from "../../../constants/fileUploadPolicies";
 import { buildExistingFilePreview } from "../../../utils/fileAccessUrl.util";
 import type { UploadProgressEntry } from "../../../utils/uploadProgress.util";
-import ProductTagInput from "../ProductTagInput";
 import type {
   DraftFabric,
   DraftFabricColor,
@@ -36,7 +35,6 @@ import type {
 import {
   createDraftFabric,
   createDraftFabricColor,
-  createDraftMaterialComposition,
   createDraftSetPiece,
   createDraftSetPieceDimension,
   createDraftSetPieceImage,
@@ -174,16 +172,6 @@ const CatalogSection = ({
                     primaryMaterial: event.target.value,
                   })
                 }
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <ProductTagInput
-                label="مواد ثانویه"
-                value={materialProfile.secondaryMaterials}
-                onChange={(secondaryMaterials) =>
-                  onMaterialProfileChange({ ...materialProfile, secondaryMaterials })
-                }
-                placeholder="مثلاً چوب راش"
               />
             </Grid>
             <Grid item xs={12}>

@@ -179,8 +179,7 @@ function buildPrefetchOperationsForItem(
             DEFAULT_PRODUCT_LIST_FILTERS,
             DEFAULT_PRODUCT_LIST_SORT,
             PRODUCT_LIST_PAGE_SIZE,
-            null,
-            { restrictToFreeOnAndroidApk: isPublicProductView }
+            null
           ),
         },
       ];

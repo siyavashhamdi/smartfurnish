@@ -15,7 +15,7 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   min-block-size: 27.5rem;
   cursor: pointer;
   outline: none;
-  overflow: hidden;
+  overflow: visible;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
@@ -50,12 +50,12 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   isolation: isolate;
   container-type: size;
   background:
-    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.58), transparent 31%),
+    radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.2), transparent 34%),
     linear-gradient(
-      135deg,
-      variables.$color-gradient-start 0%,
-      variables.$color-gradient-mid 52%,
-      #10b981 100%
+      160deg,
+      variables.$color-secondary-main 0%,
+      variables.$color-secondary-light 48%,
+      variables.$color-primary-dark 100%
     );
 
   .coverImage,
@@ -64,13 +64,121 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 
+.coverCarouselRoot {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  touch-action: pan-y;
+  direction: ltr;
+}
+
+.coverCarouselControls {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 0.45rem;
+  transform: translateY(-2.75rem);
+  pointer-events: none;
+  direction: ltr;
+}
+
+.coverCarouselTrack {
+  display: flex;
+  flex-direction: row;
+  direction: ltr;
+  block-size: 100%;
+  inline-size: max-content;
+  min-inline-size: 100%;
+  will-change: transform;
+  transition: transform 0.38s $ease-out;
+}
+
+.coverCarouselTrackDragging {
+  transition: none;
+}
+
+.coverCarouselSlide {
+  position: relative;
+  flex: 0 0 100%;
+  block-size: 100%;
+  min-inline-size: 100%;
+  overflow: hidden;
+}
+
+.coverNavButton {
+  flex: 0 0 auto;
+  inline-size: 1.85rem;
+  block-size: 1.85rem;
+  padding: 0 !important;
+  color: #ffffff !important;
+  background: rgba(15, 26, 20, 0.42) !important;
+  border: 0.0625rem solid rgba(255, 255, 255, 0.18) !important;
+  backdrop-filter: blur(0.35rem);
+  box-shadow: 0 0.12rem 0.45rem rgba(0, 0, 0, 0.22);
+  pointer-events: auto;
+
+  &:hover {
+    background: rgba(15, 26, 20, 0.58) !important;
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+}
+
+.coverCarouselDotsRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 0.48rem;
+}
+
+.coverCarouselDots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  direction: ltr;
+}
+
+.coverCarouselDot {
+  flex: 0 0 auto;
+  inline-size: 0.34rem;
+  block-size: 0.34rem;
+  padding: 0;
+  border: none;
+  border-radius: 999rem;
+  background: rgba(255, 255, 255, 0.42);
+  cursor: pointer;
+  transition:
+    inline-size 0.22s $ease-out,
+    block-size 0.22s $ease-out,
+    background-color 0.22s $ease-out,
+    opacity 0.22s $ease-out;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.72);
+  }
+}
+
+.coverCarouselDotActive {
+  inline-size: 0.48rem;
+  block-size: 0.48rem;
+  background: #ffffff;
+  box-shadow: 0 0 0 0.0625rem rgba(15, 26, 20, 0.18);
+}
+
 .coverImage {
   position: absolute;
   inset: 0;
   inline-size: 100%;
   block-size: 100%;
   object-fit: cover;
-  z-index: 0;
 }
 
 .defaultCoverGlow {
@@ -106,17 +214,14 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   flex-direction: column;
   gap: 0.45rem;
   margin-block-start: auto;
-  padding: 3rem 0.85rem 0.8rem;
+  padding: 1.85rem 0.85rem 0.75rem;
   min-inline-size: 0;
   color: #ffffff;
   background: linear-gradient(
     to top,
-    rgba(0, 0, 0, 0.97) 0%,
-    rgba(0, 0, 0, 0.92) 20%,
-    rgba(0, 0, 0, 0.84) 38%,
-    rgba(0, 0, 0, 0.8) 56%,
-    rgba(0, 0, 0, 0.7) 72%,
-    rgba(0, 0, 0, 0.1) 88%,
+    rgba(15, 26, 20, 0.9) 0%,
+    rgba(15, 26, 20, 0.62) 40%,
+    rgba(15, 26, 20, 0.22) 72%,
     transparent 100%
   );
   border-radius: 0;
@@ -124,12 +229,47 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
   h3,
   p,
-  .coverMeta,
-  .itemTypeChipsRow,
-  .tagRow {
+  .tagRow,
+  .coverCarouselDotsRow {
     pointer-events: auto;
   }
 }
+.warrantyRibbon {
+  position: absolute;
+  top: 1.5rem;
+  inset-inline-start: -2.85rem;
+  z-index: 6;
+  inline-size: 11.25rem;
+  padding-block: 0.55rem;
+  background: linear-gradient(
+    135deg,
+    #f0d4d4 0%,
+    #e86868 12%,
+    #c43c3c 55%,
+    #8f2222 100%
+  );
+  color: #ffffff;
+  text-align: center;
+  transform: rotate(45deg);
+  transform-origin: center;
+  box-shadow:
+    0 0.18rem 0.65rem rgba(154, 40, 40, 0.4),
+    inset 0 0.0625rem 0 rgba(255, 255, 255, 0.32),
+    inset 0 -0.0625rem 0 rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+}
+
+.warrantyRibbonText {
+  display: block;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.015em;
+  line-height: 1.35;
+  white-space: nowrap;
+  -webkit-text-stroke: 0.02rem rgba(80, 10, 10, 0.35);
+  text-shadow: 0 0.0625rem 1.16rem rgba(80, 10, 10, 1);
+}
+
 .topChipsRow {
   position: absolute;
   top: 0.7rem;
@@ -191,37 +331,6 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   background: color-mix(in srgb, #64748b 22%, white) !important;
 }
 
-.coverMeta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.38rem;
-  align-self: flex-start;
-  margin-block: 0.05rem 0.1rem;
-  min-block-size: 1.5rem;
-  padding: 0 0.5rem;
-  border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.12);
-  border: 0.0625rem solid rgba(255, 255, 255, 0.22);
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 0.68rem;
-  font-weight: 700;
-  line-height: 1.2;
-  backdrop-filter: blur(0.45rem);
-  text-shadow: 0 0.0625rem 0.18rem rgba(0, 0, 0, 0.35);
-  pointer-events: auto;
-}
-
-.coverMeta span {
-  display: inline-flex;
-  align-items: center;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
-.coverMetaSeparator {
-  opacity: 0.72;
-}
-
 .coverContent h3 {
   margin: 0;
   font-size: 1.05rem;
@@ -265,28 +374,9 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   text-align-last: start;
 }
 
-.itemTypeChips,
 .tagRow {
   display: flex;
   gap: 0.35rem;
-}
-
-.itemTypeChips {
-  flex-wrap: wrap;
-  align-items: center;
-  max-block-size: 1.5rem;
-  overflow: hidden;
-}
-
-.itemTypeChipsRow {
-  margin-block-start: 0;
-}
-
-.coverContent p + .itemTypeChipsRow {
-  margin-block-start: 0;
-}
-
-.tagRow {
   flex-wrap: nowrap;
   align-items: center;
   block-size: 1.5rem;
@@ -306,29 +396,6 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
 .tagRow::-webkit-scrollbar {
   display: none;
-}
-
-.itemTypeChip {
-  align-items: center !important;
-  block-size: 1.5rem !important;
-  max-inline-size: 7.5rem;
-  background: rgba(255, 255, 255, 0.14) !important;
-  border-color: rgba(255, 255, 255, 0.28) !important;
-  color: #ffffff !important;
-  backdrop-filter: blur(0.45rem);
-  box-shadow: 0 0.08rem 0.28rem rgba(0, 0, 0, 0.18);
-}
-
-.itemTypeChip :global(.MuiChip-label) {
-  display: flex;
-  align-items: center;
-  padding-block: 0;
-  line-height: 1.2;
-}
-
-.itemTypeChip :global(.MuiChip-icon) {
-  margin: 0 0.3rem 0 -0.12rem !important;
-  color: rgba(255, 255, 255, 0.92) !important;
 }
 
 .tagChip {
@@ -387,12 +454,12 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   inset-inline: 0;
   bottom: 0;
   inline-size: 100%;
-  block-size: 100cqh;
+  block-size: 115%;
   object-fit: cover;
   object-position: center bottom;
-  transform: scale(2) translateZ(0);
-  filter: blur(0.85rem) saturate(122%);
-  -webkit-filter: blur(0.85rem) saturate(122%);
+  transform: scale(1.06) translateZ(0);
+  filter: blur(0.45rem) saturate(108%);
+  -webkit-filter: blur(0.45rem) saturate(108%);
 }
 
 .priceBarCoverFallback {
@@ -400,18 +467,18 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   inset-inline: 0;
   bottom: 0;
   inline-size: 100%;
-  block-size: 100cqh;
+  block-size: 115%;
   background:
-    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.58), transparent 31%),
+    radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.16), transparent 34%),
     linear-gradient(
-      135deg,
-      variables.$color-gradient-start 0%,
-      variables.$color-gradient-mid 52%,
-      #10b981 100%
+      160deg,
+      variables.$color-secondary-main 0%,
+      variables.$color-secondary-light 48%,
+      variables.$color-primary-dark 100%
     );
-  transform: scale(1.04);
-  filter: blur(0.55rem) saturate(118%);
-  -webkit-filter: blur(0.55rem) saturate(118%);
+  transform: scale(1.02);
+  filter: blur(0.35rem) saturate(106%);
+  -webkit-filter: blur(0.35rem) saturate(106%);
 }
 
 .priceBarBackdropScrim {
@@ -420,9 +487,9 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   background:
     linear-gradient(
       to top,
-      rgba(0, 0, 0, 0.62) 0%,
-      rgba(0, 0, 0, 0.42) 58%,
-      rgba(0, 0, 0, 0.24) 100%
+      rgba(15, 26, 20, 0.78) 0%,
+      rgba(15, 26, 20, 0.42) 62%,
+      transparent 100%
     );
 }
 
@@ -439,11 +506,11 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   min-block-size: 4.25rem;
   padding: 0.75rem 0.85rem;
   border: none;
-  border-block-start: 0.0625rem solid rgba(255, 255, 255, 0.14);
+  border-block-start: 0.0625rem solid rgba(255, 255, 255, 0.12);
   border-radius: 0;
-  background: rgba(15, 23, 42, 0.12);
-  backdrop-filter: blur(0.7rem) saturate(138%);
-  -webkit-backdrop-filter: blur(0.7rem) saturate(138%);
+  background: rgba(15, 26, 20, 0.28);
+  backdrop-filter: blur(0.55rem) saturate(118%);
+  -webkit-backdrop-filter: blur(0.55rem) saturate(118%);
   box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.08);
 }
 
@@ -542,7 +609,8 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
   .releaseTypeChip,
   .statusChip,
-  .itemTypeChip,
+  .coverNavButton,
+  .coverCarouselDot,
   .overlayTagChip,
   .priceBar {
     backdrop-filter: none;
@@ -572,32 +640,28 @@ body[data-theme="dark"] {
 
   .coverWrap {
     background:
-      radial-gradient(circle at 18% 18%, color-mix(in srgb, #ffffff 10%, transparent), transparent 28%),
-      linear-gradient(135deg, #1a2e1f, #2a4530 48%, #9a7848);
-  }
-
-  .coverMeta {
-    border-radius: 0.375rem;
+      radial-gradient(circle at 24% 20%, color-mix(in srgb, #ffffff 12%, transparent), transparent 32%),
+      linear-gradient(160deg, #1a2e1f 0%, #2a4530 52%, #9a7848 100%);
   }
 
   .priceBarCoverFallback {
     background:
-      radial-gradient(circle at 18% 18%, color-mix(in srgb, #ffffff 10%, transparent), transparent 28%),
-      linear-gradient(135deg, #1a2e1f, #2a4530 48%, #9a7848);
+      radial-gradient(circle at 24% 20%, color-mix(in srgb, #ffffff 12%, transparent), transparent 32%),
+      linear-gradient(160deg, #1a2e1f 0%, #2a4530 52%, #9a7848 100%);
   }
 
   .priceBarBackdropScrim {
     background:
       linear-gradient(
         to top,
-        rgba(0, 0, 0, 0.72) 0%,
-        rgba(0, 0, 0, 0.5) 58%,
-        rgba(0, 0, 0, 0.3) 100%
+        rgba(10, 18, 14, 0.82) 0%,
+        rgba(10, 18, 14, 0.45) 62%,
+        transparent 100%
       );
   }
 
   .priceBar {
-    background: rgba(15, 23, 42, 0.14);
+    background: rgba(10, 18, 14, 0.34);
     border-block-start-color: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(0.75rem) saturate(135%);
     -webkit-backdrop-filter: blur(0.75rem) saturate(135%);
@@ -625,5 +689,19 @@ body[data-theme="dark"] {
 
   .statusInactive {
     background: color-mix(in srgb, #64748b 30%, #0b100c) !important;
+  }
+
+  .warrantyRibbon {
+    background: linear-gradient(
+      135deg,
+      #f2d0d0 0%,
+      #e86868 14%,
+      #c43c3c 58%,
+      #7a1c1c 100%
+    );
+    box-shadow:
+      0 0.2rem 0.75rem rgba(0, 0, 0, 0.42),
+      inset 0 0.0625rem 0 rgba(255, 255, 255, 0.24),
+      inset 0 -0.0625rem 0 rgba(0, 0, 0, 0.18);
   }
 }

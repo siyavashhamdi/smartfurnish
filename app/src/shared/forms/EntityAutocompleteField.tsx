@@ -119,6 +119,7 @@ function EntityOptionThumbnail({
         fileId={imageAccessUrl?.fileId}
         alt=""
         variant={avatarVariant}
+        className="app-avatar--plain"
         sx={avatarSx}
       />
     );
@@ -128,6 +129,7 @@ function EntityOptionThumbnail({
     return (
       <Avatar
         variant="rounded"
+        className="app-avatar--plain"
         sx={{
           ...avatarSx,
           color: "text.secondary",
