@@ -44,6 +44,16 @@ const telegramFields = [
   { key: "apiBaseUrl", label: "آدرس API", type: "url" },
 ] as const;
 
+const openrouterFields = [
+  { key: "apiKey", label: "کلید API", type: "password" },
+  { key: "model", label: "مدل" },
+  {
+    key: "placementPrompt",
+    label: "دستورالعمل قرارگیری مبل (پرامپت)",
+    multiline: true,
+  },
+] as const;
+
 interface JsonValueEditorProps {
   readonly jsonValue: JsonFormState;
   readonly updateJson: UpdateJsonFormState;
@@ -133,6 +143,18 @@ const JsonValueEditor = ({ jsonValue, updateJson }: JsonValueEditorProps): React
           onChange={(config) =>
             updateJson((current) =>
               current.kind === "telegramConfig" ? { ...current, config } : current
+            )
+          }
+        />
+      );
+    case "openrouterConfig":
+      return (
+        <ObjectFieldsEditor
+          value={jsonValue.config}
+          fields={openrouterFields}
+          onChange={(config) =>
+            updateJson((current) =>
+              current.kind === "openrouterConfig" ? { ...current, config } : current
             )
           }
         />

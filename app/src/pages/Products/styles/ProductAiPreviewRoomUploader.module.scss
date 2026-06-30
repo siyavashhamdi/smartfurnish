@@ -1,0 +1,95 @@
+@use "../../../styles/variables" as variables;
+
+.root {
+  border: 2px dashed var(--app-surface-border);
+  border-radius: variables.$border-radius-lg;
+  background: color-mix(in srgb, var(--app-surface-border) 8%, transparent);
+  overflow: hidden;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.rootDragActive {
+  border-color: variables.$color-secondary-main;
+  background: color-mix(in srgb, variables.$color-secondary-main 10%, transparent);
+}
+
+.emptyState {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  padding: 2rem 1.25rem;
+  text-align: center;
+}
+
+.uploadIconWrap {
+  display: grid;
+  place-items: center;
+  inline-size: 4.75rem;
+  block-size: 4.75rem;
+  border-radius: 999rem;
+  border: 1px solid color-mix(in srgb, variables.$color-secondary-main 28%, transparent);
+  background: color-mix(in srgb, variables.$color-secondary-main 14%, transparent);
+  color: variables.$color-secondary-dark;
+}
+
+.uploadIcon {
+  font-size: 2rem !important;
+}
+
+.emptyCopy {
+  display: grid;
+  gap: 0.45rem;
+  max-inline-size: 24rem;
+}
+
+.previewLayout {
+  display: grid;
+  gap: 0.9rem;
+  padding: 0.9rem;
+}
+
+.previewFrame {
+  position: relative;
+  overflow: hidden;
+  border-radius: variables.$border-radius-md;
+}
+
+.previewImage {
+  display: block;
+  inline-size: 100%;
+  max-block-size: 18rem;
+  object-fit: cover;
+}
+
+.removeButton {
+  position: absolute;
+  inset-block-start: 0.65rem;
+  inset-inline-end: 0.65rem;
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(8px);
+}
+
+.previewMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.previewMetaText {
+  display: grid;
+  gap: 0.15rem;
+}
+
+body[data-theme="dark"] {
+  .root {
+    background: color-mix(in srgb, var(--app-surface-border) 14%, transparent);
+  }
+
+  .removeButton {
+    background: rgba(20, 24, 22, 0.88) !important;
+  }
+}

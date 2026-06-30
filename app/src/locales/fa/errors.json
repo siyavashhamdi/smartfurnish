@@ -57,6 +57,7 @@
             "LATIN_MOBILE_INVALID": "فرمت شماره موبایل معتبر نیست.",
             "LATIN_IDENTITY_INVALID": "شناسه ورود معتبر نیست.",
             "PRODUCT_NOT_FOUND": "محصول یافت نشد!",
+            "PRODUCT_AI_PREVIEW_GENERATION_FAILED": "امکان تولید پیش‌نمایش هوشمند وجود ندارد. لطفاً بعداً دوباره تلاش کنید.",
             "PRODUCT_CHAPTER_REQUIRED": "حداقل یک بخش برای محصول لازم است.",
             "PRODUCT_CHAPTER_ITEM_REQUIRED": "هر بخش باید حداقل یک آیتم داشته باشد.",
             "PRODUCT_ITEM_CONTENT_REQUIRED": "هر آیتم باید فایل یا متن مقاله داشته باشد.",

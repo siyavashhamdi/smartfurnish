@@ -6,6 +6,7 @@ export const FILE_UPLOAD_POLICY = {
   SUPPORT_ATTACHMENT: "SUPPORT_ATTACHMENT",
   PAYMENT_RECEIPT: "PAYMENT_RECEIPT",
   PAYMENT_EVIDENCE: "PAYMENT_EVIDENCE",
+  AI_PREVIEW_ROOM: "AI_PREVIEW_ROOM",
 } as const;
 
 export type FileUploadPolicyId =
@@ -59,5 +60,9 @@ export const FILE_UPLOAD_POLICIES: Record<
     maxSizeBytes: 10 * 1024 * 1024,
     allowedMimePatterns: ["image/", "application/pdf"],
     allowedExtensions: [".pdf"],
+  },
+  [FILE_UPLOAD_POLICY.AI_PREVIEW_ROOM]: {
+    maxSizeBytes: 3 * 1024 * 1024,
+    allowedMimePatterns: ["image/jpeg", "image/png", "image/webp", "image/gif"],
   },
 };

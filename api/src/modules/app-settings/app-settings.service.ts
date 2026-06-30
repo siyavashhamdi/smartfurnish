@@ -6,6 +6,10 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { EXCEPTION_CONSTANT } from "../../constants/exception.constant";
+import {
+  DEFAULT_AI_PREVIEW_PLACEMENT_PROMPT,
+  DEFAULT_AI_PREVIEW_STAGING_DURATION_SECONDS,
+} from "../../constants/product-ai-preview.constants";
 
 import {
   HIDDEN_APP_SETTING_KEYS,
@@ -55,6 +59,9 @@ import {
   StoredBackupConfigValue,
   StoredTelegramConfigValue,
   TelegramConfig,
+  DEFAULT_OPENROUTER_MODEL,
+  OpenRouterConfig,
+  StoredOpenRouterConfigValue,
   UsdtIrtRateConfig,
 } from "./app-settings.types";
 
@@ -410,6 +417,69 @@ export class AppSettingsService {
       chatId,
       apiBaseUrl,
     };
+  }
+
+  async getOpenRouterConfig(): Promise<OpenRouterConfig | null> {
+    const storedConfig =
+      await this.getActiveJsonSettingValue<StoredOpenRouterConfigValue>(
+        APP_SETTING_KEY.OPENROUTER_CONFIG,
+      );
+
+    if (!this.isPlainObject<StoredOpenRouterConfigValue>(storedConfig)) {
+      return null;
+    }
+
+    const apiKey = this.normalizeOptionalText(storedConfig.apiKey);
+    if (!apiKey) {
+      return null;
+    }
+
+    const model =
+      this.normalizeOptionalText(storedConfig.model) || DEFAULT_OPENROUTER_MODEL;
+    const placementPrompt =
+      this.normalizeOptionalText(storedConfig.placementPrompt) ||
+      DEFAULT_AI_PREVIEW_PLACEMENT_PROMPT;
+
+    return {
+      apiKey,
+      model,
+      placementPrompt,
+    };
+  }
+
+  async getProductAiPreviewStagingDurationSeconds(): Promise<number> {
+    const storedValue = await this.getActiveSettingValue(
+      APP_SETTING_KEY.AI_PREVIEW_STAGING_DURATION_SECONDS,
+      AppSettingValueType.NUMBER,
+    );
+    const durationSeconds = Number(storedValue);
+
+    return Number.isFinite(durationSeconds) && durationSeconds > 0
+      ? durationSeconds
+      : DEFAULT_AI_PREVIEW_STAGING_DURATION_SECONDS;
+  }
+
+  async updateProductAiPreviewStagingDurationSeconds(
+    durationSeconds: number,
+  ): Promise<void> {
+    if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+      return;
+    }
+
+    await this.appSettingModel
+      .findOneAndUpdate(
+        {
+          key: APP_SETTING_KEY.AI_PREVIEW_STAGING_DURATION_SECONDS,
+          isActive: true,
+        },
+        {
+          $set: {
+            value: durationSeconds,
+          },
+        },
+        { runValidators: true },
+      )
+      .exec();
   }
 
   private createEmptySupportContactConfig(): SupportContactConfig {

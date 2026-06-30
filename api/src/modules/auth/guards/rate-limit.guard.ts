@@ -1,5 +1,5 @@
 import { Reflector } from "@nestjs/core";
-import { SetMetadata } from "@nestjs/common";
+import { SetMetadata, HttpException, HttpStatus } from "@nestjs/common";
 import { GqlExecutionContext } from "@nestjs/graphql";
 import { Injectable, CanActivate, ExecutionContext } from "@nestjs/common";
 import { Request } from "express";
@@ -49,13 +49,11 @@ export class RateLimitGuard implements CanActivate {
     }
 
     if (record.count >= options.limit) {
-      // Rate limit exceeded
-      // TODO: Disabled temporarily
-      // const remainingSeconds = Math.ceil((record.resetAt - now) / 1000);
-      // throw new HttpException(
-      //   `Too many requests. Please try again in ${remainingSeconds} seconds.`,
-      //   HttpStatus.TOO_MANY_REQUESTS,
-      // );
+      const remainingSeconds = Math.ceil((record.resetAt - now) / 1000);
+      throw new HttpException(
+        `Too many requests. Please try again in ${remainingSeconds} seconds.`,
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
 
     // Increment counter

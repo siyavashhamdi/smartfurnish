@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import sharp from "sharp";
+import sharp from "../../utils/sharp.util";
 
 import {
   COMPRESSIBLE_IMAGE_EXTENSION,

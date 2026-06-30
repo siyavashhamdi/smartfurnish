@@ -1,6 +1,7 @@
 import { BaseMigration, registerMigration } from "./core";
 import { AppSettingValueType, UserProductPaymentMethod } from "../enums";
 import { APP_SETTING_KEY } from "../constants";
+import { DEFAULT_AI_PREVIEW_PLACEMENT_PROMPT } from "../constants/product-ai-preview.constants";
 import {
   PASSWORD_RESET_EMAIL_HTML,
   PASSWORD_RESET_EMAIL_SUBJECT,
@@ -86,6 +87,12 @@ const DEFAULT_TELEGRAM_CONFIG_VALUE = {
   botToken: "1234567890:AAExampleBotTokenReplaceInAppSettings",
   chatId: "-1001234567890",
   apiBaseUrl: "https://api.telegram.org",
+};
+
+const DEFAULT_OPENROUTER_CONFIG_VALUE = {
+  apiKey: "",
+  model: "sourceful/riverflow-v2.5-fast:free",
+  placementPrompt: DEFAULT_AI_PREVIEW_PLACEMENT_PROMPT,
 };
 
 const DEFAULT_EMAIL_TEMPLATES_VALUE = [
@@ -570,6 +577,15 @@ const DEFAULT_APP_SETTINGS: readonly DefaultAppSettingSeed[] = [
     valueType: AppSettingValueType.JSON,
     description:
       "تنظیمات ارسال پشتیبان و اعلان‌ها به تلگرام شامل توکن ربات، شناسه چت و آدرس API",
+    isActive: true,
+  },
+  {
+    key: APP_SETTING_KEY.OPENROUTER_CONFIG,
+    label: "تنظیمات OpenRouter (پیش‌نمایش هوشمند)",
+    value: DEFAULT_OPENROUTER_CONFIG_VALUE,
+    valueType: AppSettingValueType.JSON,
+    description:
+      "تنظیمات تولید تصویر پیش‌نمایش هوشمند شامل کلید API و نام مدل OpenRouter",
     isActive: true,
   },
   {

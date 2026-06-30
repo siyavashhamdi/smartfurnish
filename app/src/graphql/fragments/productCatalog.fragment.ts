@@ -44,6 +44,9 @@ export const PRODUCT_FABRIC_COLOR_USER_FIELDS = `
   hexCode
   sortOrder
   isActive
+  aiProductImageAccessUrl {
+    ${FILE_ACCESS_URL_FIELDS}
+  }
 `;
 
 export const PRODUCT_FABRIC_FIELDS = `

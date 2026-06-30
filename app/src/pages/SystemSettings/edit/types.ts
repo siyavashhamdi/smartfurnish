@@ -94,6 +94,12 @@ export type TelegramConfigForm = {
   apiBaseUrl: string;
 };
 
+export type OpenRouterConfigForm = {
+  apiKey: string;
+  model: string;
+  placementPrompt: string;
+};
+
 export type EmailTemplateForm = {
   name: string;
   subject: string;
@@ -160,6 +166,7 @@ export type JsonFormState =
   | { kind: "emailSmtpConfig"; config: EmailSmtpConfigForm }
   | { kind: "backupConfig"; config: BackupConfigForm }
   | { kind: "telegramConfig"; config: TelegramConfigForm }
+  | { kind: "openrouterConfig"; config: OpenRouterConfigForm }
   | { kind: "emailTemplates"; templates: EmailTemplateForm[] }
   | { kind: "supportContact"; config: SupportContactForm }
   | { kind: "rawJson"; value: string };

@@ -83,6 +83,19 @@ function resolveUploadErrorMessage(body: unknown, fallbackCode: string): string 
   return resolveErrorMessageFromCode(fallbackCode);
 }
 
+function unwrapApiData<T>(body: unknown): T {
+  if (
+    typeof body === "object" &&
+    body !== null &&
+    "data" in body &&
+    (body as { data?: T }).data != null
+  ) {
+    return (body as { data: T }).data;
+  }
+
+  return body as T;
+}
+
 export async function uploadFile(
   file: File,
   options?: FileUploadOptions
@@ -157,7 +170,7 @@ export async function uploadFile(
           percent: 100,
         });
         try {
-          resolve(JSON.parse(xhr.responseText) as FileUploadResult);
+          resolve(unwrapApiData<FileUploadResult>(JSON.parse(xhr.responseText)));
         } catch {
           reject(
             new FileUploadError(resolveErrorMessageFromCode("INTERNAL_SERVER_ERROR"), xhr.status)

@@ -6,6 +6,7 @@ import { Model, Types } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -240,6 +241,36 @@ export class FileService implements OnModuleInit {
     buffer: Buffer;
   }> {
     const { storedFile, stream } = await this.getDownloadStreamById(id);
+    const buffer = await this.readStreamToBuffer(
+      stream,
+      SecurityConfig.getMaxRequestSize(),
+    );
+
+    return { storedFile, buffer };
+  }
+
+  async downloadActiveBufferByIdForOwner(
+    id: string,
+    ownerUserId: Types.ObjectId,
+  ): Promise<{
+    storedFile: StoredFileDocument;
+    buffer: Buffer;
+  }> {
+    const storedFile = await this.storedFileModel
+      .findOne(addNotDeletedCondition({ _id: id }))
+      .exec();
+
+    if (!storedFile) {
+      throw new NotFoundException(EXCEPTION_CONSTANT.FILE_NOT_FOUND);
+    }
+
+    const createdBy = storedFile.audit?.createdBy;
+    if (!createdBy?.equals(ownerUserId)) {
+      throw new ForbiddenException(EXCEPTION_CONSTANT.FORBIDDEN);
+    }
+
+    const { bucket, objectKey } = this.resolveStorageLocation(storedFile);
+    const stream = await this.minioClient.getObject(bucket, objectKey);
     const buffer = await this.readStreamToBuffer(
       stream,
       SecurityConfig.getMaxRequestSize(),

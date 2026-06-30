@@ -2,7 +2,6 @@ import { cloneElement, isValidElement, type ReactElement, type ReactNode } from 
 import { Box, Typography } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material/styles";
 
-/** Width presets aligned with common table column filter sizes (کمیسیون نظارت / اتاق‌ها). */
 export type SupplementaryFilterFieldWidth = "sm" | "md" | "lg" | "grow";
 
 const WIDTH_SX: Record<SupplementaryFilterFieldWidth, SxProps<Theme>> = {

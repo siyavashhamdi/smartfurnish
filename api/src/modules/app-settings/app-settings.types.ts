@@ -154,6 +154,20 @@ export type TelegramConfig = {
   apiBaseUrl: string;
 };
 
+export type StoredOpenRouterConfigValue = {
+  apiKey?: string;
+  model?: string;
+  placementPrompt?: string;
+};
+
+export const DEFAULT_OPENROUTER_MODEL = "sourceful/riverflow-v2.5-fast:free";
+
+export type OpenRouterConfig = {
+  apiKey: string;
+  model: string;
+  placementPrompt: string;
+};
+
 export type StoredSupportContactConfigValue = {
   eyebrow?: unknown;
   heading?: unknown;

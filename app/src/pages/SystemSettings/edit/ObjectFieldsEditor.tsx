@@ -2,7 +2,7 @@ import type { ChangeEvent, ReactElement } from "react";
 import { Stack, TextField } from "@mui/material";
 
 import PasswordTextField from "./PasswordTextField";
-import { type TextFieldConfig } from "./shared";
+import { MULTILINE_TEXTAREA_MAX_ROWS, MULTILINE_TEXTAREA_MIN_ROWS, type TextFieldConfig } from "./shared";
 import SectionPaper from "./SectionPaper";
 
 interface ObjectFieldsEditorProps<TValue extends object> {
@@ -32,7 +32,19 @@ const ObjectFieldsEditor = <TValue extends object>({
           return <PasswordTextField key={field.key} {...fieldProps} />;
         }
 
-        return <TextField key={field.key} {...fieldProps} type={field.type ?? "text"} />;
+        return (
+          <TextField
+            key={field.key}
+            {...fieldProps}
+            type={field.type ?? "text"}
+            multiline={field.multiline}
+            minRows={field.multiline ? MULTILINE_TEXTAREA_MIN_ROWS : undefined}
+            maxRows={field.multiline ? MULTILINE_TEXTAREA_MAX_ROWS : undefined}
+            sx={{
+              flexBasis: { md: field.multiline ? "100%" : "calc(50% - 8px)" },
+            }}
+          />
+        );
       })}
     </Stack>
   </SectionPaper>

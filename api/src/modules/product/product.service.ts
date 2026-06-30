@@ -389,7 +389,9 @@ export class ProductService {
     input: ProductPurchaseSubmitGqlInput,
     userId: Types.ObjectId,
   ): Promise<ProductPurchaseSubmitGqlResponse> {
-    throw new BadRequestException(EXCEPTION_CONSTANT.PAYMENTS_TEMPORARILY_DISABLED);
+    throw new BadRequestException(
+      EXCEPTION_CONSTANT.PAYMENTS_TEMPORARILY_DISABLED,
+    );
     this.validatePurchaseInputShape(input);
 
     const [product, user, existingUserProduct] = await Promise.all([
@@ -544,7 +546,9 @@ export class ProductService {
     authority?: string,
     status?: string,
   ): Promise<ZarinPalVerificationResult> {
-    throw new BadRequestException(EXCEPTION_CONSTANT.PAYMENTS_TEMPORARILY_DISABLED);
+    throw new BadRequestException(
+      EXCEPTION_CONSTANT.PAYMENTS_TEMPORARILY_DISABLED,
+    );
 
     const normalizedAuthority = this.normalizeOptionalText(authority);
 
@@ -670,7 +674,9 @@ export class ProductService {
   async paymentDetail(
     input: ProductPaymentDetailGqlInput,
   ): Promise<ProductPaymentListGqlResponse> {
-    throw new BadRequestException(EXCEPTION_CONSTANT.PAYMENTS_TEMPORARILY_DISABLED);
+    throw new BadRequestException(
+      EXCEPTION_CONSTANT.PAYMENTS_TEMPORARILY_DISABLED,
+    );
     const userProduct = await this.userProductModel.findById(input.id).exec();
 
     if (!userProduct) {
@@ -687,7 +693,9 @@ export class ProductService {
   async listPayments(
     input: ProductPaymentListGqlInput,
   ): Promise<ProductPaymentListPaginatedOffsetGqlResponse> {
-    throw new BadRequestException(EXCEPTION_CONSTANT.PAYMENTS_TEMPORARILY_DISABLED);
+    throw new BadRequestException(
+      EXCEPTION_CONSTANT.PAYMENTS_TEMPORARILY_DISABLED,
+    );
     const { filters, options } = input || {};
     const limit =
       options?.limit ?? PAGINATION_CONSTANT.OFFSET_BASED.DEFAULT_LIMIT;
@@ -732,7 +740,9 @@ export class ProductService {
     input: ProductPaymentStatusUpdateGqlInput,
     adminUserId: Types.ObjectId,
   ): Promise<ProductPaymentListGqlResponse> {
-    throw new BadRequestException(EXCEPTION_CONSTANT.PAYMENTS_TEMPORARILY_DISABLED);
+    throw new BadRequestException(
+      EXCEPTION_CONSTANT.PAYMENTS_TEMPORARILY_DISABLED,
+    );
     const userProduct = await this.userProductModel.findById(input.id).exec();
 
     if (!userProduct) {
@@ -772,7 +782,9 @@ export class ProductService {
     input: ProductPaymentManualCreateGqlInput,
     adminUserId: Types.ObjectId,
   ): Promise<ProductPaymentListGqlResponse> {
-    throw new BadRequestException(EXCEPTION_CONSTANT.PAYMENTS_TEMPORARILY_DISABLED);
+    throw new BadRequestException(
+      EXCEPTION_CONSTANT.PAYMENTS_TEMPORARILY_DISABLED,
+    );
     this.validateManualPaymentInputShape(input);
 
     const [product, user, existingUserProduct] = await Promise.all([
@@ -1096,11 +1108,29 @@ export class ProductService {
       this.buildUserProductLookup(userId, [product]),
     ]);
     const fileAccessUrlMap = await this.buildFileAccessUrlLookup([product], {
-      includeFabricImages: false,
+      includeFabricImages: true,
     });
     const userProduct = userProductLookup.get(product._id.toString());
 
-    return this.toUserDetailResponse(product, userProduct, fileAccessUrlMap);
+    return this.toUserDetailResponse(
+      product,
+      userProduct,
+      fileAccessUrlMap,
+      true,
+    );
+  }
+
+  async findActiveProductById(
+    productId: string,
+  ): Promise<ProductDocument | null> {
+    return this.productModel
+      .findOne({ _id: productId, isActive: true })
+      .select({
+        title: 1,
+        materialProfile: 1,
+        fabrics: 1,
+      })
+      .exec();
   }
 
   private resolveProductCursorSort(sort?: ProductListSortOptionInput): {
@@ -1449,7 +1479,9 @@ export class ProductService {
       tags: this.normalizeTags(input.tags),
       notes: this.normalizeNullableText(input.notes),
       vendor: this.normalizeVendorInput(input.vendor),
-      materialProfile: this.normalizeMaterialProfileInput(input.materialProfile),
+      materialProfile: this.normalizeMaterialProfileInput(
+        input.materialProfile,
+      ),
       setPieces: (input.setPieces ?? []).map((piece) =>
         this.normalizeSetPieceInput(piece),
       ),
@@ -1490,7 +1522,8 @@ export class ProductService {
     return {
       texture: this.normalizeNullableText(materialProfile.texture) ?? undefined,
       primaryMaterial:
-        this.normalizeNullableText(materialProfile.primaryMaterial) ?? undefined,
+        this.normalizeNullableText(materialProfile.primaryMaterial) ??
+        undefined,
       careInstructions:
         this.normalizeNullableText(materialProfile.careInstructions) ??
         undefined,
@@ -1523,7 +1556,9 @@ export class ProductService {
         this.normalizeSetPieceDimensionInput(dimension),
       ),
       weightKg: piece.weightKg,
-      materialProfile: this.normalizeMaterialProfileInput(piece.materialProfile),
+      materialProfile: this.normalizeMaterialProfileInput(
+        piece.materialProfile,
+      ),
     };
   }
 
@@ -1603,9 +1638,8 @@ export class ProductService {
     options?: { includeFabricImages?: boolean },
   ): Types.ObjectId[] {
     const includeFabricImages = options?.includeFabricImages !== false;
-    const fabricImageFileIds =
-      includeFabricImages ?
-        (input.fabrics ?? []).flatMap((fabric) =>
+    const fabricImageFileIds = includeFabricImages
+      ? (input.fabrics ?? []).flatMap((fabric) =>
           (fabric.colors ?? [])
             .map((color) => color.aiProductImageFileId)
             .filter((fileId): fileId is Types.ObjectId => Boolean(fileId)),
@@ -2082,9 +2116,9 @@ export class ProductService {
       sortOrder: color.sortOrder,
       isActive: color.isActive,
       aiProductImageAccessUrl:
-        includeFabricImages && color.aiProductImageFileId ?
-          fileAccessUrlMap?.get(color.aiProductImageFileId.toString())
-        : undefined,
+        includeFabricImages && color.aiProductImageFileId
+          ? fileAccessUrlMap?.get(color.aiProductImageFileId.toString())
+          : undefined,
     };
   }
 
@@ -2101,7 +2135,11 @@ export class ProductService {
     const colors = (fabric.colors ?? [])
       .filter((color) => !activeOnly || color.isActive)
       .map((color) =>
-        this.toFabricColorResponse(color, fileAccessUrlMap, includeFabricImages),
+        this.toFabricColorResponse(
+          color,
+          fileAccessUrlMap,
+          includeFabricImages,
+        ),
       );
 
     if (activeOnly && colors.length === 0) {
@@ -2209,7 +2247,9 @@ export class ProductService {
       tags: productObj.tags || [],
       notes: productObj.notes,
       vendor: this.toVendorResponse(productObj.vendor),
-      materialProfile: this.toMaterialProfileResponse(productObj.materialProfile),
+      materialProfile: this.toMaterialProfileResponse(
+        productObj.materialProfile,
+      ),
       setPieces: this.toSetPiecesResponse(
         productObj.setPieces,
         fileAccessUrlMap,
@@ -2348,6 +2388,7 @@ export class ProductService {
     product: ProductDocument,
     userProduct?: UserProductListRecord,
     fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
+    includeFabricImages = false,
   ): UserProductDetailGqlResponse {
     const productObj = (product.toObject?.() || product) as PlainProduct;
     const purchaseStatus = userProduct?.purchase?.status;
@@ -2367,7 +2408,9 @@ export class ProductService {
       isFree: this.isProductFree(productObj),
       isPurchased: purchaseStatus === UserProductPurchaseStatus.PAID,
       purchaseStatus,
-      materialProfile: this.toMaterialProfileResponse(productObj.materialProfile),
+      materialProfile: this.toMaterialProfileResponse(
+        productObj.materialProfile,
+      ),
       setPieces: this.toSetPiecesResponse(
         productObj.setPieces,
         fileAccessUrlMap,
@@ -2376,7 +2419,7 @@ export class ProductService {
         productObj.fabrics,
         true,
         fileAccessUrlMap,
-        false,
+        includeFabricImages,
       ),
       isReviewSubmissionEnabled: productObj.isReviewSubmissionEnabled !== false,
       isReviewsSectionVisible: productObj.isReviewsSectionVisible !== false,

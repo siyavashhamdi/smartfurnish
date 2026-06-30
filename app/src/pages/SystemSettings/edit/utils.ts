@@ -14,6 +14,7 @@ import type {
   SupportFaqPageForm,
   SupportFaqSectionForm,
   TelegramConfigForm,
+  OpenRouterConfigForm,
   UsdtIrtRateForm,
   UsdtWalletForm,
   ZarinpalConfigForm,
@@ -224,6 +225,15 @@ function normalizeTelegramConfig(value: unknown): TelegramConfigForm {
   };
 }
 
+function normalizeOpenRouterConfig(value: unknown): OpenRouterConfigForm {
+  const config = isRecord(value) ? value : {};
+  return {
+    apiKey: text(config.apiKey),
+    model: text(config.model) || "sourceful/riverflow-v2.5-fast:free",
+    placementPrompt: text(config.placementPrompt),
+  };
+}
+
 function normalizeEmailTemplates(value: unknown): EmailTemplateForm[] {
   if (!Array.isArray(value)) {
     return [createEmptyEmailTemplate()];
@@ -336,6 +346,8 @@ function normalizeJsonForm(key: string, value: unknown): JsonFormState {
       return { kind: "backupConfig", config: normalizeBackupConfig(value) };
     case "TELEGRAM_CONFIG":
       return { kind: "telegramConfig", config: normalizeTelegramConfig(value) };
+    case "OPENROUTER_CONFIG":
+      return { kind: "openrouterConfig", config: normalizeOpenRouterConfig(value) };
     case "EMAIL_TEMPLATES":
       return { kind: "emailTemplates", templates: normalizeEmailTemplates(value) };
     case "SUPPORT_CONTACT":
@@ -456,6 +468,12 @@ function serializeJsonForm(jsonForm: JsonFormState): JsonValue {
         botToken: requiredText(jsonForm.config.botToken, "توکن ربات تلگرام"),
         chatId: requiredText(jsonForm.config.chatId, "شناسه چت تلگرام"),
         apiBaseUrl: requiredText(jsonForm.config.apiBaseUrl, "آدرس API تلگرام"),
+      };
+    case "openrouterConfig":
+      return {
+        apiKey: requiredText(jsonForm.config.apiKey, "کلید API OpenRouter"),
+        model: requiredText(jsonForm.config.model, "مدل OpenRouter"),
+        placementPrompt: optionalText(jsonForm.config.placementPrompt),
       };
     case "emailTemplates":
       return jsonForm.templates.map((template) => ({

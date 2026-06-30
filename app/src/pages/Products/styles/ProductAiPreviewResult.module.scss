@@ -1,0 +1,66 @@
+@use "../../../styles/variables" as variables;
+
+.root {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--app-surface-border);
+  border-radius: variables.$border-radius-lg;
+  background: var(--app-surface-elevated);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  background: linear-gradient(
+    135deg,
+    variables.$color-primary-dark 0%,
+    variables.$color-secondary-dark 100%
+  );
+  color: #f5f1eb;
+}
+
+.headerCopy {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.headerSubtext {
+  color: rgba(245, 241, 235, 0.72) !important;
+}
+
+.readyChip {
+  border-color: rgba(127, 191, 152, 0.45) !important;
+  background: rgba(127, 191, 152, 0.18) !important;
+  color: #d4f0df !important;
+  font-weight: 700;
+}
+
+.imageStage {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  padding: 0.75rem 1.1rem 1.1rem;
+}
+
+.imageButton {
+  display: block;
+  inline-size: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: zoom-in;
+  border-radius: variables.$border-radius-md;
+}
+
+.image {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  max-block-size: min(75vh, 46rem);
+  object-fit: contain;
+  border: 2px solid color-mix(in srgb, variables.$color-secondary-main 28%, transparent);
+  border-radius: variables.$border-radius-md;
+}

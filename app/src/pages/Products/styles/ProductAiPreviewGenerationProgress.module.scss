@@ -1,0 +1,66 @@
+@use "../../../styles/variables" as variables;
+
+.backdrop {
+  z-index: calc(#{variables.$z-index-modal} + 2) !important;
+  backdrop-filter: blur(8px);
+  background: rgba(11, 16, 12, 0.72) !important;
+}
+
+.panel {
+  inline-size: min(100%, 28rem);
+  margin-inline: 1rem;
+  overflow: hidden;
+  border: 1px solid var(--app-surface-border);
+  border-radius: variables.$border-radius-lg;
+  background: var(--app-surface-elevated);
+}
+
+.header {
+  padding: 1rem 1.25rem;
+  background: linear-gradient(
+    135deg,
+    variables.$color-primary-dark 0%,
+    variables.$color-secondary-dark 100%
+  );
+  color: #f5f1eb;
+}
+
+.headerError {
+  background: rgba(127, 29, 29, 0.92);
+}
+
+.headerIconWrap {
+  display: grid;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: 999rem;
+  background: rgba(201, 166, 107, 0.22);
+  color: #e8d3ae;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+.headerError .headerIconWrap {
+  animation: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fecaca;
+}
+
+.headerSubtext {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.body {
+  padding: 1.25rem;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.06);
+  }
+}

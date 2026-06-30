@@ -1324,11 +1324,11 @@ body[data-theme="dark"] {
 
 .galleryThumb {
   flex: 0 0 auto;
-  inline-size: 4.1rem;
-  block-size: 4.1rem;
+  inline-size: 2.05rem;
+  block-size: 2.05rem;
   padding: 0;
   border: 0.14rem solid transparent;
-  border-radius: 0.85rem;
+  border-radius: 0.425rem;
   overflow: hidden;
   background: color-mix(in srgb, var(--app-surface-bg) 88%, #ffffff);
   cursor: pointer;
@@ -1430,11 +1430,11 @@ body[data-theme="dark"] {
 
 .imageViewerDialogThumb {
   flex: 0 0 auto;
-  inline-size: 4.35rem;
-  block-size: 4.35rem;
+  inline-size: 2.175rem;
+  block-size: 2.175rem;
   padding: 0;
   border: 0.14rem solid rgba(255, 255, 255, 0.18);
-  border-radius: 0.85rem;
+  border-radius: 0.425rem;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.08);
   cursor: pointer;

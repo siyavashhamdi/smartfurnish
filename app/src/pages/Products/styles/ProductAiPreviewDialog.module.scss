@@ -1,34 +1,15 @@
-@use "../../../styles/variables" as variables;
-
 .body {
   display: grid;
-  gap: 1.15rem;
+  gap: 1.25rem;
   padding-block: 0.25rem 0.5rem;
 }
 
-.comingSoon {
+.section {
   display: grid;
-  justify-items: center;
   gap: 0.75rem;
-  padding: 1.25rem 0.5rem 0.5rem;
-  text-align: center;
 }
 
-.iconWrap {
-  display: grid;
-  place-items: center;
-  inline-size: 4rem;
-  block-size: 4rem;
-  border-radius: 999rem;
-  background: color-mix(in srgb, var(--app-surface-border) 42%, transparent);
-}
-
-.icon {
-  font-size: 1.85rem !important;
-  color: var(--text-secondary);
-}
-
-.message {
+.sectionTitle {
   margin: 0;
-  font-weight: 900;
+  font-weight: 800;
 }

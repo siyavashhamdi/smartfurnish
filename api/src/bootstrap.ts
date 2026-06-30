@@ -124,6 +124,7 @@ export async function bootstrap() {
     allowedHeaders: [
       "Content-Type",
       "Authorization",
+      "Accept",
       "X-File-Name",
       "X-Upload-Policy",
       "X-Apollo-Operation-Name",

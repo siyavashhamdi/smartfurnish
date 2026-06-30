@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@apollo/client/react";
-import { Alert, Button, Chip, CircularProgress, IconButton, Paper, Skeleton, Typography } from "@mui/material";
-import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
-import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import WeekendRoundedIcon from "@mui/icons-material/WeekendRounded";
+import { Alert, Button, Chip, CircularProgress, Paper, Skeleton, Typography } from "@mui/material";
 import { PAYMENTS_ENABLED } from "../../constants/payments.constants";
 import { useAuth } from "../../contexts/AuthContext";
 import { APP_SHELL_ROUTES } from "../../routing/app-shell-routes";
@@ -48,7 +45,6 @@ import {
 import {
   formatProductPrice,
   getDiscountedPrice,
-  type ProductDetailRecord,
   type UserProductDetailQuery,
   type UserProductDetailQueryVariables,
 } from "./product-detail.api";
@@ -57,9 +53,7 @@ import {
   type ProductMaterialProfileRow,
 } from "./product-list.api";
 import RichTextBox from "../../shared/forms/RichTextBox";
-import { ProductDetailCoverCarousel } from "./ProductDetailCoverCarousel";
-import { ProductDetailCoverThumbnails } from "./ProductDetailCoverThumbnails";
-import { ProductDetailImageViewerDialog } from "./ProductDetailImageViewerDialog";
+import { ProductDetailCoverGallery } from "./ProductDetailCoverGallery";
 import { FabricSelector } from "./FabricSelector";
 import { ProductAiPreviewDialog } from "./ProductAiPreviewDialog";
 import {
@@ -70,11 +64,6 @@ import { useProductAiPreviewRoute } from "./useProductAiPreviewRoute";
 import { ProductSetPiecesGallery } from "./ProductSetPiecesGallery";
 import { useFabricSelection } from "./useFabricSelection";
 import styles from "./styles/ProductDetail.module.scss";
-
-type CoverImageGalleryProps = {
-  readonly title: string;
-  readonly coverImageAccessUrls: ProductDetailRecord["coverImageAccessUrls"];
-};
 
 function ProductDetailSectionHeader({
   section,
@@ -95,104 +84,6 @@ function ProductDetailSectionHeader({
       <h2 id={headingId}>{definition.label}</h2>
       {loading ? <CircularProgress size={22} /> : null}
     </div>
-  );
-}
-
-function CoverImageGallery({ title, coverImageAccessUrls }: CoverImageGalleryProps): ReactElement {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [isViewerOpen, setIsViewerOpen] = useState(false);
-  const safeIndex = Math.min(activeIndex, Math.max(coverImageAccessUrls.length - 1, 0));
-  const hasMultipleImages = coverImageAccessUrls.length > 1;
-
-  useEffect(() => {
-    setActiveIndex(0);
-    setIsViewerOpen(false);
-  }, [coverImageAccessUrls]);
-
-  if (coverImageAccessUrls.length === 0) {
-    return (
-      <div className={styles.heroMedia}>
-        <div className={styles.heroGlow} />
-        <WeekendRoundedIcon className={styles.heroIcon} />
-      </div>
-    );
-  }
-
-  const goToPrevious = (): void => {
-    if (!hasMultipleImages || safeIndex <= 0) {
-      return;
-    }
-    setActiveIndex(safeIndex - 1);
-  };
-
-  const goToNext = (): void => {
-    if (!hasMultipleImages || safeIndex >= coverImageAccessUrls.length - 1) {
-      return;
-    }
-    setActiveIndex(safeIndex + 1);
-  };
-
-  return (
-    <>
-      <div className={styles.gallery}>
-        <div className={`${styles.galleryMain} ${styles.galleryMainExpandable}`}>
-          <ProductDetailCoverCarousel
-            title={title}
-            coverImageAccessUrls={coverImageAccessUrls}
-            activeIndex={safeIndex}
-            onActiveIndexChange={setActiveIndex}
-            onActivate={() => setIsViewerOpen(true)}
-          />
-          {hasMultipleImages ? (
-            <div className={styles.galleryCarouselControls}>
-              <IconButton
-                type="button"
-                size="small"
-                className={styles.galleryCarouselNavButton}
-                aria-label="تصویر بعدی"
-                disabled={safeIndex >= coverImageAccessUrls.length - 1}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  goToNext();
-                }}
-              >
-                <ChevronLeftRoundedIcon fontSize="small" />
-              </IconButton>
-              <IconButton
-                type="button"
-                size="small"
-                className={styles.galleryCarouselNavButton}
-                aria-label="تصویر قبلی"
-                disabled={safeIndex <= 0}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  goToPrevious();
-                }}
-              >
-                <ChevronRightRoundedIcon fontSize="small" />
-              </IconButton>
-            </div>
-          ) : null}
-        </div>
-        {hasMultipleImages ? (
-          <ProductDetailCoverThumbnails
-            title={title}
-            coverImageAccessUrls={coverImageAccessUrls}
-            activeIndex={safeIndex}
-            onSelect={setActiveIndex}
-          />
-        ) : null}
-      </div>
-
-      <ProductDetailImageViewerDialog
-        open={isViewerOpen}
-        title={title}
-        coverImageAccessUrls={coverImageAccessUrls}
-        activeIndex={safeIndex}
-        onActiveIndexChange={setActiveIndex}
-        onClose={() => setIsViewerOpen(false)}
-      />
-    </>
   );
 }
 
@@ -603,7 +494,7 @@ const ProductDetail = (): ReactElement => {
         </div>
 
         <div className={styles.heroMediaWrap}>
-          <CoverImageGallery
+          <ProductDetailCoverGallery
             title={product.title}
             coverImageAccessUrls={product.coverImageAccessUrls}
           />
@@ -780,6 +671,9 @@ const ProductDetail = (): ReactElement => {
       <ProductAiPreviewDialog
         open={isAiPreviewDialogOpen}
         onClose={closeAiPreviewDialog}
+        productId={product?.id ?? ""}
+        productTitle={product?.title ?? ""}
+        coverImageAccessUrls={product?.coverImageAccessUrls ?? []}
         fabricSelection={fabricSelection}
         onInPersonVisitClick={handleInPersonVisitRequest}
       />

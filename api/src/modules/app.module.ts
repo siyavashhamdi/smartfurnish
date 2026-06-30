@@ -19,6 +19,7 @@ import { AuthModule } from "./auth";
 import { UserModule, UserSubscriptionService } from "./user";
 import { FileModule } from "./file";
 import { ProductModule } from "./product";
+import { ProductAiPreviewModule } from "./product-ai-preview";
 import { ProductReviewModule } from "./product-review";
 import { HealthModule } from "./health";
 import { DatabaseModule } from "./database";
@@ -233,6 +234,7 @@ const graphQLErrorLogger = new Logger("GraphQLError");
     BackupModule,
     TelegramModule,
     ProductModule,
+    ProductAiPreviewModule,
     ProductReviewModule,
     UserModule,
   ],
