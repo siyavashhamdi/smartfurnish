@@ -1,0 +1,59 @@
+.section {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.sectionTitle {
+  font-weight: 800 !important;
+}
+
+.accordion {
+  border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 80%, transparent) !important;
+  border-radius: 0.9rem !important;
+  overflow: hidden;
+
+  &::before {
+    display: none;
+  }
+}
+
+.stack {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.card {
+  position: relative;
+  padding: 0.9rem;
+  border-radius: 0.9rem !important;
+}
+
+.cardActions {
+  position: absolute;
+  inset-block-start: 0.35rem;
+  inset-inline-end: 0.35rem;
+}
+
+.imageRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.imageField {
+  display: grid;
+  gap: 0.35rem;
+  min-inline-size: 12rem;
+  max-inline-size: 16rem;
+}
+
+.colorStack {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.colorCard {
+  padding: 0.75rem;
+  border-radius: 0.75rem !important;
+}

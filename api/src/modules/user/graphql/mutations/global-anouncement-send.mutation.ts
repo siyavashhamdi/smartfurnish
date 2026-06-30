@@ -1,4 +1,4 @@
-import { BadRequestException, UseGuards } from "@nestjs/common";
+import { BadRequestException, Inject, UseGuards, forwardRef } from "@nestjs/common";
 
 import { EXCEPTION_CONSTANT } from "../../../../constants/exception.constant";
 import { Args, Mutation, Resolver } from "@nestjs/graphql";
@@ -17,7 +17,7 @@ import {
   NotificationDocument,
 } from "../../../../database/schemas";
 import { GqlAuthGuard, Roles, RolesGuard } from "../../../auth";
-import { PushNotificationService } from "../../../push-notification";
+import { PushNotificationService } from "../../../push-notification/push-notification.service";
 import { UserSubscriptionService } from "../../user-subscription.service";
 import { GlobalAnouncementSendGqlInput } from "../inputs";
 import { GlobalAnouncementSendGqlResponse } from "../responses";
@@ -34,6 +34,7 @@ export class GlobalAnouncementSendMutation {
     @InjectModel(Notification.name)
     private readonly notificationModel: Model<NotificationDocument>,
     private readonly userSubscriptionService: UserSubscriptionService,
+    @Inject(forwardRef(() => PushNotificationService))
     private readonly pushNotificationService: PushNotificationService,
   ) {}
 

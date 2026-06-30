@@ -399,7 +399,6 @@ const Landing = (): ReactElement => {
                     key={product.id}
                     item={product}
                     variant="public"
-                    coverImageAccessUrl={product.coverImageAccessUrl}
                     onOpen={() => handleProductOpen(product.id)}
                     onKeyDown={(event) => handleProductKeyDown(product.id, event)}
                   />

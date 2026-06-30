@@ -1,41 +1,11 @@
 import { gql } from "@apollo/client";
 
-import { FILE_ACCESS_URL_FIELDS } from "../fragments/fileAccessUrl.fragment";
+import { PRODUCT_ADMIN_DETAIL_FIELDS } from "../fragments/productCatalog.fragment";
 
 export const PRODUCT_DETAIL_QUERY = gql`
   query ProductDetail($input: ProductDetailGqlInput!) {
     productDetail(input: $input) {
-      id
-      title
-      description
-      coverImageAccessUrl {
-        ${FILE_ACCESS_URL_FIELDS}
-      }
-      priceIrt
-      discount {
-        type
-        value
-      }
-      isActive
-      isReviewSubmissionEnabled
-      isReviewsSectionVisible
-      tags
-      chapters {
-        title
-        description
-        visibleAfterMinutes
-        isFree
-        sortOrder
-        items {
-          title
-          sortOrder
-          fileAccessUrl {
-            ${FILE_ACCESS_URL_FIELDS}
-          }
-          article
-          type
-        }
-      }
+      ${PRODUCT_ADMIN_DETAIL_FIELDS}
     }
   }
 `;

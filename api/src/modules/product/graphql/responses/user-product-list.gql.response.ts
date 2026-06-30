@@ -3,25 +3,11 @@ import { Types } from "mongoose";
 
 import { FileAccessUrlGqlResponse } from "../../../file/graphql/responses";
 import { PaginationCursorResponse } from "../../../../common/pagination/response";
-import {
-  ProductDiscountType,
-  ProductItemType,
-  ProductReleaseType,
-} from "../../../../enums";
+import { ProductDiscountType } from "../../../../enums";
+import { ProductDiscountGqlResponse } from "./product-list.gql.response";
 
 @ObjectType()
-export class UserProductListDiscountGqlResponse {
-  @Field(() => ProductDiscountType, {
-    description: "Discount calculation type",
-  })
-  type: ProductDiscountType;
-
-  @Field(() => Float, {
-    description:
-      "Discount value. Percentage for PERCENTAGE, IRT amount for FIXED_AMOUNT_IRT",
-  })
-  value: number;
-}
+export class UserProductListDiscountGqlResponse extends ProductDiscountGqlResponse {}
 
 @ObjectType()
 export class UserProductListGqlResponse {
@@ -31,14 +17,13 @@ export class UserProductListGqlResponse {
   @Field({ description: "Product title" })
   title: string;
 
-  @Field({ nullable: true, description: "Product description" })
-  description?: string;
+  @Field({ nullable: true, description: "Short product summary" })
+  summary?: string;
 
-  @Field(() => FileAccessUrlGqlResponse, {
-    nullable: true,
-    description: "Signed access descriptor for the product cover image",
+  @Field(() => [FileAccessUrlGqlResponse], {
+    description: "Signed access descriptors for product cover images",
   })
-  coverImageAccessUrl?: FileAccessUrlGqlResponse;
+  coverImageAccessUrls: FileAccessUrlGqlResponse[];
 
   @Field(() => Float, {
     nullable: true,
@@ -55,22 +40,13 @@ export class UserProductListGqlResponse {
   @Field(() => [String], { description: "Product tags" })
   tags: string[];
 
-  @Field(() => ProductReleaseType, {
-    description:
-      "Calculated release strategy. GRADUAL means at least one chapter has visibleAfterMinutes.",
+  @Field(() => Int, { description: "Number of set pieces in the product" })
+  setPieceCount: number;
+
+  @Field(() => Int, {
+    description: "Number of active fabrics in the product",
   })
-  releaseType: ProductReleaseType;
-
-  @Field(() => Int, { description: "Number of chapters in the product" })
-  chapterCount: number;
-
-  @Field(() => Int, { description: "Number of items in the product" })
-  itemCount: number;
-
-  @Field(() => [ProductItemType], {
-    description: "Calculated content types available in this product",
-  })
-  itemTypes: ProductItemType[];
+  fabricCount: number;
 
   @Field({
     description:

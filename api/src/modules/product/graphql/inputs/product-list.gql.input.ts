@@ -2,7 +2,6 @@ import { Type } from "class-transformer";
 import {
   IsArray,
   IsBoolean,
-  IsEnum,
   IsMongoId,
   IsNumber,
   IsOptional,
@@ -12,7 +11,6 @@ import {
 } from "class-validator";
 import { Field, Float, ID, InputType } from "@nestjs/graphql";
 
-import { ProductItemType, ProductReleaseType } from "../../../../enums";
 import {
   CursorPageOptionsParamsInput,
   PaginationCursorInput,
@@ -24,7 +22,7 @@ export class ProductListFilterInput {
   @Field({
     nullable: true,
     description:
-      "Search query that matches title, description, tags, chapter titles, item titles, and article text",
+      "Search query that matches title, summary, full description, tags, vendor, materials, and set piece names",
   })
   @IsOptional()
   @IsString({ message: "Query filter must be a string" })
@@ -35,10 +33,15 @@ export class ProductListFilterInput {
   @IsString({ message: "Title filter must be a string" })
   title?: string;
 
-  @Field({ nullable: true, description: "Filter products by description" })
+  @Field({ nullable: true, description: "Filter products by summary" })
   @IsOptional()
-  @IsString({ message: "Description filter must be a string" })
-  description?: string;
+  @IsString({ message: "Summary filter must be a string" })
+  summary?: string;
+
+  @Field({ nullable: true, description: "Filter products by full description" })
+  @IsOptional()
+  @IsString({ message: "Full description filter must be a string" })
+  fullDescription?: string;
 
   @Field(() => Boolean, {
     nullable: true,
@@ -95,28 +98,6 @@ export class ProductListFilterInput {
   @IsBoolean({ message: "hasPrice filter must be a boolean" })
   hasPrice?: boolean;
 
-  @Field(() => ProductReleaseType, {
-    nullable: true,
-    description:
-      "Filter by calculated release type. GRADUAL means at least one chapter has visibleAfterMinutes.",
-  })
-  @IsOptional()
-  @IsEnum(ProductReleaseType, {
-    message: "Release type filter must be IMMEDIATE or GRADUAL",
-  })
-  releaseType?: ProductReleaseType;
-
-  @Field(() => ProductItemType, {
-    nullable: true,
-    description:
-      "Filter products containing at least one calculated item type. ARTICLE means an item without fileId.",
-  })
-  @IsOptional()
-  @IsEnum(ProductItemType, {
-    message: "Item type filter must be ARTICLE, VIDEO, VOICE, or IMAGE",
-  })
-  itemType?: ProductItemType;
-
   @Field(() => Boolean, {
     nullable: true,
     description:
@@ -125,14 +106,6 @@ export class ProductListFilterInput {
   @IsOptional()
   @IsBoolean({ message: "isPurchased filter must be a boolean" })
   isPurchased?: boolean;
-
-  @Field(() => Boolean, {
-    nullable: true,
-    description: "Filter products that contain at least one free chapter",
-  })
-  @IsOptional()
-  @IsBoolean({ message: "hasFreeChapter filter must be a boolean" })
-  hasFreeChapter?: boolean;
 
   @Field(() => ID, {
     nullable: true,

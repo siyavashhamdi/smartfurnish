@@ -60,8 +60,8 @@ import {
   buildProductListQueryVariables,
   DEFAULT_PRODUCT_LIST_FILTERS,
   DEFAULT_PRODUCT_LIST_SORT,
+  getPrimaryCoverImageAccessUrl,
   mapProductListRowToRecord,
-  type ProductItemType,
   type ProductListFilters,
   type ProductListQuery,
   type ProductListQueryVariables,
@@ -133,13 +133,6 @@ const SORT_FIELD_LABEL: Record<ProductSortField, string> = {
   title: "عنوان",
   priceIrt: "قیمت",
   isActive: "وضعیت",
-};
-
-const ITEM_TYPE_LABEL: Record<ProductItemType, string> = {
-  ARTICLE: "مقاله",
-  VIDEO: "ویدیو",
-  VOICE: "صوت",
-  IMAGE: "تصویر",
 };
 
 const SORT_ORDER_LABEL: Record<"ASC" | "DESC", string> = {
@@ -223,9 +216,11 @@ const ProductsIndex = (): ReactElement => {
           products: items.map((item) => ({
             id: item.id,
             title: item.title,
-            description: item.description,
+            description: item.summary || item.title,
             url: resolveAbsoluteUrl(appUrl, `${APP_SHELL_ROUTES.products}/${item.id}`),
-            imageUrl: resolveFileAccessUrl(item.coverImageAccessUrl) ?? undefined,
+            imageUrl:
+              resolveFileAccessUrl(getPrimaryCoverImageAccessUrl(item.coverImageAccessUrls)) ??
+              undefined,
           })),
         }),
       ],
@@ -304,10 +299,7 @@ const ProductsIndex = (): ReactElement => {
       searchQuery.trim() !== "" ||
       filters.query.trim() !== "" ||
       filters.isActive !== DEFAULT_PRODUCT_LIST_FILTERS.isActive ||
-      filters.releaseType !== DEFAULT_PRODUCT_LIST_FILTERS.releaseType ||
-      filters.itemType !== DEFAULT_PRODUCT_LIST_FILTERS.itemType ||
       filters.hasPrice !== DEFAULT_PRODUCT_LIST_FILTERS.hasPrice ||
-      filters.hasFreeChapter !== DEFAULT_PRODUCT_LIST_FILTERS.hasFreeChapter ||
       filters.minPriceIrt.trim() !== "" ||
       filters.maxPriceIrt.trim() !== "" ||
       filters.tagsAny.trim() !== ""
@@ -706,25 +698,10 @@ const ProductsIndex = (): ReactElement => {
         label: filters.isActive === "ACTIVE" ? "فقط فعال" : "فقط غیرفعال",
       });
     }
-    if (filters.releaseType !== "ALL") {
-      chips.push({
-        key: "releaseType",
-        label: filters.releaseType === "IMMEDIATE" ? "انتشار فوری" : "انتشار تدریجی",
-      });
-    }
-    if (filters.itemType !== "ALL") {
-      chips.push({ key: "itemType", label: `نوع محتوا: ${ITEM_TYPE_LABEL[filters.itemType]}` });
-    }
     if (filters.hasPrice !== "ALL") {
       chips.push({
         key: "hasPrice",
         label: filters.hasPrice === "WITH_PRICE" ? "دارای قیمت" : "رایگان/بدون قیمت",
-      });
-    }
-    if (filters.hasFreeChapter !== "ALL") {
-      chips.push({
-        key: "hasFreeChapter",
-        label: filters.hasFreeChapter === "YES" ? "دارای بخش رایگان" : "بدون بخش رایگان",
       });
     }
     if (filters.minPriceIrt.trim()) {
@@ -932,46 +909,6 @@ const ProductsIndex = (): ReactElement => {
                 ) : null}
                 <Grid item xs={6} md={2}>
                   <FormControl fullWidth size="small">
-                    <InputLabel>انتشار</InputLabel>
-                    <Select
-                      value={filters.releaseType}
-                      label="انتشار"
-                      onChange={(event) =>
-                        setFilterValue(
-                          "releaseType",
-                          event.target.value as ProductListFilters["releaseType"]
-                        )
-                      }
-                    >
-                      <MenuItem value="ALL">همه</MenuItem>
-                      <MenuItem value="IMMEDIATE">فوری</MenuItem>
-                      <MenuItem value="GRADUAL">تدریجی</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={6} md={2}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>نوع محتوا</InputLabel>
-                    <Select
-                      value={filters.itemType}
-                      label="نوع محتوا"
-                      onChange={(event) =>
-                        setFilterValue(
-                          "itemType",
-                          event.target.value as ProductListFilters["itemType"]
-                        )
-                      }
-                    >
-                      <MenuItem value="ALL">همه</MenuItem>
-                      <MenuItem value="ARTICLE">مقاله</MenuItem>
-                      <MenuItem value="VIDEO">ویدیو</MenuItem>
-                      <MenuItem value="VOICE">صوت</MenuItem>
-                      <MenuItem value="IMAGE">تصویر</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={6} md={2}>
-                  <FormControl fullWidth size="small">
                     <InputLabel>قیمت</InputLabel>
                     <Select
                       value={filters.hasPrice}
@@ -986,25 +923,6 @@ const ProductsIndex = (): ReactElement => {
                       <MenuItem value="ALL">همه</MenuItem>
                       <MenuItem value="WITH_PRICE">دارای قیمت</MenuItem>
                       <MenuItem value="FREE_OR_UNSET">رایگان/بدون قیمت</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={6} md={2}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>بخش رایگان</InputLabel>
-                    <Select
-                      value={filters.hasFreeChapter}
-                      label="بخش رایگان"
-                      onChange={(event) =>
-                        setFilterValue(
-                          "hasFreeChapter",
-                          event.target.value as ProductListFilters["hasFreeChapter"]
-                        )
-                      }
-                    >
-                      <MenuItem value="ALL">همه</MenuItem>
-                      <MenuItem value="YES">دارد</MenuItem>
-                      <MenuItem value="NO">ندارد</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
@@ -1168,7 +1086,6 @@ const ProductsIndex = (): ReactElement => {
                 >
                   <ProductCard
                     item={item}
-                    coverImageAccessUrl={item.coverImageAccessUrl}
                     variant={isPublicProductView ? "public" : "management"}
                     onOpen={() => navigate(`${APP_SHELL_ROUTES.products}/${item.id}`)}
                     onKeyDown={(event) => handleProductKeyDown(event, item)}

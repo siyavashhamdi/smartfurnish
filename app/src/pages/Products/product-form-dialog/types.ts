@@ -1,26 +1,73 @@
-import type { FileAccessUrl } from "../../../utils/fileAccessUrl.util";
-
 export type DiscountKind = "PERCENTAGE" | "FIXED_AMOUNT_IRT";
-export type VisibleAfterUnit = "MINUTES" | "HOURS" | "DAYS";
-export type DraftItemContentType = "ARTICLE" | "FILE";
 
-export type DraftItem = {
-  id: string;
-  title: string;
-  contentType: DraftItemContentType;
-  article: string;
-  file: File | null;
-  fileAccessUrl: FileAccessUrl | null;
+export type DraftCoverImage = {
+  readonly id: string;
+  readonly file: File | null;
+  readonly accessUrl: import("../../utils/fileAccessUrl.util").FileAccessUrl | null;
 };
 
-export type DraftChapter = {
-  id: string;
-  title: string;
-  description: string;
-  visibleAfterMinutes: string;
-  visibleAfterUnit: VisibleAfterUnit;
-  isFree: boolean;
-  items: DraftItem[];
+export type DraftMaterialComposition = {
+  readonly id: string;
+  readonly label: string;
+  readonly material: string;
+  readonly texture: string;
+  readonly percentage: string;
 };
 
-export type ExpandedItemByChapter = Record<string, string | null>;
+export type DraftMaterialProfile = {
+  readonly texture: string;
+  readonly primaryMaterial: string;
+  readonly secondaryMaterials: string[];
+  readonly composition: DraftMaterialComposition[];
+  readonly careInstructions: string;
+};
+
+export type DraftVendor = {
+  readonly name: string;
+  readonly phone: string;
+  readonly address: string;
+  readonly notes: string;
+};
+
+export type DraftSetPieceDimension = {
+  readonly id: string;
+  readonly label: string;
+  readonly displayText: string;
+  readonly widthCm: string;
+  readonly heightCm: string;
+  readonly depthCm: string;
+};
+
+export type DraftSetPieceImage = {
+  readonly id: string;
+  readonly file: File | null;
+  readonly accessUrl: import("../../utils/fileAccessUrl.util").FileAccessUrl | null;
+};
+
+export type DraftSetPiece = {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly sortOrder: string;
+  readonly weightKg: string;
+  readonly images: DraftSetPieceImage[];
+  readonly dimensions: DraftSetPieceDimension[];
+  readonly materialProfile: DraftMaterialProfile;
+};
+
+export type DraftFabricColor = {
+  readonly id: string;
+  readonly name: string;
+  readonly hexCode: string;
+  readonly sortOrder: string;
+  readonly isActive: boolean;
+  readonly aiImage: DraftSetPieceImage;
+};
+
+export type DraftFabric = {
+  readonly id: string;
+  readonly patternName: string;
+  readonly sortOrder: string;
+  readonly isActive: boolean;
+  readonly colors: DraftFabricColor[];
+};

@@ -37,7 +37,7 @@ import * as UserSubscriptions from "./graphql/subscriptions";
   imports: [
     AppSettingsModule,
     DatabaseModule,
-    PushNotificationModule,
+    forwardRef(() => PushNotificationModule),
     EmailModule,
     forwardRef(() => FileModule),
     forwardRef(() => AuthModule),

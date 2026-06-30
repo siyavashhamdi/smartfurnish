@@ -19,8 +19,6 @@ import {
   BadgeCountTriggerSource,
   ProductDeleteDependencyImpact,
   ProductDiscountType,
-  ProductItemType,
-  ProductReleaseType,
   CouponDiscountType,
   GeneralSubscriptionUpdateType,
   NotificationMode,
@@ -37,11 +35,15 @@ import { buildSortOptions } from "../../common/pagination/utils";
 import { env } from "../../config";
 import {
   Product,
-  ProductChapter,
   ProductDocument,
-  ProductItem,
+  ProductFabric,
+  ProductMaterialComposition,
+  ProductMaterialProfile,
+  ProductSetPieceDimension,
   ProductReview,
   ProductReviewDocument,
+  ProductSetPiece,
+  ProductVendor,
   Coupon,
   CouponDocument,
   StoredFile,
@@ -54,9 +56,14 @@ import {
   UserDocument,
 } from "../../database/schemas";
 import {
-  ProductChapterGqlInput,
   ProductDiscountGqlInput,
-  ProductItemGqlInput,
+  ProductFabricColorGqlInput,
+  ProductFabricGqlInput,
+  ProductMaterialCompositionGqlInput,
+  ProductMaterialProfileGqlInput,
+  ProductSetPieceDimensionGqlInput,
+  ProductSetPieceGqlInput,
+  ProductVendorGqlInput,
 } from "./graphql/inputs/product-common.gql.input";
 import { ProductCreateGqlInput } from "./graphql/inputs/product-create.gql.input";
 import { ProductDetailGqlInput } from "./graphql/inputs/product-detail.gql.input";
@@ -67,23 +74,23 @@ import { ProductPaymentDetailGqlInput } from "./graphql/inputs/product-payment-d
 import { ProductPaymentManualCreateGqlInput } from "./graphql/inputs/product-payment-manual-create.gql.input";
 import { ProductPaymentStatusUpdateGqlInput } from "./graphql/inputs/product-payment-status-update.gql.input";
 import { ProductPurchaseSubmitGqlInput } from "./graphql/inputs/product-purchase-submit.gql.input";
-import { ProductChapterCompleteGqlInput } from "./graphql/inputs/product-chapter-complete.gql.input";
 import { ProductListSortOptionInput } from "./graphql/inputs/product-list-sort-option.gql.input";
 import { ProductUpdateGqlInput } from "./graphql/inputs/product-update.gql.input";
 import { UserProductDetailGqlInput } from "./graphql/inputs/user-product-detail.gql.input";
 import { FileService, FileAccessUrlDescriptor } from "../file/file.service";
 import {
-  ProductListChapterGqlResponse,
+  ProductFabricColorGqlResponse,
+  ProductFabricGqlResponse,
   ProductListGqlResponse,
-  ProductListItemGqlResponse,
   ProductListPaginatedCursorGqlResponse,
   ProductListSummaryGqlResponse,
+  ProductMaterialCompositionGqlResponse,
+  ProductMaterialProfileGqlResponse,
+  ProductSetPieceDimensionGqlResponse,
+  ProductSetPieceGqlResponse,
+  ProductVendorGqlResponse,
 } from "./graphql/responses/product-list.gql.response";
-import {
-  UserProductDetailChapterGqlResponse,
-  UserProductDetailGqlResponse,
-  UserProductDetailItemGqlResponse,
-} from "./graphql/responses/user-product-detail.gql.response";
+import { UserProductDetailGqlResponse } from "./graphql/responses/user-product-detail.gql.response";
 import {
   UserProductListGqlResponse,
   UserProductListPaginatedCursorGqlResponse,
@@ -94,7 +101,6 @@ import {
   ProductPaymentListSummaryGqlResponse,
 } from "./graphql/responses/product-payment-list.gql.response";
 import { ProductPurchaseSubmitGqlResponse } from "./graphql/responses/product-purchase-submit.gql.response";
-import { ProductChapterCompleteGqlResponse } from "./graphql/responses/product-chapter-complete.gql.response";
 import {
   ProductDeleteDependenciesGqlResponse,
   ProductDeleteDependencyBreakdownGqlResponse,
@@ -111,26 +117,19 @@ import {
 } from "../push-notification/utils/resolve-web-push-content.util";
 import { UserSubscriptionService } from "../user";
 import { ZarinPalProxyService } from "../zarinpal-proxy";
-import {
-  canAccessChapter,
-  resolveChapterUnlocksAt,
-} from "./chapter-access.util";
-import { hasRichTextContent } from "../../utils/rich-text-content.util";
 
 type PlainProduct = Product & {
   _id: Types.ObjectId;
 };
 
-type FileTypeLookup = Map<string, ProductItemType>;
-type ProductListSortField = Extract<keyof ProductListSortOptionInput, string>;
 type ProductFileReferenceSource = {
-  coverImageFileId?: Types.ObjectId;
-  chapters: Array<{
-    items: Array<{
-      fileId?: Types.ObjectId;
-    }>;
+  coverImageFileIds?: Types.ObjectId[];
+  setPieces?: Array<{ imageFileIds?: Types.ObjectId[] }>;
+  fabrics?: Array<{
+    colors?: Array<{ aiProductImageFileId?: Types.ObjectId }>;
   }>;
 };
+type ProductListSortField = Extract<keyof ProductListSortOptionInput, string>;
 type UserProductListRecord = Pick<
   UserProduct,
   "productId" | "purchase" | "progress"
@@ -276,10 +275,9 @@ export class ProductService {
         includeActiveSubscribedUsers: product.isActive,
       },
     );
-    const fileTypeLookup = await this.buildFileTypeLookup([product]);
     const fileAccessUrlMap = await this.buildFileAccessUrlLookup([product]);
 
-    return this.toListResponse(product, fileTypeLookup, fileAccessUrlMap);
+    return this.toListResponse(product, fileAccessUrlMap);
   }
 
   async update(input: ProductUpdateGqlInput): Promise<ProductListGqlResponse> {
@@ -307,15 +305,10 @@ export class ProductService {
     }
 
     const newFileIds = this.collectReferencedFileIds(normalizedInput);
-    const fileTypeLookup = await this.buildFileTypeLookup([updatedProduct]);
     const fileAccessUrlMap = await this.buildFileAccessUrlLookup([
       updatedProduct,
     ]);
-    const response = this.toListResponse(
-      updatedProduct,
-      fileTypeLookup,
-      fileAccessUrlMap,
-    );
+    const response = this.toListResponse(updatedProduct, fileAccessUrlMap);
 
     if (existingIsActive !== updatedProduct.isActive) {
       await this.publishProductBadgeCountSignal(
@@ -466,7 +459,7 @@ export class ProductService {
       userSnapshot: this.toUserProductUserSnapshot(user),
       productSnapshot: {
         title: product.title,
-        description: product.description,
+        summary: product.summary,
         priceIrt: priceSummary.amountIrt,
         discount: product.discount
           ? {
@@ -865,7 +858,7 @@ export class ProductService {
       userSnapshot: this.toUserProductUserSnapshot(user),
       productSnapshot: {
         title: product.title,
-        description: product.description,
+        summary: product.summary,
         priceIrt: manualPriceSummary.amountIrt,
         discount: product.discount
           ? {
@@ -918,10 +911,9 @@ export class ProductService {
       throw new NotFoundException(EXCEPTION_CONSTANT.PRODUCT_NOT_FOUND);
     }
 
-    const fileTypeLookup = await this.buildFileTypeLookup([product]);
     const fileAccessUrlMap = await this.buildFileAccessUrlLookup([product]);
 
-    return this.toListResponse(product, fileTypeLookup, fileAccessUrlMap);
+    return this.toListResponse(product, fileAccessUrlMap);
   }
 
   async list(
@@ -972,14 +964,13 @@ export class ProductService {
     const hasNextPage = productsWithExtra.length > limit;
     const products = productsWithExtra.slice(0, limit);
 
-    const fileTypeLookup = await this.buildFileTypeLookup(products);
     const fileAccessUrlMap = await this.buildFileAccessUrlLookup(products);
     const firstProduct = products[0];
     const lastProduct = products[products.length - 1];
 
     return {
       items: products.map((product) =>
-        this.toListSummaryResponse(product, fileTypeLookup, fileAccessUrlMap),
+        this.toListSummaryResponse(product, fileAccessUrlMap),
       ),
       pagination: {
         limit,
@@ -1039,20 +1030,20 @@ export class ProductService {
         .limit(limit + 1)
         .select({
           title: 1,
-          description: 1,
-          coverImageFileId: 1,
+          summary: 1,
+          coverImageFileIds: 1,
           priceIrt: 1,
           discount: 1,
           tags: 1,
-          chapters: 1,
+          setPieces: 1,
+          fabrics: 1,
         })
         .exec(),
       this.productModel.countDocuments(baseFilterQuery).exec(),
     ]);
     const hasNextPage = productsWithExtra.length > limit;
     const products = productsWithExtra.slice(0, limit);
-    const [fileTypeLookup, userProductLookup] = await Promise.all([
-      this.buildFileTypeLookup(products),
+    const [userProductLookup] = await Promise.all([
       this.buildUserProductLookup(userId, products),
     ]);
     const fileAccessUrlMap = await this.buildFileAccessUrlLookup(products);
@@ -1063,7 +1054,6 @@ export class ProductService {
       items: products.map((product) =>
         this.toUserListResponse(
           product,
-          fileTypeLookup,
           userProductLookup.get(product._id.toString()),
           fileAccessUrlMap,
         ),
@@ -1088,12 +1078,16 @@ export class ProductService {
       .findOne({ _id: input.id, isActive: true })
       .select({
         title: 1,
-        description: 1,
-        coverImageFileId: 1,
+        summary: 1,
+        fullDescription: 1,
+        coverImageFileIds: 1,
         priceIrt: 1,
         discount: 1,
         tags: 1,
-        chapters: 1,
+        vendor: 1,
+        materialProfile: 1,
+        setPieces: 1,
+        fabrics: 1,
         isReviewSubmissionEnabled: 1,
         isReviewsSectionVisible: 1,
       })
@@ -1102,203 +1096,13 @@ export class ProductService {
       throw new NotFoundException(EXCEPTION_CONSTANT.PRODUCT_NOT_FOUND);
     }
 
-    const [fileTypeLookup, userProductLookup] = await Promise.all([
-      this.buildFileTypeLookup([product]),
+    const [userProductLookup] = await Promise.all([
       this.buildUserProductLookup(userId, [product]),
     ]);
     const fileAccessUrlMap = await this.buildFileAccessUrlLookup([product]);
     const userProduct = userProductLookup.get(product._id.toString());
 
-    return this.toUserDetailResponse(
-      product,
-      fileTypeLookup,
-      userProduct,
-      fileAccessUrlMap,
-    );
-  }
-
-  async completeChapter(
-    input: ProductChapterCompleteGqlInput,
-    userId: Types.ObjectId,
-  ): Promise<ProductChapterCompleteGqlResponse> {
-    const product = await this.productModel
-      .findOne({ _id: input.productId, isActive: true })
-      .select({ chapters: 1, priceIrt: 1, discount: 1 })
-      .exec();
-    if (!product) {
-      throw new NotFoundException(EXCEPTION_CONSTANT.PRODUCT_NOT_FOUND);
-    }
-
-    const userProduct = await this.userProductModel
-      .findOne({
-        userId,
-        productId: input.productId,
-      })
-      .exec();
-    if (!userProduct) {
-      throw new NotFoundException(
-        EXCEPTION_CONSTANT.PRODUCT_ENROLLMENT_NOT_FOUND,
-      );
-    }
-
-    if (userProduct.purchase.status !== UserProductPurchaseStatus.PAID) {
-      throw new BadRequestException(
-        EXCEPTION_CONSTANT.CHAPTER_COMPLETION_REQUIRES_PURCHASE,
-      );
-    }
-
-    const chapters = this.sortChaptersForDisplay(
-      ((product.toObject?.() || product) as PlainProduct).chapters || [],
-    );
-    const chapter = chapters.find(
-      (entry) => entry.key === input.chapterKey.trim(),
-    );
-    if (!chapter) {
-      throw new NotFoundException(EXCEPTION_CONSTANT.CHAPTER_NOT_FOUND);
-    }
-
-    const isProductFree = this.isProductFree(
-      (product.toObject?.() || product) as PlainProduct,
-    );
-    const chapterAccessContext = {
-      isProductFree,
-      isPurchased: true,
-      paidAt: userProduct.purchase.paidAt,
-    };
-    if (!canAccessChapter(chapter, chapterAccessContext)) {
-      throw new BadRequestException(EXCEPTION_CONSTANT.CHAPTER_LOCKED);
-    }
-
-    const existingProgress = (userProduct.progress?.chapters || []).find(
-      (entry) => entry.key === chapter.key,
-    );
-    const progressCounts = this.calculateChapterProgressCounts(
-      chapters,
-      chapterAccessContext,
-      userProduct.progress?.chapters || [],
-    );
-
-    if (existingProgress) {
-      return {
-        key: existingProgress.key,
-        titleSnapshot: existingProgress.titleSnapshot,
-        userCompletedAt: existingProgress.userCompletedAt,
-        completedChapterCount: progressCounts.completedChapterCount,
-        accessibleChapterCount: progressCounts.accessibleChapterCount,
-      };
-    }
-
-    const now = new Date();
-    const progressEntry = {
-      key: chapter.key,
-      titleSnapshot: chapter.title,
-      userCompletedAt: now,
-    };
-    const updateResult = await this.userProductModel
-      .updateOne(
-        {
-          _id: userProduct._id,
-          "progress.chapters.key": { $ne: chapter.key },
-        },
-        {
-          $push: {
-            "progress.chapters": progressEntry,
-          },
-        },
-      )
-      .exec();
-
-    if (updateResult.modifiedCount === 0) {
-      const latestUserProduct = await this.userProductModel
-        .findById(userProduct._id)
-        .select({ progress: 1 })
-        .lean<{ progress?: UserProduct["progress"] }>()
-        .exec();
-      const latestProgress = (latestUserProduct?.progress?.chapters || []).find(
-        (entry) => entry.key === chapter.key,
-      );
-      if (!latestProgress) {
-        throw new ConflictException(
-          EXCEPTION_CONSTANT.CHAPTER_COMPLETION_FAILED,
-        );
-      }
-
-      const latestCounts = this.calculateChapterProgressCounts(
-        chapters,
-        chapterAccessContext,
-        latestUserProduct?.progress?.chapters || [],
-      );
-
-      return {
-        key: latestProgress.key,
-        titleSnapshot: latestProgress.titleSnapshot,
-        userCompletedAt: latestProgress.userCompletedAt,
-        completedChapterCount: latestCounts.completedChapterCount,
-        accessibleChapterCount: latestCounts.accessibleChapterCount,
-      };
-    }
-
-    return {
-      key: progressEntry.key,
-      titleSnapshot: progressEntry.titleSnapshot,
-      userCompletedAt: progressEntry.userCompletedAt,
-      completedChapterCount: progressCounts.completedChapterCount + 1,
-      accessibleChapterCount: progressCounts.accessibleChapterCount,
-    };
-  }
-
-  private calculateChapterProgressCounts(
-    chapters: ProductChapter[],
-    chapterAccessContext: {
-      isProductFree: boolean;
-      isPurchased: boolean;
-      paidAt?: Date;
-    },
-    completedChapters: Array<{ key: string }>,
-  ): {
-    completedChapterCount: number;
-    accessibleChapterCount: number;
-  } {
-    const completedKeys = new Set(completedChapters.map((entry) => entry.key));
-    let completedChapterCount = 0;
-    let accessibleChapterCount = 0;
-
-    chapters.forEach((chapter) => {
-      if (!canAccessChapter(chapter, chapterAccessContext)) {
-        return;
-      }
-
-      accessibleChapterCount += 1;
-      if (completedKeys.has(chapter.key)) {
-        completedChapterCount += 1;
-      }
-    });
-
-    return { completedChapterCount, accessibleChapterCount };
-  }
-
-  private resolveChapterProgress(
-    chapterKey: string,
-    completedChapters: Array<{
-      key: string;
-      titleSnapshot: string;
-      userCompletedAt: Date;
-    }>,
-  ): {
-    isCompleted: boolean;
-    userCompletedAt?: Date;
-  } {
-    const progress = completedChapters.find(
-      (entry) => entry.key === chapterKey,
-    );
-    if (!progress) {
-      return { isCompleted: false };
-    }
-
-    return {
-      isCompleted: true,
-      userCompletedAt: progress.userCompletedAt,
-    };
+    return this.toUserDetailResponse(product, userProduct, fileAccessUrlMap);
   }
 
   private resolveProductCursorSort(sort?: ProductListSortOptionInput): {
@@ -1553,33 +1357,6 @@ export class ProductService {
     throw new BadRequestException(key);
   }
 
-  private formatChapterValidationLabel(
-    chapterIndex: number,
-    chapterTitle?: string,
-  ): string {
-    const chapterNumber = (chapterIndex + 1).toLocaleString("fa-IR");
-    const trimmedTitle = chapterTitle?.trim();
-    return trimmedTitle ? `بخش «${trimmedTitle}»` : `بخش ${chapterNumber}`;
-  }
-
-  private formatItemValidationLabel(
-    chapterIndex: number,
-    itemIndex: number,
-    chapterTitle: string | undefined,
-    itemTitle: string | undefined,
-  ): string {
-    const chapterLabel = this.formatChapterValidationLabel(
-      chapterIndex,
-      chapterTitle,
-    );
-    const itemNumber = (itemIndex + 1).toLocaleString("fa-IR");
-    const trimmedItemTitle = itemTitle?.trim();
-    const itemLabel = trimmedItemTitle
-      ? `آیتم «${trimmedItemTitle}»`
-      : `آیتم ${itemNumber}`;
-    return `${itemLabel} در ${chapterLabel}`;
-  }
-
   private validateCreateInput(input: ProductCreateGqlInput): void {
     if (!input.title?.trim()) {
       this.failProductValidation(
@@ -1620,79 +1397,31 @@ export class ProductService {
       }
     }
 
-    if (!input.chapters?.length) {
-      this.failProductValidation(EXCEPTION_CONSTANT.PRODUCT_CHAPTER_REQUIRED);
+    if (input.vendor && !input.vendor.name?.trim()) {
+      this.failProductValidation(
+        EXCEPTION_CONSTANT.PRODUCT_VALIDATION_TITLE_REQUIRED,
+      );
     }
 
-    for (
-      let chapterIndex = 0;
-      chapterIndex < input.chapters.length;
-      chapterIndex += 1
-    ) {
-      const chapter = input.chapters[chapterIndex];
-      const chapterLabel = this.formatChapterValidationLabel(
-        chapterIndex,
-        chapter.title,
-      );
-
-      if (!chapter.title?.trim()) {
+    for (const piece of input.setPieces ?? []) {
+      if (!piece.name?.trim()) {
         this.failProductValidation(
-          EXCEPTION_CONSTANT.PRODUCT_VALIDATION_CHAPTER_TITLE_REQUIRED,
-          { chapterLabel },
+          EXCEPTION_CONSTANT.PRODUCT_VALIDATION_TITLE_REQUIRED,
+        );
+      }
+    }
+
+    for (const fabric of input.fabrics ?? []) {
+      if (!fabric.patternName?.trim()) {
+        this.failProductValidation(
+          EXCEPTION_CONSTANT.PRODUCT_VALIDATION_TITLE_REQUIRED,
         );
       }
 
-      if (
-        chapter.visibleAfterMinutes != null &&
-        chapter.visibleAfterMinutes < 0
-      ) {
-        this.failProductValidation(
-          EXCEPTION_CONSTANT.PRODUCT_VALIDATION_VISIBLE_AFTER_NEGATIVE,
-          { chapterLabel },
-        );
-      }
-
-      if (!chapter.items?.length) {
-        this.failProductValidation(
-          EXCEPTION_CONSTANT.PRODUCT_CHAPTER_ITEM_REQUIRED,
-          { chapterLabel },
-        );
-      }
-
-      for (
-        let itemIndex = 0;
-        itemIndex < chapter.items.length;
-        itemIndex += 1
-      ) {
-        const item = chapter.items[itemIndex];
-        const itemLabel = this.formatItemValidationLabel(
-          chapterIndex,
-          itemIndex,
-          chapter.title,
-          item.title,
-        );
-
-        if (!item.title?.trim()) {
+      for (const color of fabric.colors ?? []) {
+        if (!color.name?.trim()) {
           this.failProductValidation(
-            EXCEPTION_CONSTANT.PRODUCT_VALIDATION_CHAPTER_TITLE_REQUIRED,
-            { chapterLabel: itemLabel },
-          );
-        }
-
-        const hasFile = Boolean(item.fileId);
-        const hasArticle = hasRichTextContent(item.article);
-
-        if (hasFile && hasArticle) {
-          this.failProductValidation(
-            EXCEPTION_CONSTANT.PRODUCT_ITEM_FILE_AND_ARTICLE_BOTH,
-            { itemLabel },
-          );
-        }
-
-        if (!hasFile && !hasArticle) {
-          this.failProductValidation(
-            EXCEPTION_CONSTANT.PRODUCT_ITEM_CONTENT_REQUIRED,
-            { itemLabel },
+            EXCEPTION_CONSTANT.PRODUCT_VALIDATION_TITLE_REQUIRED,
           );
         }
       }
@@ -1704,8 +1433,9 @@ export class ProductService {
   ): ProductCreateGqlInput {
     return {
       title: input.title.trim(),
-      description: this.normalizeNullableText(input.description),
-      coverImageFileId: input.coverImageFileId,
+      summary: this.normalizeNullableText(input.summary),
+      fullDescription: this.normalizeNullableText(input.fullDescription),
+      coverImageFileIds: input.coverImageFileIds ?? [],
       priceIrt: input.priceIrt,
       discount: this.normalizeDiscountInput(input.discount),
       isActive: typeof input.isActive === "boolean" ? input.isActive : true,
@@ -1719,8 +1449,124 @@ export class ProductService {
           : true,
       sortOrder: input.sortOrder,
       tags: this.normalizeTags(input.tags),
-      chapters: input.chapters.map((chapter) =>
-        this.normalizeCreateChapterInput(chapter),
+      notes: this.normalizeNullableText(input.notes),
+      vendor: this.normalizeVendorInput(input.vendor),
+      materialProfile: this.normalizeMaterialProfileInput(input.materialProfile),
+      setPieces: (input.setPieces ?? []).map((piece) =>
+        this.normalizeSetPieceInput(piece),
+      ),
+      fabrics: (input.fabrics ?? []).map((fabric) =>
+        this.normalizeFabricInput(fabric),
+      ),
+    };
+  }
+
+  private normalizeVendorInput(
+    vendor?: ProductVendorGqlInput | null,
+  ): ProductVendor | null | undefined {
+    if (vendor === null) {
+      return null;
+    }
+    if (!vendor) {
+      return undefined;
+    }
+
+    return {
+      name: vendor.name.trim(),
+      phone: this.normalizeNullableText(vendor.phone) ?? undefined,
+      address: this.normalizeNullableText(vendor.address) ?? undefined,
+      notes: this.normalizeNullableText(vendor.notes) ?? undefined,
+    };
+  }
+
+  private normalizeMaterialCompositionInput(
+    composition: ProductMaterialCompositionGqlInput,
+  ): ProductMaterialComposition {
+    return {
+      label: composition.label.trim(),
+      material: this.normalizeNullableText(composition.material) ?? undefined,
+      texture: this.normalizeNullableText(composition.texture) ?? undefined,
+      percentage: composition.percentage ?? undefined,
+    };
+  }
+
+  private normalizeMaterialProfileInput(
+    materialProfile?: ProductMaterialProfileGqlInput | null,
+  ): ProductMaterialProfile | null | undefined {
+    if (materialProfile === null) {
+      return null;
+    }
+    if (!materialProfile) {
+      return undefined;
+    }
+
+    return {
+      texture: this.normalizeNullableText(materialProfile.texture) ?? undefined,
+      primaryMaterial:
+        this.normalizeNullableText(materialProfile.primaryMaterial) ?? undefined,
+      secondaryMaterials: this.normalizeStringArray(
+        materialProfile.secondaryMaterials,
+      ),
+      composition: (materialProfile.composition ?? []).map((entry) =>
+        this.normalizeMaterialCompositionInput(entry),
+      ),
+      careInstructions:
+        this.normalizeNullableText(materialProfile.careInstructions) ??
+        undefined,
+    };
+  }
+
+  private normalizeSetPieceDimensionInput(
+    dimension: ProductSetPieceDimensionGqlInput,
+  ): ProductSetPieceDimension {
+    return {
+      label: this.normalizeNullableText(dimension.label) ?? undefined,
+      displayText:
+        this.normalizeNullableText(dimension.displayText) ?? undefined,
+      widthCm: dimension.widthCm ?? undefined,
+      heightCm: dimension.heightCm ?? undefined,
+      depthCm: dimension.depthCm ?? undefined,
+      sortOrder: dimension.sortOrder,
+    };
+  }
+
+  private normalizeSetPieceInput(
+    piece: ProductSetPieceGqlInput,
+  ): ProductSetPieceGqlInput {
+    return {
+      name: piece.name.trim(),
+      description: this.normalizeNullableText(piece.description),
+      sortOrder: piece.sortOrder,
+      imageFileIds: piece.imageFileIds ?? [],
+      dimensions: (piece.dimensions ?? []).map((dimension) =>
+        this.normalizeSetPieceDimensionInput(dimension),
+      ),
+      weightKg: piece.weightKg,
+      materialProfile: this.normalizeMaterialProfileInput(piece.materialProfile),
+    };
+  }
+
+  private normalizeFabricColorInput(
+    color: ProductFabricColorGqlInput,
+  ): ProductFabricColorGqlInput {
+    return {
+      name: color.name.trim(),
+      hexCode: this.normalizeNullableText(color.hexCode),
+      sortOrder: color.sortOrder,
+      isActive: color.isActive !== false,
+      aiProductImageFileId: color.aiProductImageFileId ?? undefined,
+    };
+  }
+
+  private normalizeFabricInput(
+    fabric: ProductFabricGqlInput,
+  ): ProductFabricGqlInput {
+    return {
+      patternName: fabric.patternName.trim(),
+      sortOrder: fabric.sortOrder,
+      isActive: fabric.isActive !== false,
+      colors: (fabric.colors ?? []).map((color) =>
+        this.normalizeFabricColorInput(color),
       ),
     };
   }
@@ -1734,30 +1580,6 @@ export class ProductService {
       .exec();
 
     return (lastProductBySortOrder?.sortOrder ?? 0) + 1;
-  }
-
-  private normalizeCreateChapterInput(
-    chapter: ProductChapterGqlInput,
-  ): ProductChapterGqlInput {
-    return {
-      title: chapter.title.trim(),
-      description: this.normalizeNullableText(chapter.description),
-      visibleAfterMinutes: chapter.visibleAfterMinutes,
-      isFree: chapter.isFree === true,
-      sortOrder: chapter.sortOrder,
-      items: chapter.items.map((item) => this.normalizeCreateItemInput(item)),
-    };
-  }
-
-  private normalizeCreateItemInput(
-    item: ProductItemGqlInput,
-  ): ProductItemGqlInput {
-    return {
-      title: item.title.trim(),
-      sortOrder: item.sortOrder,
-      fileId: item.fileId === null ? null : item.fileId,
-      article: this.normalizeNullableText(item.article),
-    };
   }
 
   private normalizeDiscountInput(
@@ -1799,9 +1621,12 @@ export class ProductService {
     input: ProductFileReferenceSource,
   ): Types.ObjectId[] {
     const fileIds = [
-      input.coverImageFileId,
-      ...input.chapters.flatMap((chapter) =>
-        chapter.items.map((item) => item.fileId),
+      ...(input.coverImageFileIds ?? []),
+      ...(input.setPieces ?? []).flatMap((piece) => piece.imageFileIds ?? []),
+      ...(input.fabrics ?? []).flatMap((fabric) =>
+        (fabric.colors ?? [])
+          .map((color) => color.aiProductImageFileId)
+          .filter((fileId): fileId is Types.ObjectId => Boolean(fileId)),
       ),
     ].filter((fileId): fileId is Types.ObjectId => Boolean(fileId));
 
@@ -2089,13 +1914,15 @@ export class ProductService {
       .find({
         _id: { $ne: productId },
         $or: [
-          { coverImageFileId: { $in: fileIds } },
-          { "chapters.items.fileId": { $in: fileIds } },
+          { coverImageFileIds: { $in: fileIds } },
+          { "setPieces.imageFileIds": { $in: fileIds } },
+          { "fabrics.colors.aiProductImageFileId": { $in: fileIds } },
         ],
       })
       .select({
-        coverImageFileId: 1,
-        "chapters.items.fileId": 1,
+        coverImageFileIds: 1,
+        "setPieces.imageFileIds": 1,
+        fabrics: 1,
       })
       .exec();
 
@@ -2123,12 +1950,17 @@ export class ProductService {
       const searchRegex = this.createContainsRegex(filters.query);
       query.$or = [
         { title: searchRegex },
-        { description: searchRegex },
+        { summary: searchRegex },
+        { fullDescription: searchRegex },
         { tags: searchRegex },
-        { "chapters.title": searchRegex },
-        { "chapters.description": searchRegex },
-        { "chapters.items.title": searchRegex },
-        { "chapters.items.article": searchRegex },
+        { "vendor.name": searchRegex },
+        { "vendor.address": searchRegex },
+        { "materialProfile.texture": searchRegex },
+        { "materialProfile.primaryMaterial": searchRegex },
+        { "setPieces.name": searchRegex },
+        { "setPieces.description": searchRegex },
+        { "fabrics.patternName": searchRegex },
+        { "fabrics.colors.name": searchRegex },
       ];
     }
 
@@ -2136,8 +1968,12 @@ export class ProductService {
       query.title = this.createContainsRegex(filters.title);
     }
 
-    if (filters.description?.trim()) {
-      query.description = this.createContainsRegex(filters.description);
+    if (filters.summary?.trim()) {
+      query.summary = this.createContainsRegex(filters.summary);
+    }
+
+    if (filters.fullDescription?.trim()) {
+      query.fullDescription = this.createContainsRegex(filters.fullDescription);
     }
 
     if (typeof filters.isActive === "boolean") {
@@ -2182,134 +2018,7 @@ export class ProductService {
       }
     }
 
-    if (filters.releaseType) {
-      this.addAndCondition(
-        query,
-        this.buildReleaseTypeFilter(filters.releaseType),
-      );
-    }
-
-    if (filters.itemType) {
-      this.addAndCondition(
-        query,
-        await this.buildContainsItemTypeFilter(filters.itemType),
-      );
-    }
-
-    if (typeof filters.hasFreeChapter === "boolean") {
-      this.addAndCondition(query, {
-        chapters: {
-          $elemMatch: {
-            isFree: filters.hasFreeChapter,
-          },
-        },
-      });
-    }
-
     return query;
-  }
-
-  private buildReleaseTypeFilter(
-    releaseType: ProductReleaseType,
-  ): FilterQuery<Product> {
-    const gradualChapterFilter = {
-      chapters: {
-        $elemMatch: {
-          visibleAfterMinutes: { $type: "number" },
-        },
-      },
-    };
-
-    if (releaseType === ProductReleaseType.GRADUAL) {
-      return gradualChapterFilter;
-    }
-
-    return {
-      chapters: {
-        $not: {
-          $elemMatch: {
-            visibleAfterMinutes: { $type: "number" },
-          },
-        },
-      },
-    };
-  }
-
-  private async buildContainsItemTypeFilter(
-    itemType: ProductItemType,
-  ): Promise<FilterQuery<Product>> {
-    if (itemType === ProductItemType.ARTICLE) {
-      return {
-        chapters: {
-          $elemMatch: {
-            items: {
-              $elemMatch: {
-                $or: [{ fileId: { $exists: false } }, { fileId: null }],
-              },
-            },
-          },
-        },
-      };
-    }
-
-    const fileIds = await this.findFileIdsByItemType(itemType);
-    return {
-      "chapters.items.fileId": { $in: fileIds },
-    };
-  }
-
-  private async findFileIdsByItemType(
-    itemType: Exclude<ProductItemType, ProductItemType.ARTICLE>,
-  ): Promise<Types.ObjectId[]> {
-    const mimeTypePrefixByItemType: Record<
-      Exclude<ProductItemType, ProductItemType.ARTICLE>,
-      string
-    > = {
-      [ProductItemType.VIDEO]: "video/",
-      [ProductItemType.VOICE]: "audio/",
-      [ProductItemType.IMAGE]: "image/",
-    };
-
-    return (await this.storedFileModel
-      .distinct("_id", {
-        mimeType: {
-          $regex: `^${mimeTypePrefixByItemType[itemType]}`,
-          $options: "i",
-        },
-      })
-      .exec()) as Types.ObjectId[];
-  }
-
-  private async buildFileTypeLookup(
-    products: ProductDocument[],
-  ): Promise<FileTypeLookup> {
-    const fileIds = Array.from(
-      new Set(
-        products.flatMap((product) =>
-          (product.chapters || []).flatMap((chapter) =>
-            (chapter.items || [])
-              .map((item) => item.fileId?.toString())
-              .filter((fileId): fileId is string => Boolean(fileId)),
-          ),
-        ),
-      ),
-    );
-
-    if (fileIds.length === 0) {
-      return new Map();
-    }
-
-    const files = await this.storedFileModel
-      .find({ _id: { $in: fileIds } })
-      .select({ mimeType: 1, name: 1, objectKey: 1, path: 1 })
-      .exec();
-
-    return new Map(
-      files.map((file) => [
-        file._id.toString(),
-        this.classifyStoredFileAsItemType(file),
-      ]),
-    );
   }
 
   private async buildFileAccessUrlLookup(
@@ -2318,77 +2027,189 @@ export class ProductService {
     const fileIds = products.flatMap((product) => {
       const productObj = (product.toObject?.() ||
         product) as ProductFileReferenceSource;
-      const ids: Array<Types.ObjectId | undefined> = [
-        productObj.coverImageFileId,
-      ];
 
-      for (const chapter of productObj.chapters || []) {
-        for (const item of chapter.items || []) {
-          ids.push(item.fileId);
-        }
-      }
-
-      return ids;
+      return this.collectReferencedFileIds(productObj);
     });
 
     return this.fileService.getAccessUrlMap(fileIds);
   }
 
+  private mapCoverImageAccessUrls(
+    coverImageFileIds: Types.ObjectId[] | undefined,
+    fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
+  ): FileAccessUrlDescriptor[] {
+    return (coverImageFileIds ?? [])
+      .map((fileId) => fileAccessUrlMap?.get(fileId.toString()))
+      .filter((accessUrl): accessUrl is FileAccessUrlDescriptor =>
+        Boolean(accessUrl),
+      );
+  }
+
+  private mapFileAccessUrls(
+    fileIds: Types.ObjectId[] | undefined,
+    fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
+  ): FileAccessUrlDescriptor[] {
+    return this.mapCoverImageAccessUrls(fileIds, fileAccessUrlMap);
+  }
+
+  private countActiveFabrics(
+    fabrics: ProductFabric[] | undefined,
+  ): number {
+    return (fabrics ?? []).filter((fabric) => fabric.isActive).length;
+  }
+
+  private toVendorResponse(
+    vendor?: ProductVendor,
+  ): ProductVendorGqlResponse | undefined {
+    if (!vendor) {
+      return undefined;
+    }
+
+    return {
+      name: vendor.name,
+      phone: vendor.phone,
+      address: vendor.address,
+      notes: vendor.notes,
+    };
+  }
+
+  private toMaterialProfileResponse(
+    materialProfile?: ProductMaterialProfile,
+  ): ProductMaterialProfileGqlResponse | undefined {
+    if (!materialProfile) {
+      return undefined;
+    }
+
+    return {
+      texture: materialProfile.texture,
+      primaryMaterial: materialProfile.primaryMaterial,
+      secondaryMaterials: materialProfile.secondaryMaterials,
+      composition: materialProfile.composition,
+      careInstructions: materialProfile.careInstructions,
+    };
+  }
+
+  private toFabricColorResponse(
+    color: ProductFabric["colors"][number],
+    fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
+  ): ProductFabricColorGqlResponse {
+    return {
+      key: color.key,
+      name: color.name,
+      hexCode: color.hexCode,
+      sortOrder: color.sortOrder,
+      isActive: color.isActive,
+      aiProductImageAccessUrl: color.aiProductImageFileId
+        ? fileAccessUrlMap?.get(color.aiProductImageFileId.toString())
+        : undefined,
+    };
+  }
+
+  private toFabricResponse(
+    fabric: ProductFabric,
+    activeOnly: boolean,
+    fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
+  ): ProductFabricGqlResponse | null {
+    if (activeOnly && !fabric.isActive) {
+      return null;
+    }
+
+    const colors = (fabric.colors ?? [])
+      .filter((color) => !activeOnly || color.isActive)
+      .map((color) => this.toFabricColorResponse(color, fileAccessUrlMap));
+
+    if (activeOnly && colors.length === 0) {
+      return null;
+    }
+
+    return {
+      key: fabric.key,
+      patternName: fabric.patternName,
+      sortOrder: fabric.sortOrder,
+      isActive: fabric.isActive,
+      colors,
+    };
+  }
+
+  private toFabricsResponse(
+    fabrics: ProductFabric[] | undefined,
+    activeOnly: boolean,
+    fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
+  ): ProductFabricGqlResponse[] {
+    return (fabrics ?? [])
+      .map((fabric) =>
+        this.toFabricResponse(fabric, activeOnly, fileAccessUrlMap),
+      )
+      .filter((fabric): fabric is ProductFabricGqlResponse => Boolean(fabric));
+  }
+
+  private toSetPieceResponse(
+    piece: ProductSetPiece,
+    fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
+  ): ProductSetPieceGqlResponse {
+    return {
+      key: piece.key,
+      name: piece.name,
+      description: piece.description,
+      sortOrder: piece.sortOrder,
+      imageAccessUrls: this.mapFileAccessUrls(
+        piece.imageFileIds,
+        fileAccessUrlMap,
+      ),
+      dimensions: piece.dimensions ?? [],
+      weightKg: piece.weightKg,
+      materialProfile: this.toMaterialProfileResponse(piece.materialProfile),
+    };
+  }
+
+  private toSetPiecesResponse(
+    setPieces: ProductSetPiece[] | undefined,
+    fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
+  ): ProductSetPieceGqlResponse[] {
+    return (setPieces ?? []).map((piece) =>
+      this.toSetPieceResponse(piece, fileAccessUrlMap),
+    );
+  }
+
   private toListSummaryResponse(
     product: ProductDocument,
-    fileTypeLookup: FileTypeLookup,
     fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
   ): ProductListSummaryGqlResponse {
     const productObj = (product.toObject?.() || product) as PlainProduct;
-    const chapters = productObj.chapters || [];
-    const itemTypes = Array.from(
-      new Set(
-        chapters.flatMap((chapter) =>
-          (chapter.items || []).map((item) =>
-            this.resolveItemType(item, fileTypeLookup),
-          ),
-        ),
-      ),
-    );
-    const coverImageFileId = productObj.coverImageFileId;
 
     return {
       id: product._id,
       title: productObj.title,
-      description: productObj.description,
-      coverImageAccessUrl: coverImageFileId
-        ? fileAccessUrlMap?.get(coverImageFileId.toString())
-        : undefined,
+      summary: productObj.summary,
+      coverImageAccessUrls: this.mapCoverImageAccessUrls(
+        productObj.coverImageFileIds,
+        fileAccessUrlMap,
+      ),
       priceIrt: productObj.priceIrt,
       discount: productObj.discount,
       isActive: productObj.isActive,
       sortOrder: productObj.sortOrder,
       tags: productObj.tags || [],
-      releaseType: this.calculateReleaseType(chapters),
-      chapterCount: chapters.length,
-      itemCount: chapters.reduce(
-        (sum, chapter) => sum + (chapter.items || []).length,
-        0,
-      ),
-      itemTypes,
+      setPieceCount: productObj.setPieces?.length ?? 0,
+      fabricCount: this.countActiveFabrics(productObj.fabrics),
     };
   }
 
   private toListResponse(
     product: ProductDocument,
-    fileTypeLookup: FileTypeLookup,
     fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
   ): ProductListGqlResponse {
     const productObj = (product.toObject?.() || product) as PlainProduct;
-    const coverImageFileId = productObj.coverImageFileId;
 
     return {
       id: product._id,
       title: productObj.title,
-      description: productObj.description,
-      coverImageAccessUrl: coverImageFileId
-        ? fileAccessUrlMap?.get(coverImageFileId.toString())
-        : undefined,
+      summary: productObj.summary,
+      fullDescription: productObj.fullDescription,
+      coverImageAccessUrls: this.mapCoverImageAccessUrls(
+        productObj.coverImageFileIds,
+        fileAccessUrlMap,
+      ),
       priceIrt: productObj.priceIrt,
       discount: productObj.discount,
       isActive: productObj.isActive,
@@ -2396,58 +2217,21 @@ export class ProductService {
       isReviewsSectionVisible: productObj.isReviewsSectionVisible !== false,
       sortOrder: productObj.sortOrder,
       tags: productObj.tags || [],
-      releaseType: this.calculateReleaseType(productObj.chapters || []),
-      chapters: (productObj.chapters || []).map((chapter) =>
-        this.toChapterResponse(chapter, fileTypeLookup, fileAccessUrlMap),
+      notes: productObj.notes,
+      vendor: this.toVendorResponse(productObj.vendor),
+      materialProfile: this.toMaterialProfileResponse(productObj.materialProfile),
+      setPieces: this.toSetPiecesResponse(
+        productObj.setPieces,
+        fileAccessUrlMap,
+      ),
+      fabrics: this.toFabricsResponse(
+        productObj.fabrics,
+        false,
+        fileAccessUrlMap,
       ),
       createdAt: productObj.audit?.createdAt,
       updatedAt: productObj.audit?.updatedAt,
     };
-  }
-
-  private toChapterResponse(
-    chapter: ProductChapter,
-    fileTypeLookup: FileTypeLookup,
-    fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
-  ): ProductListChapterGqlResponse {
-    return {
-      title: chapter.title,
-      description: chapter.description,
-      visibleAfterMinutes: chapter.visibleAfterMinutes,
-      isFree: chapter.isFree,
-      sortOrder: chapter.sortOrder,
-      items: (chapter.items || []).map((item) =>
-        this.toItemResponse(item, fileTypeLookup, fileAccessUrlMap),
-      ),
-    };
-  }
-
-  private toItemResponse(
-    item: ProductItem,
-    fileTypeLookup: FileTypeLookup,
-    fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
-  ): ProductListItemGqlResponse {
-    const fileId = item.fileId;
-
-    return {
-      title: item.title,
-      sortOrder: item.sortOrder,
-      fileAccessUrl: fileId
-        ? fileAccessUrlMap?.get(fileId.toString())
-        : undefined,
-      article: item.article,
-      type: fileId
-        ? (fileTypeLookup.get(fileId.toString()) ?? ProductItemType.ARTICLE)
-        : ProductItemType.ARTICLE,
-    };
-  }
-
-  private calculateReleaseType(chapters: ProductChapter[]): ProductReleaseType {
-    return chapters.some(
-      (chapter) => typeof chapter.visibleAfterMinutes === "number",
-    )
-      ? ProductReleaseType.GRADUAL
-      : ProductReleaseType.IMMEDIATE;
   }
 
   private async applyIncludeUserIdFilter(
@@ -2549,40 +2333,24 @@ export class ProductService {
 
   private toUserListResponse(
     product: ProductDocument,
-    fileTypeLookup: FileTypeLookup,
     userProduct?: UserProductListRecord,
     fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
   ): UserProductListGqlResponse {
     const productObj = (product.toObject?.() || product) as PlainProduct;
-    const chapters = productObj.chapters || [];
-    const itemTypes = Array.from(
-      new Set(
-        chapters.flatMap((chapter) =>
-          (chapter.items || []).map((item) =>
-            this.resolveItemType(item, fileTypeLookup),
-          ),
-        ),
-      ),
-    );
-    const coverImageFileId = productObj.coverImageFileId;
 
     return {
       id: product._id,
       title: productObj.title,
-      description: productObj.description,
-      coverImageAccessUrl: coverImageFileId
-        ? fileAccessUrlMap?.get(coverImageFileId.toString())
-        : undefined,
+      summary: productObj.summary,
+      coverImageAccessUrls: this.mapCoverImageAccessUrls(
+        productObj.coverImageFileIds,
+        fileAccessUrlMap,
+      ),
       priceIrt: productObj.priceIrt,
       discount: productObj.discount,
       tags: productObj.tags || [],
-      releaseType: this.calculateReleaseType(chapters),
-      chapterCount: chapters.length,
-      itemCount: chapters.reduce(
-        (sum, chapter) => sum + (chapter.items || []).length,
-        0,
-      ),
-      itemTypes,
+      setPieceCount: productObj.setPieces?.length ?? 0,
+      fabricCount: this.countActiveFabrics(productObj.fabrics),
       isPurchased:
         userProduct?.purchase?.status === UserProductPurchaseStatus.PAID,
     };
@@ -2590,126 +2358,40 @@ export class ProductService {
 
   private toUserDetailResponse(
     product: ProductDocument,
-    fileTypeLookup: FileTypeLookup,
     userProduct?: UserProductListRecord,
     fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
   ): UserProductDetailGqlResponse {
     const productObj = (product.toObject?.() || product) as PlainProduct;
-    const chapters = this.sortChaptersForDisplay(productObj.chapters || []);
-    const isFree = this.isProductFree(productObj);
     const purchaseStatus = userProduct?.purchase?.status;
-    const isPurchased = purchaseStatus === UserProductPurchaseStatus.PAID;
-    const paidAt = userProduct?.purchase?.paidAt;
-    const chapterAccessContext = {
-      isProductFree: isFree,
-      isPurchased,
-      paidAt,
-    };
-    const completedChapters = userProduct?.progress?.chapters || [];
-    const progressCounts = this.calculateChapterProgressCounts(
-      chapters,
-      chapterAccessContext,
-      completedChapters,
-    );
-    const coverImageFileId = productObj.coverImageFileId;
 
     return {
       id: product._id,
       title: productObj.title,
-      description: productObj.description,
-      coverImageAccessUrl: coverImageFileId
-        ? fileAccessUrlMap?.get(coverImageFileId.toString())
-        : undefined,
+      summary: productObj.summary,
+      fullDescription: productObj.fullDescription,
+      coverImageAccessUrls: this.mapCoverImageAccessUrls(
+        productObj.coverImageFileIds,
+        fileAccessUrlMap,
+      ),
       priceIrt: productObj.priceIrt,
       discount: productObj.discount,
       tags: productObj.tags || [],
-      releaseType: this.calculateReleaseType(chapters),
-      isFree,
-      isPurchased,
+      isFree: this.isProductFree(productObj),
+      isPurchased: purchaseStatus === UserProductPurchaseStatus.PAID,
       purchaseStatus,
-      completedChapterCount: progressCounts.completedChapterCount,
-      accessibleChapterCount: progressCounts.accessibleChapterCount,
+      vendor: this.toVendorResponse(productObj.vendor),
+      materialProfile: this.toMaterialProfileResponse(productObj.materialProfile),
+      setPieces: this.toSetPiecesResponse(
+        productObj.setPieces,
+        fileAccessUrlMap,
+      ),
+      fabrics: this.toFabricsResponse(
+        productObj.fabrics,
+        true,
+        fileAccessUrlMap,
+      ),
       isReviewSubmissionEnabled: productObj.isReviewSubmissionEnabled !== false,
       isReviewsSectionVisible: productObj.isReviewsSectionVisible !== false,
-      chapters: chapters.map((chapter) => {
-        const chapterProgress = this.resolveChapterProgress(
-          chapter.key,
-          completedChapters,
-        );
-
-        return this.toUserDetailChapterResponse(
-          chapter,
-          fileTypeLookup,
-          chapterAccessContext,
-          fileAccessUrlMap,
-          chapterProgress.userCompletedAt,
-        );
-      }),
-    };
-  }
-
-  private toUserDetailChapterResponse(
-    chapter: ProductChapter,
-    fileTypeLookup: FileTypeLookup,
-    chapterAccessContext: {
-      isProductFree: boolean;
-      isPurchased: boolean;
-      paidAt?: Date;
-    },
-    fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
-    userCompletedAt?: Date,
-  ): UserProductDetailChapterGqlResponse {
-    const canAccessChapterContent = canAccessChapter(
-      chapter,
-      chapterAccessContext,
-    );
-    const unlocksAt = resolveChapterUnlocksAt(
-      chapterAccessContext.paidAt,
-      chapter.visibleAfterMinutes,
-    );
-
-    return {
-      key: chapter.key,
-      title: chapter.title,
-      description: chapter.description,
-      visibleAfterMinutes: chapter.visibleAfterMinutes,
-      isFree: chapter.isFree,
-      isLocked: !canAccessChapterContent,
-      unlocksAt:
-        !canAccessChapterContent &&
-        chapterAccessContext.isPurchased &&
-        unlocksAt
-          ? unlocksAt
-          : undefined,
-      items: canAccessChapterContent
-        ? this.sortItemsForDisplay(chapter.items || []).map((item) =>
-            this.toUserDetailItemResponse(
-              item,
-              fileTypeLookup,
-              fileAccessUrlMap,
-            ),
-          )
-        : null,
-      isCompleted: Boolean(userCompletedAt),
-      userCompletedAt,
-    };
-  }
-
-  private toUserDetailItemResponse(
-    item: ProductItem,
-    fileTypeLookup: FileTypeLookup,
-    fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
-  ): UserProductDetailItemGqlResponse {
-    const fileId = item.fileId;
-
-    return {
-      title: item.title,
-      type: this.resolveItemType(item, fileTypeLookup),
-      fileAccessUrl:
-        fileId && fileAccessUrlMap
-          ? fileAccessUrlMap.get(fileId.toString())
-          : undefined,
-      article: item.article,
     };
   }
 
@@ -3808,7 +3490,7 @@ export class ProductService {
       product: {
         id: userProduct.productId,
         title: userProduct.productSnapshot.title,
-        description: userProduct.productSnapshot.description,
+        summary: userProduct.productSnapshot.summary,
         priceIrt: userProduct.productSnapshot.priceIrt,
       },
       status: purchase.status,
@@ -4074,87 +3756,6 @@ export class ProductService {
       "code" in error &&
       (error as { code?: number }).code === 11000
     );
-  }
-
-  private sortChaptersForDisplay(chapters: ProductChapter[]): ProductChapter[] {
-    return [...chapters].sort((first, second) =>
-      this.compareBySortOrderThenTitle(first, second),
-    );
-  }
-
-  private sortItemsForDisplay(items: ProductItem[]): ProductItem[] {
-    return [...items].sort((first, second) =>
-      this.compareBySortOrderThenTitle(first, second),
-    );
-  }
-
-  private compareBySortOrderThenTitle(
-    first: { sortOrder?: number; title: string },
-    second: { sortOrder?: number; title: string },
-  ): number {
-    const firstSortOrder =
-      typeof first.sortOrder === "number"
-        ? first.sortOrder
-        : Number.MAX_SAFE_INTEGER;
-    const secondSortOrder =
-      typeof second.sortOrder === "number"
-        ? second.sortOrder
-        : Number.MAX_SAFE_INTEGER;
-
-    if (firstSortOrder !== secondSortOrder) {
-      return firstSortOrder - secondSortOrder;
-    }
-
-    return first.title.localeCompare(second.title, "fa");
-  }
-
-  private resolveItemType(
-    item: ProductItem,
-    fileTypeLookup: FileTypeLookup,
-  ): ProductItemType {
-    return item.fileId
-      ? (fileTypeLookup.get(item.fileId.toString()) ?? ProductItemType.ARTICLE)
-      : ProductItemType.ARTICLE;
-  }
-
-  private classifyStoredFileAsItemType(
-    storedFile: Pick<StoredFile, "mimeType" | "name" | "objectKey" | "path">,
-  ): ProductItemType {
-    const mimeType = storedFile.mimeType?.toLowerCase() || "";
-
-    if (mimeType.startsWith("video/")) {
-      return ProductItemType.VIDEO;
-    }
-    if (mimeType.startsWith("audio/")) {
-      return ProductItemType.VOICE;
-    }
-    if (mimeType.startsWith("image/")) {
-      return ProductItemType.IMAGE;
-    }
-
-    return this.classifyByExtension(
-      storedFile.name || storedFile.objectKey || storedFile.path,
-    );
-  }
-
-  private classifyByExtension(fileName?: string): ProductItemType {
-    const extension = fileName?.split(".").pop()?.toLowerCase();
-
-    if (!extension) {
-      return ProductItemType.ARTICLE;
-    }
-
-    if (["mp4", "mov", "mkv", "webm", "avi"].includes(extension)) {
-      return ProductItemType.VIDEO;
-    }
-    if (["mp3", "wav", "aac", "m4a", "ogg", "flac"].includes(extension)) {
-      return ProductItemType.VOICE;
-    }
-    if (["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(extension)) {
-      return ProductItemType.IMAGE;
-    }
-
-    return ProductItemType.ARTICLE;
   }
 
   private normalizeStringArray(values?: string[]): string[] {

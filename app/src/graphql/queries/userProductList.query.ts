@@ -1,27 +1,12 @@
 import { gql } from "@apollo/client";
 
-import { FILE_ACCESS_URL_FIELDS } from "../fragments/fileAccessUrl.fragment";
+import { PRODUCT_LIST_SUMMARY_FIELDS } from "../fragments/productCatalog.fragment";
 
 export const USER_PRODUCT_LIST_QUERY = gql`
   query UserProductList($input: ProductListGqlInput!) {
     productList: userProductList(input: $input) {
       items {
-        id
-        title
-        description
-        coverImageAccessUrl {
-          ${FILE_ACCESS_URL_FIELDS}
-        }
-        priceIrt
-        discount {
-          type
-          value
-        }
-        tags
-        releaseType
-        chapterCount
-        itemCount
-        itemTypes
+        ${PRODUCT_LIST_SUMMARY_FIELDS}
         isPurchased
       }
       pagination {

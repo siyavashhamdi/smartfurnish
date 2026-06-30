@@ -37,3 +37,17 @@
   font-size: 0.9rem !important;
   font-weight: 800 !important;
 }
+
+.coverGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  align-items: flex-start;
+}
+
+.coverItem {
+  display: grid;
+  gap: 0.35rem;
+  min-inline-size: 12rem;
+  max-inline-size: 18rem;
+}

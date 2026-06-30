@@ -5,6 +5,8 @@ import { Model, Types } from "mongoose";
 import {
   Product,
   ProductDocument,
+  ProductReview,
+  ProductReviewDocument,
   StoredFile,
   StoredFileDocument,
   Ticket,
@@ -43,6 +45,8 @@ export class UnreferencedFileCleanupService {
   constructor(
     @InjectModel(Product.name)
     private readonly productModel: Model<ProductDocument>,
+    @InjectModel(ProductReview.name)
+    private readonly productReviewModel: Model<ProductReviewDocument>,
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
     @InjectModel(Ticket.name)
@@ -55,22 +59,35 @@ export class UnreferencedFileCleanupService {
   ) {
     this.fileReferenceSources = [
       {
-        label: "products.coverImageFileId",
+        label: "products.coverImageFileIds",
         collect: () =>
           this.productModel.collection.distinct(
-            "coverImageFileId",
+            "coverImageFileIds",
             addNotDeletedCondition({
-              coverImageFileId: { $exists: true, $ne: null },
+              "coverImageFileIds.0": { $exists: true },
             }),
           ),
       },
       {
-        label: "products.chapters.items.fileId",
+        label: "products.setPieces.imageFileIds",
         collect: () =>
           this.productModel.collection.distinct(
-            "chapters.items.fileId",
+            "setPieces.imageFileIds",
             addNotDeletedCondition({
-              "chapters.items.fileId": { $exists: true, $ne: null },
+              "setPieces.imageFileIds.0": { $exists: true },
+            }),
+          ),
+      },
+      {
+        label: "products.fabrics.colors.aiProductImageFileId",
+        collect: () =>
+          this.productModel.collection.distinct(
+            "fabrics.colors.aiProductImageFileId",
+            addNotDeletedCondition({
+              "fabrics.colors.aiProductImageFileId": {
+                $exists: true,
+                $ne: null,
+              },
             }),
           ),
       },
@@ -101,6 +118,29 @@ export class UnreferencedFileCleanupService {
             "purchase.uploadedReceiptFileId",
             addNotDeletedCondition({
               "purchase.uploadedReceiptFileId": { $exists: true, $ne: null },
+            }),
+          ),
+      },
+      {
+        label: "product_reviews.userSnapshot.avatarFileId",
+        collect: () =>
+          this.productReviewModel.collection.distinct(
+            "userSnapshot.avatarFileId",
+            addNotDeletedCondition({
+              "userSnapshot.avatarFileId": { $exists: true, $ne: null },
+            }),
+          ),
+      },
+      {
+        label: "product_reviews.messages.senderSnapshot.avatarFileId",
+        collect: () =>
+          this.productReviewModel.collection.distinct(
+            "messages.senderSnapshot.avatarFileId",
+            addNotDeletedCondition({
+              "messages.senderSnapshot.avatarFileId": {
+                $exists: true,
+                $ne: null,
+              },
             }),
           ),
       },
@@ -189,11 +229,16 @@ export class UnreferencedFileCleanupService {
 
       const [
         clearedProductReferences,
+        clearedProductReviewReferences,
         clearedUserReferences,
         clearedTicketReferences,
         clearedUserProductReferences,
       ] = await Promise.all([
         this.clearUnavailableProductFileReferences(
+          unavailableObjectIds,
+          updatedAt,
+        ),
+        this.clearUnavailableProductReviewFileReferences(
           unavailableObjectIds,
           updatedAt,
         ),
@@ -213,6 +258,7 @@ export class UnreferencedFileCleanupService {
 
       clearedCount +=
         clearedProductReferences +
+        clearedProductReviewReferences +
         clearedUserReferences +
         clearedTicketReferences +
         clearedUserProductReferences;
@@ -248,52 +294,153 @@ export class UnreferencedFileCleanupService {
     const result = await this.productModel.collection.updateMany(
       addNotDeletedCondition({
         $or: [
-          { coverImageFileId: { $in: unavailableObjectIds } },
-          { "chapters.items.fileId": { $in: unavailableObjectIds } },
+          { coverImageFileIds: { $in: unavailableObjectIds } },
+          { "setPieces.imageFileIds": { $in: unavailableObjectIds } },
+          { "fabrics.colors.aiProductImageFileId": { $in: unavailableObjectIds } },
         ],
       }),
       [
         {
           $set: {
-            coverImageFileId: {
-              $cond: [
-                { $in: ["$coverImageFileId", unavailableObjectIds] },
-                null,
-                "$coverImageFileId",
-              ],
+            coverImageFileIds: {
+              $filter: {
+                input: { $ifNull: ["$coverImageFileIds", []] },
+                as: "fileId",
+                cond: { $not: { $in: ["$$fileId", unavailableObjectIds] } },
+              },
             },
-            chapters: {
+            setPieces: {
               $map: {
-                input: { $ifNull: ["$chapters", []] },
-                as: "chapter",
+                input: { $ifNull: ["$setPieces", []] },
+                as: "piece",
                 in: {
                   $mergeObjects: [
-                    "$$chapter",
+                    "$$piece",
                     {
-                      items: {
+                      imageFileIds: {
+                        $filter: {
+                          input: { $ifNull: ["$$piece.imageFileIds", []] },
+                          as: "fileId",
+                          cond: {
+                            $not: { $in: ["$$fileId", unavailableObjectIds] },
+                          },
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            fabrics: {
+              $map: {
+                input: { $ifNull: ["$fabrics", []] },
+                as: "fabric",
+                in: {
+                  $mergeObjects: [
+                    "$$fabric",
+                    {
+                      colors: {
                         $map: {
-                          input: { $ifNull: ["$$chapter.items", []] },
-                          as: "item",
+                          input: { $ifNull: ["$$fabric.colors", []] },
+                          as: "color",
                           in: {
                             $mergeObjects: [
-                              "$$item",
+                              "$$color",
                               {
-                                fileId: {
+                                aiProductImageFileId: {
                                   $cond: [
                                     {
                                       $in: [
-                                        "$$item.fileId",
+                                        "$$color.aiProductImageFileId",
                                         unavailableObjectIds,
                                       ],
                                     },
                                     null,
-                                    "$$item.fileId",
+                                    "$$color.aiProductImageFileId",
                                   ],
                                 },
                               },
                             ],
                           },
                         },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            "audit.updatedAt": updatedAt,
+          },
+        },
+      ],
+    );
+
+    return result.modifiedCount ?? 0;
+  }
+
+  private async clearUnavailableProductReviewFileReferences(
+    unavailableObjectIds: Types.ObjectId[],
+    updatedAt: Date,
+  ): Promise<number> {
+    const result = await this.productReviewModel.collection.updateMany(
+      addNotDeletedCondition({
+        $or: [
+          { "userSnapshot.avatarFileId": { $in: unavailableObjectIds } },
+          {
+            "messages.senderSnapshot.avatarFileId": {
+              $in: unavailableObjectIds,
+            },
+          },
+        ],
+      }),
+      [
+        {
+          $set: {
+            userSnapshot: {
+              $mergeObjects: [
+                "$userSnapshot",
+                {
+                  avatarFileId: {
+                    $cond: [
+                      {
+                        $in: [
+                          "$userSnapshot.avatarFileId",
+                          unavailableObjectIds,
+                        ],
+                      },
+                      null,
+                      "$userSnapshot.avatarFileId",
+                    ],
+                  },
+                },
+              ],
+            },
+            messages: {
+              $map: {
+                input: { $ifNull: ["$messages", []] },
+                as: "message",
+                in: {
+                  $mergeObjects: [
+                    "$$message",
+                    {
+                      senderSnapshot: {
+                        $mergeObjects: [
+                          "$$message.senderSnapshot",
+                          {
+                            avatarFileId: {
+                              $cond: [
+                                {
+                                  $in: [
+                                    "$$message.senderSnapshot.avatarFileId",
+                                    unavailableObjectIds,
+                                  ],
+                                },
+                                null,
+                                "$$message.senderSnapshot.avatarFileId",
+                              ],
+                            },
+                          },
+                        ],
                       },
                     },
                   ],

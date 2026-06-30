@@ -1,17 +1,16 @@
 import { useRef, type KeyboardEvent, type PointerEvent, type ReactElement } from "react";
-import AutoStoriesRoundedIcon from "@mui/icons-material/AutoStoriesRounded";
-import BoltRoundedIcon from "@mui/icons-material/BoltRounded";
+import ChairRoundedIcon from "@mui/icons-material/ChairRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import DoNotDisturbOnRoundedIcon from "@mui/icons-material/DoNotDisturbOnRounded";
-import EventRepeatRoundedIcon from "@mui/icons-material/EventRepeatRounded";
-import OndemandVideoRoundedIcon from "@mui/icons-material/OndemandVideoRounded";
-import PhotoRoundedIcon from "@mui/icons-material/PhotoRounded";
-import VolumeUpRoundedIcon from "@mui/icons-material/VolumeUpRounded";
+import PaletteRoundedIcon from "@mui/icons-material/PaletteRounded";
 import { Chip } from "@mui/material";
 import { OverflowTooltip } from "../../shared/OverflowTooltip";
 import { CachedFileImage } from "../../shared/display/CachedFileImage";
 import type { FileAccessUrl } from "../../utils/fileAccessUrl.util";
-import type { ProductItemType, ProductListRecord, ProductReleaseType } from "./product-list.api";
+import {
+  getPrimaryCoverImageAccessUrl,
+  type ProductListRecord,
+} from "./product-list.api";
 import { getProductTagChipSx } from "./product-tag-colors.util";
 import styles from "./styles/ProductCard.module.scss";
 import AppTooltip from "../../shared/AppTooltip";
@@ -25,30 +24,6 @@ interface ProductCardProps {
   readonly onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
   readonly onEdit?: (item: ProductListRecord) => void;
 }
-
-const RELEASE_TYPE_TOOLTIP_LABEL: Record<ProductReleaseType, string> = {
-  IMMEDIATE: "نوع انتشار آنی",
-  GRADUAL: "نوع انتشار تدریجی",
-};
-
-const ITEM_TYPE_LABEL: Record<ProductItemType, string> = {
-  ARTICLE: "مقاله",
-  VIDEO: "ویدیو",
-  VOICE: "صوت",
-  IMAGE: "تصویر",
-};
-
-const ITEM_TYPE_ICON: Record<ProductItemType, ReactElement> = {
-  ARTICLE: <AutoStoriesRoundedIcon fontSize="small" />,
-  VIDEO: <OndemandVideoRoundedIcon fontSize="small" />,
-  VOICE: <VolumeUpRoundedIcon fontSize="small" />,
-  IMAGE: <PhotoRoundedIcon fontSize="small" />,
-};
-
-const RELEASE_TYPE_ICON: Record<ProductReleaseType, ReactElement> = {
-  IMMEDIATE: <BoltRoundedIcon fontSize="small" />,
-  GRADUAL: <EventRepeatRoundedIcon fontSize="small" />,
-};
 
 function formatProductPrice(priceIrt: number | null): string {
   if (priceIrt == null || priceIrt === 0) {
@@ -94,9 +69,8 @@ const ProductCard = ({
   onEdit,
 }: ProductCardProps): ReactElement => {
   const isManagement = variant === "management";
-  const releaseTypeChipClass =
-    item.releaseType === "GRADUAL" ? styles.releaseGradual : styles.releaseImmediate;
   const statusChipClass = item.isActive ? styles.statusActive : styles.statusInactive;
+  const primaryCover = coverImageAccessUrl ?? getPrimaryCoverImageAccessUrl(item.coverImageAccessUrls);
   const tagRowRef = useRef<HTMLDivElement>(null);
   const tagDragStateRef = useRef({
     pointerId: -1,
@@ -151,10 +125,8 @@ const ProductCard = ({
       if (deltaX < 6 && deltaY < 6) {
         return;
       }
-
       dragState.decided = true;
       dragState.isHorizontalDrag = deltaX > deltaY;
-
       if (!dragState.isHorizontalDrag) {
         tagRow.releasePointerCapture(event.pointerId);
         resetTagDragState();
@@ -186,7 +158,6 @@ const ProductCard = ({
       onEdit?.(item);
       return;
     }
-
     onOpen();
   };
 
@@ -206,11 +177,11 @@ const ProductCard = ({
       aria-label={item.title}
     >
       <div className={styles.coverWrap}>
-        {coverImageAccessUrl || coverImageUrl ? (
+        {primaryCover || coverImageUrl ? (
           <CachedFileImage
-            accessUrl={coverImageAccessUrl}
+            accessUrl={primaryCover}
             networkUrl={coverImageUrl}
-            fileId={coverImageAccessUrl?.fileId}
+            fileId={primaryCover?.fileId}
             alt={item.title}
             className={styles.coverImage}
             loading="lazy"
@@ -219,7 +190,7 @@ const ProductCard = ({
           <>
             <div className={styles.defaultCoverGlow} aria-hidden="true" />
             <span className={styles.defaultCoverIcon}>
-              <AutoStoriesRoundedIcon />
+              <ChairRoundedIcon />
             </span>
           </>
         )}
@@ -247,20 +218,6 @@ const ProductCard = ({
               </span>
             </AppTooltip>
           ) : null}
-          <AppTooltip
-            title={RELEASE_TYPE_TOOLTIP_LABEL[item.releaseType]}
-            arrow
-            leaveTouchDelay={2200}
-          >
-            <span className={styles.releaseTypeChipWrap}>
-              <Chip
-                size="small"
-                icon={RELEASE_TYPE_ICON[item.releaseType]}
-                aria-label={RELEASE_TYPE_TOOLTIP_LABEL[item.releaseType]}
-                className={`${styles.iconOnlyChip} ${styles.releaseTypeChip} ${releaseTypeChipClass}`}
-              />
-            </span>
-          </AppTooltip>
         </div>
 
         <div className={styles.coverContent}>
@@ -269,31 +226,28 @@ const ProductCard = ({
               {item.title}
             </OverflowTooltip>
           </h3>
-          {item.description?.trim() ? (
+          {item.summary?.trim() ? (
             <p>
-              <OverflowTooltip className={styles.descriptionText} title={item.description.trim()}>
-                {item.description.trim()}
+              <OverflowTooltip className={styles.descriptionText} title={item.summary.trim()}>
+                {item.summary.trim()}
               </OverflowTooltip>
             </p>
           ) : null}
           <div className={styles.coverMeta}>
-            <span>{item.chapterCount} بخش</span>
+            <span>{item.setPieceCount} قطعه</span>
             <span className={styles.coverMetaSeparator}>/</span>
-            <span>{item.itemCount} آیتم</span>
+            <span>{item.fabricCount} پارچه</span>
           </div>
-          {item.itemTypes.length > 0 ? (
+          {item.fabricCount > 0 ? (
             <div className={styles.itemTypeChipsRow}>
               <div className={styles.itemTypeChips}>
-                {item.itemTypes.map((type) => (
-                  <Chip
-                    key={`${item.id}-${type}`}
-                    size="small"
-                    icon={ITEM_TYPE_ICON[type]}
-                    label={ITEM_TYPE_LABEL[type]}
-                    variant="outlined"
-                    className={styles.itemTypeChip}
-                  />
-                ))}
+                <Chip
+                  size="small"
+                  icon={<PaletteRoundedIcon fontSize="small" />}
+                  label="انتخاب پارچه"
+                  variant="outlined"
+                  className={styles.itemTypeChip}
+                />
               </div>
             </div>
           ) : null}
@@ -327,11 +281,11 @@ const ProductCard = ({
 
         <div className={styles.priceFooter}>
           <div className={styles.priceBarBackdrop} aria-hidden="true">
-            {coverImageAccessUrl || coverImageUrl ? (
+            {primaryCover || coverImageUrl ? (
               <CachedFileImage
-                accessUrl={coverImageAccessUrl}
+                accessUrl={primaryCover}
                 networkUrl={coverImageUrl}
-                fileId={coverImageAccessUrl?.fileId}
+                fileId={primaryCover?.fileId}
                 alt=""
                 className={styles.priceBarCoverImage}
                 loading="eager"
@@ -349,11 +303,6 @@ const ProductCard = ({
                   ? ""
                   : ` ${styles.priceBarDiscounted}`
             }`}
-            aria-label={
-              item.isPurchased
-                ? "وضعیت: خریداری شده"
-                : `قیمت: ${formatProductPrice(discountedPrice ?? item.priceIrt)}`
-            }
           >
             {item.isPurchased ? (
               <>

@@ -1,4 +1,3 @@
-export * from "./product-chapter-complete.gql.input";
 export * from "./product-common.gql.input";
 export * from "./product-create.gql.input";
 export * from "./product-delete.gql.input";

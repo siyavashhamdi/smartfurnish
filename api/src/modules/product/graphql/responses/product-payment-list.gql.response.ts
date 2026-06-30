@@ -40,8 +40,8 @@ export class ProductPaymentProductSnapshotGqlResponse {
   @Field({ description: "Product title snapshot" })
   title: string;
 
-  @Field({ nullable: true, description: "Product description snapshot" })
-  description?: string;
+  @Field({ nullable: true, description: "Product summary snapshot" })
+  summary?: string;
 
   @Field(() => Float, { description: "Original product price in IRT" })
   priceIrt: number;

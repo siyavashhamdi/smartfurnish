@@ -5,7 +5,7 @@ export const PRODUCT_SECTION_TABS: ReadonlyArray<{
   readonly label: string;
 }> = [
   { value: "intro", label: "معرفی محصول" },
-  { value: "content", label: "محتوای محصول" },
+  { value: "content", label: "کاتالوگ و مشخصات" },
   { value: "reviews", label: "امتیاز و نظرات" },
 ];
 
@@ -14,7 +14,7 @@ export const PRODUCT_FORM_SECTION_TABS: ReadonlyArray<{
   readonly label: string;
 }> = [
   { value: "intro", label: "اطلاعات اصلی" },
-  { value: "content", label: "بخش‌ها" },
+  { value: "content", label: "کاتالوگ" },
   { value: "reviews", label: "امتیاز و نظرات" },
 ];
 

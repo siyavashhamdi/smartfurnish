@@ -19,7 +19,7 @@ export type UserProductUserSnapshot = {
 
 export type UserProductSnapshot = {
   title: string;
-  description?: string;
+  summary?: string;
   priceIrt: number;
   discount?: UserProductDiscountSnapshot;
 };
@@ -109,7 +109,7 @@ export const UserProductUserSnapshotSchema = new MongooseSchema(
 export const UserProductSnapshotSchema = new MongooseSchema(
   {
     title: { required: true, trim: true, type: String },
-    description: { trim: true, type: String },
+    summary: { trim: true, type: String },
     priceIrt: { min: 0, required: true, type: Number },
     discount: {
       type: new MongooseSchema(

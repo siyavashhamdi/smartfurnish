@@ -16,7 +16,7 @@ export class ProductDetailQuery {
   @Query(() => ProductListGqlResponse, {
     name: "productDetail",
     description:
-      "Get full product data for SUPER_ADMIN, including chapters and items for editing",
+      "Get full product data for SUPER_ADMIN, including furniture catalog fields for editing",
   })
   async findProductDetail(
     @Args("input") input: ProductDetailGqlInput,

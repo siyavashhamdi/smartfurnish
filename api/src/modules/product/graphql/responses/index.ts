@@ -1,4 +1,3 @@
-export * from "./product-chapter-complete.gql.response";
 export * from "./product-delete-dependencies.gql.response";
 export * from "./product-list.gql.response";
 export * from "./product-payment-list.gql.response";

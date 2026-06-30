@@ -1,9 +1,7 @@
 import {
   Field,
   Float,
-  GraphQLISODateTime,
   ID,
-  Int,
   ObjectType,
 } from "@nestjs/graphql";
 import { Types } from "mongoose";
@@ -11,87 +9,16 @@ import { Types } from "mongoose";
 import { FileAccessUrlGqlResponse } from "../../../file/graphql/responses";
 import {
   ProductDiscountType,
-  ProductItemType,
-  ProductReleaseType,
   UserProductPurchaseStatus,
 } from "../../../../enums";
+import {
+  ProductDiscountGqlResponse,
+  ProductFabricGqlResponse,
+  ProductMaterialProfileGqlResponse,
+  ProductSetPieceGqlResponse,
+  ProductVendorGqlResponse,
+} from "./product-list.gql.response";
 import { UserProductListDiscountGqlResponse } from "./user-product-list.gql.response";
-
-@ObjectType()
-export class UserProductDetailItemGqlResponse {
-  @Field({ description: "Product item title" })
-  title: string;
-
-  @Field(() => ProductItemType, {
-    description: "Calculated item content type",
-  })
-  type: ProductItemType;
-
-  @Field(() => FileAccessUrlGqlResponse, {
-    nullable: true,
-    description: "Signed access descriptor for an unlocked file-backed item",
-  })
-  fileAccessUrl?: FileAccessUrlGqlResponse;
-
-  @Field({
-    nullable: true,
-    description: "Article body for unlocked text-based items",
-  })
-  article?: string | null;
-}
-
-@ObjectType()
-export class UserProductDetailChapterGqlResponse {
-  @Field({ description: "Stable chapter key" })
-  key: string;
-
-  @Field({ description: "Chapter title" })
-  title: string;
-
-  @Field({ nullable: true, description: "Chapter description" })
-  description?: string;
-
-  @Field(() => Int, {
-    nullable: true,
-    description: "Number of minutes after purchase/enrollment when visible",
-  })
-  visibleAfterMinutes?: number;
-
-  @Field({ description: "Whether this chapter is free to access" })
-  isFree: boolean;
-
-  @Field({
-    description:
-      "Whether this chapter content is hidden from the current viewer",
-  })
-  isLocked: boolean;
-
-  @Field(() => GraphQLISODateTime, {
-    nullable: true,
-    description:
-      "When this chapter becomes available for a paid viewer under gradual release",
-  })
-  unlocksAt?: Date;
-
-  @Field(() => [UserProductDetailItemGqlResponse], {
-    nullable: true,
-    description:
-      "Chapter items. Null when the chapter is locked for the current viewer.",
-  })
-  items?: UserProductDetailItemGqlResponse[] | null;
-
-  @Field({
-    description:
-      "Whether the authenticated learner has confirmed completion of this chapter",
-  })
-  isCompleted: boolean;
-
-  @Field(() => GraphQLISODateTime, {
-    nullable: true,
-    description: "When the learner confirmed completion of this chapter",
-  })
-  userCompletedAt?: Date;
-}
 
 @ObjectType()
 export class UserProductDetailGqlResponse {
@@ -101,14 +28,16 @@ export class UserProductDetailGqlResponse {
   @Field({ description: "Product title" })
   title: string;
 
-  @Field({ nullable: true, description: "Product description" })
-  description?: string;
+  @Field({ nullable: true, description: "Short product summary" })
+  summary?: string;
 
-  @Field(() => FileAccessUrlGqlResponse, {
-    nullable: true,
-    description: "Signed access descriptor for the product cover image",
+  @Field({ nullable: true, description: "Full product description" })
+  fullDescription?: string;
+
+  @Field(() => [FileAccessUrlGqlResponse], {
+    description: "Signed access descriptors for product cover images",
   })
-  coverImageAccessUrl?: FileAccessUrlGqlResponse;
+  coverImageAccessUrls: FileAccessUrlGqlResponse[];
 
   @Field(() => Float, {
     nullable: true,
@@ -128,12 +57,6 @@ export class UserProductDetailGqlResponse {
   @Field(() => [String], { description: "Product tags" })
   tags: string[];
 
-  @Field(() => ProductReleaseType, {
-    description:
-      "Calculated release strategy. GRADUAL means at least one chapter has visibleAfterMinutes.",
-  })
-  releaseType: ProductReleaseType;
-
   @Field({ description: "Whether this product is free to access" })
   isFree: boolean;
 
@@ -149,22 +72,27 @@ export class UserProductDetailGqlResponse {
   })
   purchaseStatus?: UserProductPurchaseStatus;
 
-  @Field(() => [UserProductDetailChapterGqlResponse], {
-    description: "Product chapters with locked content redacted",
+  @Field(() => ProductVendorGqlResponse, {
+    nullable: true,
+    description: "Vendor or seller information",
   })
-  chapters: UserProductDetailChapterGqlResponse[];
+  vendor?: ProductVendorGqlResponse;
 
-  @Field(() => Int, {
-    description:
-      "Number of unlocked chapters the learner has confirmed complete",
+  @Field(() => ProductMaterialProfileGqlResponse, {
+    nullable: true,
+    description: "Material and texture profile",
   })
-  completedChapterCount: number;
+  materialProfile?: ProductMaterialProfileGqlResponse;
 
-  @Field(() => Int, {
-    description:
-      "Number of chapters currently unlocked and eligible for completion",
+  @Field(() => [ProductSetPieceGqlResponse], {
+    description: "Set pieces included in this product",
   })
-  accessibleChapterCount: number;
+  setPieces: ProductSetPieceGqlResponse[];
+
+  @Field(() => [ProductFabricGqlResponse], {
+    description: "Active fabric pattern and color options selectable by users",
+  })
+  fabrics: ProductFabricGqlResponse[];
 
   @Field({
     description: "Whether learners can submit reviews for this product",

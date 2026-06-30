@@ -2,74 +2,11 @@ import { Field, Float, ID, Int, ObjectType } from "@nestjs/graphql";
 import { Types } from "mongoose";
 
 import { FileAccessUrlGqlResponse } from "../../../file/graphql/responses";
-import {
-  ProductDiscountType,
-  ProductItemType,
-  ProductReleaseType,
-} from "../../../../enums";
+import { ProductDiscountType } from "../../../../enums";
 import { PaginationCursorResponse } from "../../../../common/pagination/response";
 
 @ObjectType()
-export class ProductListItemGqlResponse {
-  @Field({ description: "Product item title" })
-  title: string;
-
-  @Field(() => Int, {
-    nullable: true,
-    description: "Optional item sort order inside its chapter",
-  })
-  sortOrder?: number;
-
-  @Field(() => FileAccessUrlGqlResponse, {
-    nullable: true,
-    description: "Signed access descriptor for the file attached to this item",
-  })
-  fileAccessUrl?: FileAccessUrlGqlResponse;
-
-  @Field({
-    nullable: true,
-    description: "Article body when this item is text-based",
-  })
-  article?: string | null;
-
-  @Field(() => ProductItemType, {
-    description:
-      "Calculated item type. File-backed items are resolved from stored file MIME type; items without fileId are ARTICLE.",
-  })
-  type: ProductItemType;
-}
-
-@ObjectType()
-export class ProductListChapterGqlResponse {
-  @Field({ description: "Chapter title" })
-  title: string;
-
-  @Field({ nullable: true, description: "Chapter description" })
-  description?: string;
-
-  @Field(() => Int, {
-    nullable: true,
-    description: "Number of minutes after purchase/enrollment when visible",
-  })
-  visibleAfterMinutes?: number;
-
-  @Field({ description: "Whether the chapter is free to access" })
-  isFree: boolean;
-
-  @Field(() => Int, {
-    nullable: true,
-    description: "Optional chapter sort order",
-  })
-  sortOrder?: number;
-
-  @Field(() => [ProductListItemGqlResponse], {
-    description: "Chapter items",
-  })
-  items: ProductListItemGqlResponse[];
-}
-
-@ObjectType()
-export class ProductListDiscountGqlResponse {
+export class ProductDiscountGqlResponse {
   @Field(() => ProductDiscountType, {
     description: "Discount calculation type",
   })
@@ -83,6 +20,162 @@ export class ProductListDiscountGqlResponse {
 }
 
 @ObjectType()
+export class ProductVendorGqlResponse {
+  @Field({ description: "Vendor or seller name" })
+  name: string;
+
+  @Field({ nullable: true, description: "Vendor phone number" })
+  phone?: string;
+
+  @Field({ nullable: true, description: "Vendor address" })
+  address?: string;
+
+  @Field({ nullable: true, description: "Internal vendor notes" })
+  notes?: string;
+}
+
+@ObjectType()
+export class ProductMaterialCompositionGqlResponse {
+  @Field({ description: "Composition label" })
+  label: string;
+
+  @Field({ nullable: true, description: "Material name" })
+  material?: string;
+
+  @Field({ nullable: true, description: "Texture name" })
+  texture?: string;
+
+  @Field(() => Float, {
+    nullable: true,
+    description: "Optional percentage share",
+  })
+  percentage?: number;
+}
+
+@ObjectType()
+export class ProductMaterialProfileGqlResponse {
+  @Field({ nullable: true, description: "Primary texture" })
+  texture?: string;
+
+  @Field({ nullable: true, description: "Primary material" })
+  primaryMaterial?: string;
+
+  @Field(() => [String], {
+    nullable: true,
+    description: "Secondary materials",
+  })
+  secondaryMaterials?: string[];
+
+  @Field(() => [ProductMaterialCompositionGqlResponse], {
+    nullable: true,
+    description: "Optional material composition breakdown",
+  })
+  composition?: ProductMaterialCompositionGqlResponse[];
+
+  @Field({ nullable: true, description: "Care instructions" })
+  careInstructions?: string;
+}
+
+@ObjectType()
+export class ProductSetPieceDimensionGqlResponse {
+  @Field({ nullable: true, description: "Dimension label" })
+  label?: string;
+
+  @Field({ nullable: true, description: "Display text for the dimension" })
+  displayText?: string;
+
+  @Field(() => Float, { nullable: true, description: "Width in centimeters" })
+  widthCm?: number;
+
+  @Field(() => Float, { nullable: true, description: "Height in centimeters" })
+  heightCm?: number;
+
+  @Field(() => Float, { nullable: true, description: "Depth in centimeters" })
+  depthCm?: number;
+
+  @Field(() => Int, { nullable: true, description: "Sort order" })
+  sortOrder?: number;
+}
+
+@ObjectType()
+export class ProductFabricColorGqlResponse {
+  @Field({ description: "Stable fabric color key" })
+  key: string;
+
+  @Field({ description: "Fabric color name" })
+  name: string;
+
+  @Field({ nullable: true, description: "Hex color code" })
+  hexCode?: string;
+
+  @Field(() => Int, { nullable: true, description: "Sort order" })
+  sortOrder?: number;
+
+  @Field({ description: "Whether end users can select this color" })
+  isActive: boolean;
+
+  @Field(() => FileAccessUrlGqlResponse, {
+    nullable: true,
+    description: "Signed access descriptor for the AI product preview image",
+  })
+  aiProductImageAccessUrl?: FileAccessUrlGqlResponse;
+}
+
+@ObjectType()
+export class ProductFabricGqlResponse {
+  @Field({ description: "Stable fabric key" })
+  key: string;
+
+  @Field({ description: "Fabric pattern name" })
+  patternName: string;
+
+  @Field(() => Int, { nullable: true, description: "Sort order" })
+  sortOrder?: number;
+
+  @Field({ description: "Whether end users can select this pattern" })
+  isActive: boolean;
+
+  @Field(() => [ProductFabricColorGqlResponse], {
+    description: "Selectable colors for this pattern",
+  })
+  colors: ProductFabricColorGqlResponse[];
+}
+
+@ObjectType()
+export class ProductSetPieceGqlResponse {
+  @Field({ description: "Stable set piece key" })
+  key: string;
+
+  @Field({ description: "Set piece name" })
+  name: string;
+
+  @Field({ nullable: true, description: "Set piece description" })
+  description?: string;
+
+  @Field(() => Int, { nullable: true, description: "Sort order" })
+  sortOrder?: number;
+
+  @Field(() => [FileAccessUrlGqlResponse], {
+    description: "Signed access descriptors for set piece images",
+  })
+  imageAccessUrls: FileAccessUrlGqlResponse[];
+
+  @Field(() => [ProductSetPieceDimensionGqlResponse], {
+    description: "Dimensions for this set piece",
+  })
+  dimensions: ProductSetPieceDimensionGqlResponse[];
+
+  @Field(() => Float, { nullable: true, description: "Weight in kilograms" })
+  weightKg?: number;
+
+  @Field(() => ProductMaterialProfileGqlResponse, {
+    nullable: true,
+    description: "Optional material profile for this set piece",
+  })
+  materialProfile?: ProductMaterialProfileGqlResponse;
+}
+
+@ObjectType()
 export class ProductListSummaryGqlResponse {
   @Field(() => ID, { description: "Product ID" })
   id: Types.ObjectId;
@@ -90,14 +183,13 @@ export class ProductListSummaryGqlResponse {
   @Field({ description: "Product title" })
   title: string;
 
-  @Field({ nullable: true, description: "Product description" })
-  description?: string;
+  @Field({ nullable: true, description: "Short product summary" })
+  summary?: string;
 
-  @Field(() => FileAccessUrlGqlResponse, {
-    nullable: true,
-    description: "Signed access descriptor for the product cover image",
+  @Field(() => [FileAccessUrlGqlResponse], {
+    description: "Signed access descriptors for product cover images",
   })
-  coverImageAccessUrl?: FileAccessUrlGqlResponse;
+  coverImageAccessUrls: FileAccessUrlGqlResponse[];
 
   @Field(() => Float, {
     nullable: true,
@@ -105,11 +197,11 @@ export class ProductListSummaryGqlResponse {
   })
   priceIrt?: number;
 
-  @Field(() => ProductListDiscountGqlResponse, {
+  @Field(() => ProductDiscountGqlResponse, {
     nullable: true,
     description: "Optional product discount",
   })
-  discount?: ProductListDiscountGqlResponse;
+  discount?: ProductDiscountGqlResponse;
 
   @Field({ description: "Whether the product is active" })
   isActive: boolean;
@@ -123,22 +215,13 @@ export class ProductListSummaryGqlResponse {
   @Field(() => [String], { description: "Product tags" })
   tags: string[];
 
-  @Field(() => ProductReleaseType, {
-    description:
-      "Calculated release strategy. GRADUAL means at least one chapter has visibleAfterMinutes.",
+  @Field(() => Int, { description: "Number of set pieces in the product" })
+  setPieceCount: number;
+
+  @Field(() => Int, {
+    description: "Number of active fabrics in the product",
   })
-  releaseType: ProductReleaseType;
-
-  @Field(() => Int, { description: "Number of chapters in the product" })
-  chapterCount: number;
-
-  @Field(() => Int, { description: "Number of items in the product" })
-  itemCount: number;
-
-  @Field(() => [ProductItemType], {
-    description: "Calculated content types available in this product",
-  })
-  itemTypes: ProductItemType[];
+  fabricCount: number;
 }
 
 @ObjectType()
@@ -149,14 +232,16 @@ export class ProductListGqlResponse {
   @Field({ description: "Product title" })
   title: string;
 
-  @Field({ nullable: true, description: "Product description" })
-  description?: string;
+  @Field({ nullable: true, description: "Short product summary" })
+  summary?: string;
 
-  @Field(() => FileAccessUrlGqlResponse, {
-    nullable: true,
-    description: "Signed access descriptor for the product cover image",
+  @Field({ nullable: true, description: "Full product description" })
+  fullDescription?: string;
+
+  @Field(() => [FileAccessUrlGqlResponse], {
+    description: "Signed access descriptors for product cover images",
   })
-  coverImageAccessUrl?: FileAccessUrlGqlResponse;
+  coverImageAccessUrls: FileAccessUrlGqlResponse[];
 
   @Field(() => Float, {
     nullable: true,
@@ -164,11 +249,11 @@ export class ProductListGqlResponse {
   })
   priceIrt?: number;
 
-  @Field(() => ProductListDiscountGqlResponse, {
+  @Field(() => ProductDiscountGqlResponse, {
     nullable: true,
     description: "Optional product discount",
   })
-  discount?: ProductListDiscountGqlResponse;
+  discount?: ProductDiscountGqlResponse;
 
   @Field({ description: "Whether the product is active" })
   isActive: boolean;
@@ -193,16 +278,33 @@ export class ProductListGqlResponse {
   @Field(() => [String], { description: "Product tags" })
   tags: string[];
 
-  @Field(() => ProductReleaseType, {
-    description:
-      "Calculated release strategy. GRADUAL means at least one chapter has visibleAfterMinutes.",
+  @Field({
+    nullable: true,
+    description: "Internal notes visible to SUPER_ADMIN only",
   })
-  releaseType: ProductReleaseType;
+  notes?: string;
 
-  @Field(() => [ProductListChapterGqlResponse], {
-    description: "Product chapters",
+  @Field(() => ProductVendorGqlResponse, {
+    nullable: true,
+    description: "Vendor or seller information",
   })
-  chapters: ProductListChapterGqlResponse[];
+  vendor?: ProductVendorGqlResponse;
+
+  @Field(() => ProductMaterialProfileGqlResponse, {
+    nullable: true,
+    description: "Material and texture profile",
+  })
+  materialProfile?: ProductMaterialProfileGqlResponse;
+
+  @Field(() => [ProductSetPieceGqlResponse], {
+    description: "Set pieces included in this product",
+  })
+  setPieces: ProductSetPieceGqlResponse[];
+
+  @Field(() => [ProductFabricGqlResponse], {
+    description: "Admin-defined fabric pattern and color options",
+  })
+  fabrics: ProductFabricGqlResponse[];
 
   @Field({ nullable: true, description: "Date when the product was created" })
   createdAt?: Date;
@@ -226,3 +328,6 @@ export class ProductListPaginatedCursorGqlResponse {
   })
   pagination: PaginationCursorResponse;
 }
+
+/** @deprecated Use ProductDiscountGqlResponse */
+export const ProductListDiscountGqlResponse = ProductDiscountGqlResponse;

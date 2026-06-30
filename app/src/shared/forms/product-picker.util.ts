@@ -1,5 +1,5 @@
 import type { ProductListItemRow } from "../../pages/Products/product-list.api";
-import type { FileAccessUrl } from "../../utils/fileAccessUrl.util";
+import { getPrimaryCoverImageAccessUrl } from "../../pages/Products/product-list.api";
 import type { EntityAutocompleteOption } from "./EntityAutocompleteField";
 
 export type ProductPickerOption = EntityAutocompleteOption & {
@@ -33,7 +33,7 @@ export function mapProductRowToPickerOption(row: ProductListItemRow): ProductPic
     id: row.id,
     label: row.title,
     subtitle: formatProductPickerPrice(finalPrice),
-    imageAccessUrl: row.coverImageAccessUrl as FileAccessUrl | null | undefined,
+    imageAccessUrl: getPrimaryCoverImageAccessUrl(row.coverImageAccessUrls ?? []),
     row,
   };
 }

@@ -7,57 +7,71 @@ import { timestampablePlugin } from "../plugins/timestampable.plugin";
 import { blameablePlugin } from "../plugins/blameable.plugin";
 import { softDeletePlugin } from "../plugins/soft-delete.plugin";
 
-export type ProductItem = {
-  title: string;
-  sortOrder?: number;
-  fileId?: Types.ObjectId;
-  article?: string | null;
-};
-
-export type ProductChapter = {
-  key: string;
-  title: string;
-  description?: string;
-  visibleAfterMinutes?: number;
-  isFree: boolean;
-  sortOrder?: number;
-  items: ProductItem[];
-};
-
 export type ProductDiscount = {
   type: ProductDiscountType;
   value: number;
 };
 
+export type ProductVendor = {
+  name: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
+};
+
+export type ProductMaterialComposition = {
+  label: string;
+  material?: string;
+  texture?: string;
+  percentage?: number;
+};
+
+export type ProductMaterialProfile = {
+  texture?: string;
+  primaryMaterial?: string;
+  secondaryMaterials?: string[];
+  composition?: ProductMaterialComposition[];
+  careInstructions?: string;
+};
+
+export type ProductSetPieceDimension = {
+  label?: string;
+  displayText?: string;
+  widthCm?: number;
+  heightCm?: number;
+  depthCm?: number;
+  sortOrder?: number;
+};
+
+export type ProductSetPiece = {
+  key: string;
+  name: string;
+  description?: string;
+  sortOrder?: number;
+  imageFileIds?: Types.ObjectId[];
+  dimensions?: ProductSetPieceDimension[];
+  weightKg?: number;
+  materialProfile?: ProductMaterialProfile;
+};
+
+export type ProductFabricColor = {
+  key: string;
+  name: string;
+  hexCode?: string;
+  aiProductImageFileId?: Types.ObjectId;
+  sortOrder?: number;
+  isActive: boolean;
+};
+
+export type ProductFabric = {
+  key: string;
+  patternName: string;
+  sortOrder?: number;
+  isActive: boolean;
+  colors: ProductFabricColor[];
+};
+
 export type ProductDocument = Product & Document;
-
-export const ProductItemSchema = new MongooseSchema(
-  {
-    title: { type: String, required: true, trim: true },
-    sortOrder: { type: Number },
-    fileId: { type: Types.ObjectId, ref: "StoredFile" },
-    article: { type: String, default: null },
-  },
-  { _id: false },
-);
-
-export const ProductChapterSchema = new MongooseSchema(
-  {
-    key: {
-      type: String,
-      required: true,
-      default: randomUUID,
-      immutable: true,
-    },
-    title: { type: String, required: true, trim: true },
-    description: { type: String, trim: true },
-    visibleAfterMinutes: { type: Number, min: 0 },
-    isFree: { type: Boolean, required: true, default: false },
-    sortOrder: { type: Number },
-    items: { type: [ProductItemSchema], default: [] },
-  },
-  { _id: false },
-);
 
 export const ProductDiscountSchema = new MongooseSchema(
   {
@@ -81,16 +95,114 @@ export const ProductDiscountSchema = new MongooseSchema(
   { _id: false },
 );
 
+export const ProductVendorSchema = new MongooseSchema(
+  {
+    name: { required: true, trim: true, type: String },
+    phone: { trim: true, type: String },
+    address: { trim: true, type: String },
+    notes: { trim: true, type: String },
+  },
+  { _id: false },
+);
+
+export const ProductMaterialCompositionSchema = new MongooseSchema(
+  {
+    label: { required: true, trim: true, type: String },
+    material: { trim: true, type: String },
+    texture: { trim: true, type: String },
+    percentage: { max: 100, min: 0, type: Number },
+  },
+  { _id: false },
+);
+
+export const ProductMaterialProfileSchema = new MongooseSchema(
+  {
+    texture: { trim: true, type: String },
+    primaryMaterial: { trim: true, type: String },
+    secondaryMaterials: { default: [], trim: true, type: [String] },
+    composition: { default: [], type: [ProductMaterialCompositionSchema] },
+    careInstructions: { trim: true, type: String },
+  },
+  { _id: false },
+);
+
+export const ProductSetPieceDimensionSchema = new MongooseSchema(
+  {
+    label: { trim: true, type: String },
+    displayText: { trim: true, type: String },
+    widthCm: { min: 0, type: Number },
+    heightCm: { min: 0, type: Number },
+    depthCm: { min: 0, type: Number },
+    sortOrder: { type: Number },
+  },
+  { _id: false },
+);
+
+export const ProductFabricColorSchema = new MongooseSchema(
+  {
+    key: {
+      default: randomUUID,
+      immutable: true,
+      required: true,
+      type: String,
+    },
+    name: { required: true, trim: true, type: String },
+    hexCode: { trim: true, type: String },
+    aiProductImageFileId: { ref: "StoredFile", type: Types.ObjectId },
+    sortOrder: { type: Number },
+    isActive: { default: true, required: true, type: Boolean },
+  },
+  { _id: false },
+);
+
+export const ProductFabricSchema = new MongooseSchema(
+  {
+    key: {
+      default: randomUUID,
+      immutable: true,
+      required: true,
+      type: String,
+    },
+    patternName: { required: true, trim: true, type: String },
+    sortOrder: { type: Number },
+    isActive: { default: true, required: true, type: Boolean },
+    colors: { default: [], type: [ProductFabricColorSchema] },
+  },
+  { _id: false },
+);
+
+export const ProductSetPieceSchema = new MongooseSchema(
+  {
+    key: {
+      default: randomUUID,
+      immutable: true,
+      required: true,
+      type: String,
+    },
+    name: { required: true, trim: true, type: String },
+    description: { trim: true, type: String },
+    sortOrder: { type: Number },
+    imageFileIds: { default: [], ref: "StoredFile", type: [Types.ObjectId] },
+    dimensions: { default: [], type: [ProductSetPieceDimensionSchema] },
+    weightKg: { min: 0, type: Number },
+    materialProfile: { type: ProductMaterialProfileSchema },
+  },
+  { _id: false },
+);
+
 @Schema({ collection: "products" })
 export class Product extends BaseIdTimestampableBlameableSchema {
   @Prop({ required: true, trim: true, type: String })
   title: string;
 
   @Prop({ trim: true, type: String })
-  description?: string;
+  summary?: string;
 
-  @Prop({ ref: "StoredFile", type: Types.ObjectId })
-  coverImageFileId?: Types.ObjectId;
+  @Prop({ trim: true, type: String })
+  fullDescription?: string;
+
+  @Prop({ default: [], ref: "StoredFile", type: [Types.ObjectId] })
+  coverImageFileIds?: Types.ObjectId[];
 
   @Prop({ min: 0, type: Number })
   priceIrt?: number;
@@ -113,8 +225,20 @@ export class Product extends BaseIdTimestampableBlameableSchema {
   @Prop({ default: [], trim: true, type: [String] })
   tags?: string[];
 
-  @Prop({ default: [], type: [ProductChapterSchema] })
-  chapters: ProductChapter[];
+  @Prop({ trim: true, type: String })
+  notes?: string;
+
+  @Prop({ type: ProductVendorSchema })
+  vendor?: ProductVendor;
+
+  @Prop({ type: ProductMaterialProfileSchema })
+  materialProfile?: ProductMaterialProfile;
+
+  @Prop({ default: [], type: [ProductSetPieceSchema] })
+  setPieces?: ProductSetPiece[];
+
+  @Prop({ default: [], type: [ProductFabricSchema] })
+  fabrics?: ProductFabric[];
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
@@ -128,8 +252,14 @@ ProductSchema.index({ sortOrder: 1 });
 ProductSchema.index({ title: 1 });
 ProductSchema.index({ priceIrt: 1 });
 ProductSchema.index({ tags: 1 });
-ProductSchema.index({ "chapters.key": 1 }, { unique: true, sparse: true });
-ProductSchema.index({ "chapters.visibleAfterMinutes": 1 });
-ProductSchema.index({ "chapters.items.fileId": 1 });
+ProductSchema.index({ coverImageFileIds: 1 });
+ProductSchema.index({ "setPieces.key": 1 }, { unique: true, sparse: true });
+ProductSchema.index({ "setPieces.imageFileIds": 1 });
+ProductSchema.index({ "fabrics.key": 1 }, { unique: true, sparse: true });
+ProductSchema.index(
+  { "fabrics.colors.key": 1 },
+  { unique: true, sparse: true },
+);
+ProductSchema.index({ "fabrics.colors.aiProductImageFileId": 1 });
 ProductSchema.index({ "audit.createdAt": -1 });
 ProductSchema.index({ "audit.updatedAt": -1 });

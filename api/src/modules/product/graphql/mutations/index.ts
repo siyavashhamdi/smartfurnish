@@ -1,4 +1,3 @@
-export * from "./product-chapter-complete.mutation";
 export * from "./product-create.mutation";
 export * from "./product-delete.mutation";
 export * from "./product-payment-manual-create.mutation";

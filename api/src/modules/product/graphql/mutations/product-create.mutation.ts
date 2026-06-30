@@ -16,7 +16,7 @@ export class ProductCreateMutation {
   @Mutation(() => ProductListGqlResponse, {
     name: "productCreate",
     description:
-      "Create a product with chapters and items, returning calculated release and item types",
+      "Create a furniture product with catalog fields and media references",
   })
   async createProduct(
     @Args("input") input: ProductCreateGqlInput,

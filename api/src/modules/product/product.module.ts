@@ -9,16 +9,11 @@ import { NotificationModule } from "../notification";
 import { PushNotificationModule } from "../push-notification";
 import { UserModule } from "../user";
 import { ZarinPalProxyModule } from "../zarinpal-proxy";
-import {
-  ChapterReleaseNotificationCron,
-  GatewayPaymentExpiryCron,
-} from "../../cron/jobs";
+import { GatewayPaymentExpiryCron } from "../../cron/jobs";
 import { ProductPaymentController } from "./api/product-payment.controller";
-import { ChapterReleaseNotificationService } from "./chapter-release-notification.service";
 import { GatewayPaymentExpiryService } from "./gateway-payment-expiry.service";
 import { ProductService } from "./product.service";
 import {
-  ProductChapterCompleteMutation,
   ProductCreateMutation,
   ProductDeleteMutation,
   ProductPaymentManualCreateMutation,
@@ -50,12 +45,9 @@ import {
   ],
   controllers: [ProductPaymentController],
   providers: [
-    ChapterReleaseNotificationCron,
-    ChapterReleaseNotificationService,
     GatewayPaymentExpiryCron,
     GatewayPaymentExpiryService,
     ProductService,
-    ProductChapterCompleteMutation,
     ProductCreateMutation,
     ProductDeleteMutation,
     ProductPaymentManualCreateMutation,
@@ -70,6 +62,6 @@ import {
     UserProductDetailQuery,
     UserProductListQuery,
   ],
-  exports: [ChapterReleaseNotificationService, ProductService],
+  exports: [ProductService],
 })
 export class ProductModule {}

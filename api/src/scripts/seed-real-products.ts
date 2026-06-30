@@ -1,22 +1,76 @@
 /**
- * Seeds realistic Smart Furnish product catalog entries.
+ * Seeds realistic Smart Furnish product catalog entries with downloaded images.
  *
  * Run from api/:
  *   npm run seed:products
  *
  * Re-running removes previous seed products (tags include "seed:auto")
- * before inserting fresh ones.
+ * and their associated stored files before inserting fresh ones.
  */
 import { randomUUID } from "crypto";
+import { extname } from "path";
 import { resolve } from "path";
 import { config } from "dotenv";
-import mongoose from "mongoose";
+import { Client as MinioClient } from "minio";
+import mongoose, { Types } from "mongoose";
 
 import { ProductDiscountType } from "../enums";
 
 config({ path: resolve(process.cwd(), ".env") });
 
 const SEED_TAG = "seed:auto";
+
+type SeedProgressState = {
+  productIndex: number;
+  productTotal: number;
+  imageIndex: number;
+  imageTotal: number;
+};
+
+let seedProgress: SeedProgressState = {
+  productIndex: 0,
+  productTotal: 0,
+  imageIndex: 0,
+  imageTotal: 0,
+};
+
+function logSeedProgress(message: string): void {
+  console.log(`[seed:products] ${message}`);
+}
+
+type ImageSlot = {
+  url: string;
+  fileName: string;
+};
+
+type SeedSetPieceDefinition = {
+  name: string;
+  description: string;
+  sortOrder: number;
+  weightKg?: number;
+  imageSlots: ImageSlot[];
+  dimensions?: Array<{
+    label: string;
+    displayText: string;
+    widthCm?: number;
+    heightCm?: number;
+    depthCm?: number;
+    sortOrder: number;
+  }>;
+};
+
+type SeedFabricColorDefinition = {
+  name: string;
+  hexCode: string;
+  sortOrder: number;
+  imageSlot: ImageSlot;
+};
+
+type SeedFabricDefinition = {
+  patternName: string;
+  sortOrder: number;
+  colors: SeedFabricColorDefinition[];
+};
 
 type SeedProductDefinition = {
   title: string;
@@ -28,37 +82,47 @@ type SeedProductDefinition = {
   };
   sortOrder: number;
   tags: string[];
-  audience: string;
-  promise: string;
-  chapters: string[];
+  vendor: {
+    name: string;
+    phone: string;
+    address: string;
+  };
+  materialProfile: {
+    texture: string;
+    primaryMaterial: string;
+    secondaryMaterials: string[];
+    careInstructions: string;
+  };
+  coverImageSlots: ImageSlot[];
+  setPieces: SeedSetPieceDefinition[];
+  fabrics: SeedFabricDefinition[];
 };
 
-type SeedProduct = {
-  title: string;
-  description: string;
-  priceIrt: number;
-  discount?: {
-    type: ProductDiscountType;
-    value: number;
-  };
-  isActive: boolean;
-  isReviewSubmissionEnabled: boolean;
-  isReviewsSectionVisible: boolean;
-  sortOrder: number;
-  tags: string[];
-  chapters: Array<{
-    key: string;
-    title: string;
-    description: string;
-    visibleAfterMinutes?: number;
-    isFree: boolean;
-    sortOrder: number;
-    items: Array<{
-      title: string;
-      sortOrder: number;
-      article: string;
-    }>;
-  }>;
+function countTotalImageSlots(definitions: SeedProductDefinition[]): number {
+  return definitions.reduce((total, product) => {
+    let count = product.coverImageSlots.length;
+
+    for (const piece of product.setPieces) {
+      count += piece.imageSlots.length;
+    }
+
+    for (const fabric of product.fabrics) {
+      count += fabric.colors.length;
+    }
+
+    return total + count;
+  }, 0);
+}
+
+type StoredFileRecord = {
+  _id: Types.ObjectId;
+  name: string;
+  mimeType: string;
+  sizeBytes: number;
+  path: string;
+  bucket: string;
+  objectKey: string;
+  uploadedAt: Date;
   audit: {
     createdAt: Date;
     updatedAt: Date;
@@ -74,111 +138,135 @@ const PRODUCT_DEFINITIONS: SeedProductDefinition[] = [
     discount: { type: ProductDiscountType.PERCENTAGE, value: 15 },
     sortOrder: 10,
     tags: ["مبلمان", "پذیرایی", "راحتی", SEED_TAG],
-    audience: "خانواده‌هایی که به دنبال مبل راحت، بادوام و هماهنگ با دکور مدرن پذیرایی هستند",
-    promise:
-      "با مشخصات دقیق ابعاد، رنگ‌ها و پیش‌نمایش AI می‌توانید قبل از خرید ببینید این مبل در فضای واقعی پذیرایی شما چگونه قرار می‌گیرد.",
-    chapters: [
-      "معرفی مبلمان لینکلن",
-      "ابعاد و فضای موردنیاز",
-      "پارچه‌ها و رنگ‌های موجود",
-      "ساختار داخلی و فوم",
-      "راهنمای پیش‌نمایش AI در پذیرایی",
-      "پیشنهاد چیدمان با فرش و میز",
-      "نحوه سفارش سفارشی",
-      "شرایط تحویل و مونتاژ",
-      "نگهداری پارچه و تمیزکاری",
-      "گارانتی و خدمات پس از فروش",
+    vendor: {
+      name: "گالری مبلمان آرمان",
+      phone: "021-88776655",
+      address: "تهران، خیابان ولیعصر، پلاک ۱۲۴",
+    },
+    materialProfile: {
+      texture: "مخمل نرم",
+      primaryMaterial: "چوب روس",
+      secondaryMaterials: ["فوم HR", "پارچه پلی‌استر"],
+      careInstructions: "تمیزکاری با جاروبرقی نرم؛ لکه‌گیری با پارچه مرطوب.",
+    },
+    coverImageSlots: [
+      {
+        url: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc",
+        fileName: "seed-lincoln-cover-1.jpg",
+      },
+      {
+        url: "https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e",
+        fileName: "seed-lincoln-cover-2.jpg",
+      },
     ],
-  },
-  {
-    title: "فرش دستبافت طرح شیراز ۳×۲ متر",
-    description:
-      "فرش دستبافت با طرح کلاسیک شیراز، پشم مرغوب و رنگ‌آمیزی گیاهی — مناسب پذیرایی و اتاق نشیمن.",
-    priceIrt: 12_500_000,
-    sortOrder: 20,
-    tags: ["فرش", "دستباف", "پذیرایی", SEED_TAG],
-    audience: "خریدارانی که به دنبال فرش اصیل، بادوام و هماهنگ با مبلمان کلاسیک یا مدرن هستند",
-    promise:
-      "با راهنمای ابعاد و پیش‌نمایش AI می‌توانید ترکیب فرش با مبلمان و رنگ دیوار را قبل از خرید ببینید.",
-    chapters: [
-      "معرفی طرح و اصالت فرش",
-      "ابعاد و انتخاب سایز مناسب",
-      "جنس پشم و رنگ‌آمیزی",
-      "نگهداری و تمیزکاری فرش",
-      "راهنمای پیش‌نمایش AI در پذیرایی",
-      "ترکیب با مبلمان و پرده",
-      "شرایط بسته‌بندی و ارسال",
-      "گارانتی اصالت و خدمات",
+    setPieces: [
+      {
+        name: "مبل سه‌نفره",
+        description: "مبل اصلی با پشتی بلند و نشیمن عمیق.",
+        sortOrder: 1,
+        weightKg: 42,
+        imageSlots: [
+          {
+            url: "https://images.unsplash.com/photo-1524758631624-e2822e304c36",
+            fileName: "seed-lincoln-sofa-1.jpg",
+          },
+          {
+            url: "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c",
+            fileName: "seed-lincoln-sofa-2.jpg",
+          },
+        ],
+        dimensions: [
+          {
+            label: "ابعاد کلی",
+            displayText: "۲۲۰ × ۹۵ × ۸۵ سانتی‌متر",
+            widthCm: 220,
+            heightCm: 85,
+            depthCm: 95,
+            sortOrder: 1,
+          },
+        ],
+      },
+      {
+        name: "پاف همراه",
+        description: "پاف مکمل با روکش هم‌طرح مبل.",
+        sortOrder: 2,
+        weightKg: 8,
+        imageSlots: [
+          {
+            url: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7",
+            fileName: "seed-lincoln-ottoman-1.jpg",
+          },
+        ],
+        dimensions: [
+          {
+            label: "ابعاد پاف",
+            displayText: "۶۰ × ۴۵ × ۴۵ سانتی‌متر",
+            widthCm: 60,
+            heightCm: 45,
+            depthCm: 45,
+            sortOrder: 1,
+          },
+        ],
+      },
     ],
-  },
-  {
-    title: "کابینت آشپزخانه مدولار مدل مینیمال",
-    description:
-      "سیستم کابینت مدولار با درب های‌گلاس، یراق‌آلات بلوم و امکان شخصی‌سازی چیدمان بر اساس پلان آشپزخانه.",
-    priceIrt: 89_000_000,
-    discount: { type: ProductDiscountType.FIXED_AMOUNT_IRT, value: 5_000_000 },
-    sortOrder: 30,
-    tags: ["آشپزخانه", "کابینت", "مدولار", SEED_TAG],
-    audience: "خانواده‌هایی که آشپزخانه خود را بازسازی یا از نو طراحی می‌کنند",
-    promise:
-      "با بخش‌های فنی و پیش‌نمایش AI می‌توانید چیدمان کابینت، رنگ و جزئیات را در فضای واقعی آشپزخانه ببینید.",
-    chapters: [
-      "معرفی سیستم مدولار",
-      "پلان‌گذاری و اندازه‌گیری",
-      "متریال بدنه و رویه",
-      "یراق‌آلات و کشوها",
-      "رنگ‌ها و ترکیب‌های پیشنهادی",
-      "راهنمای پیش‌نمایش AI در آشپزخانه",
-      "لوازم جانبی و اکسسوری",
-      "فرآیند سفارش و تولید",
-      "نصب و تحویل",
-      "گارانتی و خدمات پس از فروش",
-      "نگهداری و تمیزکاری",
-      "پرسش‌های متداول",
-    ],
-  },
-  {
-    title: "میز تلویزیون دیواری با نورپردازی LED",
-    description:
-      "میز TV دیواری با قفسه‌های باز، کابل‌کشی مخفی و نوار LED قابل تنظیم — مناسب پذیرایی و اتاق خانواده.",
-    priceIrt: 8_900_000,
-    sortOrder: 40,
-    tags: ["تلویزیون", "میز TV", "دکور", SEED_TAG],
-    audience: "خریدارانی که به دنبال میز تلویزیون مدرن با نورپردازی و مدیریت کابل هستند",
-    promise:
-      "با مشخصات ابعاد و پیش‌نمایش AI می‌توانید جایگاه میز TV و اثر نور LED را در دیوار پذیرایی ببینید.",
-    chapters: [
-      "معرفی میز تلویزیون",
-      "ابعاد و ظرفیت تلویزیون",
-      "متریال و رنگ‌بندی",
-      "نورپردازی LED",
-      "راهنمای پیش‌نمایش AI در پذیرایی",
-      "پیشنهاد چیدمان با مبل و فرش",
-      "نصب دیواری و ایمنی",
-      "نگهداری و تمیزکاری",
-      "گارانتی",
-    ],
-  },
-  {
-    title: "نمای دیوار سه‌بعدی مدل آرام",
-    description:
-      "پنل دیواری سه‌بعدی با بافت چوب طبیعی و رنگ‌های مات — برای accent wall در پذیرایی، اتاق خواب یا راهرو.",
-    priceIrt: 6_500_000,
-    discount: { type: ProductDiscountType.PERCENTAGE, value: 10 },
-    sortOrder: 50,
-    tags: ["نمای دیوار", "دکور", "پنل دیواری", SEED_TAG],
-    audience: "کسانی که می‌خواهند یک دیوار برجسته و متمایز در فضای داخلی ایجاد کنند",
-    promise:
-      "با پیش‌نمایش AI می‌توانید ببینید پنل دیواری در فضای واقعی منزل شما چه اثری ایجاد می‌کند.",
-    chapters: [
-      "معرفی پنل دیواری آرام",
-      "ابعاد و پوشش متراژ",
-      "بافت و رنگ‌های موجود",
-      "راهنمای پیش‌نمایش AI",
-      "پیشنهاد دیوار accent",
-      "نصب و چسباندن",
-      "نگهداری",
-      "گارانتی",
+    fabrics: [
+      {
+        patternName: "مخمل ریزبافت",
+        sortOrder: 1,
+        colors: [
+          {
+            name: "زیتونی",
+            hexCode: "#556B2F",
+            sortOrder: 1,
+            imageSlot: {
+              url: "https://images.unsplash.com/photo-1615529328331-f8917597711f",
+              fileName: "seed-lincoln-fabric-velvet-olive.jpg",
+            },
+          },
+          {
+            name: "خاکستری دودی",
+            hexCode: "#6B6B6B",
+            sortOrder: 2,
+            imageSlot: {
+              url: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace",
+              fileName: "seed-lincoln-fabric-velvet-grey.jpg",
+            },
+          },
+          {
+            name: "کرم",
+            hexCode: "#F5F0E6",
+            sortOrder: 3,
+            imageSlot: {
+              url: "https://images.unsplash.com/photo-1615874959474-d609969a20ed",
+              fileName: "seed-lincoln-fabric-velvet-cream.jpg",
+            },
+          },
+        ],
+      },
+      {
+        patternName: "کتان بافت‌دار",
+        sortOrder: 2,
+        colors: [
+          {
+            name: "سفید طبیعی",
+            hexCode: "#F8F6F0",
+            sortOrder: 1,
+            imageSlot: {
+              url: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6",
+              fileName: "seed-lincoln-fabric-linen-white.jpg",
+            },
+          },
+          {
+            name: "آبی دریایی",
+            hexCode: "#2F6F8F",
+            sortOrder: 2,
+            imageSlot: {
+              url: "https://images.unsplash.com/photo-1593784991095-a205069470b6",
+              fileName: "seed-lincoln-fabric-linen-navy.jpg",
+            },
+          },
+        ],
+      },
     ],
   },
   {
@@ -186,21 +274,113 @@ const PRODUCT_DEFINITIONS: SeedProductDefinition[] = [
     description:
       "ست ناهارخوری شش‌نفره با میز چوب راش و صندلی‌های راحت با روکش پارچه‌ای — مناسب آشپزخانه باز و فضای ناهارخوری.",
     priceIrt: 32_000_000,
-    sortOrder: 60,
+    sortOrder: 20,
     tags: ["مبلمان", "ناهارخوری", "ست", SEED_TAG],
-    audience: "خانواده‌هایی که فضای ناهارخوری گرم و کاربردی برای ۴ تا ۶ نفر می‌خواهند",
-    promise:
-      "با راهنمای ابعاد و پیش‌نمایش AI می‌توانید چیدمان ست ناهارخوری را در فضای واقعی ببینید.",
-    chapters: [
-      "معرفی ست ناهارخوری",
-      "ابعاد میز و صندلی‌ها",
-      "متریال چوب و پارچه",
-      "رنگ‌ها و ترکیب‌های پیشنهادی",
-      "راهنمای پیش‌نمایش AI",
-      "فاصله‌گذاری در فضا",
-      "تحویل و مونتاژ",
-      "نگهداری چوب و پارچه",
-      "گارانتی",
+    vendor: {
+      name: "مبلمان چوبی راش",
+      phone: "021-77889900",
+      address: "تهران، میرداماد، خیابان شمس",
+    },
+    materialProfile: {
+      texture: "چوب طبیعی مات",
+      primaryMaterial: "چوب راش",
+      secondaryMaterials: ["پارچه پلی‌استر", "فوم نشیمن"],
+      careInstructions: "گردگیری منظم؛ تمیزکاری پارچه با پارچه مرطوب.",
+    },
+    coverImageSlots: [
+      {
+        url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c",
+        fileName: "seed-dining-cover-1.jpg",
+      },
+      {
+        url: "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0",
+        fileName: "seed-dining-cover-2.jpg",
+      },
+    ],
+    setPieces: [
+      {
+        name: "میز ناهارخوری",
+        description: "میز شش‌نفره با پایه‌های چوبی محکم.",
+        sortOrder: 1,
+        weightKg: 45,
+        imageSlots: [
+          {
+            url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c",
+            fileName: "seed-dining-table-1.jpg",
+          },
+          {
+            url: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3",
+            fileName: "seed-dining-table-2.jpg",
+          },
+        ],
+        dimensions: [
+          {
+            label: "ابعاد میز",
+            displayText: "۱۸۰ × ۹۰ × ۷۵ سانتی‌متر",
+            widthCm: 180,
+            heightCm: 75,
+            depthCm: 90,
+            sortOrder: 1,
+          },
+        ],
+      },
+      {
+        name: "صندلی ناهارخوری",
+        description: "صندلی راحت با پشتی منحنی و روکش پارچه‌ای.",
+        sortOrder: 2,
+        weightKg: 7,
+        imageSlots: [
+          {
+            url: "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c",
+            fileName: "seed-dining-chair-1.jpg",
+          },
+        ],
+        dimensions: [
+          {
+            label: "ابعاد صندلی",
+            displayText: "۴۵ × ۹۰ × ۵۵ سانتی‌متر",
+            widthCm: 45,
+            heightCm: 90,
+            depthCm: 55,
+            sortOrder: 1,
+          },
+        ],
+      },
+    ],
+    fabrics: [
+      {
+        patternName: "پارچه نشیمن صندلی",
+        sortOrder: 1,
+        colors: [
+          {
+            name: "خاکستری روشن",
+            hexCode: "#B0B0B0",
+            sortOrder: 1,
+            imageSlot: {
+              url: "https://images.unsplash.com/photo-1615529328331-f8917597711f",
+              fileName: "seed-dining-fabric-grey.jpg",
+            },
+          },
+          {
+            name: "آبی ملایم",
+            hexCode: "#6B8E9F",
+            sortOrder: 2,
+            imageSlot: {
+              url: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace",
+              fileName: "seed-dining-fabric-blue.jpg",
+            },
+          },
+          {
+            name: "بژ",
+            hexCode: "#D4C4A8",
+            sortOrder: 3,
+            imageSlot: {
+              url: "https://images.unsplash.com/photo-1615874959474-d609969a20ed",
+              fileName: "seed-dining-fabric-beige.jpg",
+            },
+          },
+        ],
+      },
     ],
   },
   {
@@ -209,22 +389,103 @@ const PRODUCT_DEFINITIONS: SeedProductDefinition[] = [
       "تخت خواب دو نفره با headboard پارچه‌ای، ۴ کشوی ذخیره‌سازی و فریم فلزی مقاوم — مناسب اتاق خواب اصلی.",
     priceIrt: 28_500_000,
     discount: { type: ProductDiscountType.PERCENTAGE, value: 12 },
-    sortOrder: 70,
+    sortOrder: 30,
     tags: ["مبلمان", "خواب", "تخت", SEED_TAG],
-    audience: "زوج‌هایی که به دنبال تخت خواب کاربردی با فضای ذخیره‌سازی اضافی هستند",
-    promise:
-      "با مشخصات ابعاد و پیش‌نمایش AI می‌توانید جایگاه تخت و headboard را در اتاق خواب واقعی ببینید.",
-    chapters: [
-      "معرفی تخت رویال",
-      "ابعاد و سایز تشک",
-      "headboard و پارچه",
-      "کشوهای ذخیره‌سازی",
-      "رنگ‌ها و ترکیب‌ها",
-      "راهنمای پیش‌نمایش AI در اتاق خواب",
-      "هماهنگی با کمد و پاتختی",
-      "تحویل و مونتاژ",
-      "نگهداری",
-      "گارانتی",
+    vendor: {
+      name: "مبلمان خواب رویال",
+      phone: "021-66554433",
+      address: "تهران، نیاوران، خیابان شهید باهنر",
+    },
+    materialProfile: {
+      texture: "پارچه مخملی",
+      primaryMaterial: "فلز گالوانیزه",
+      secondaryMaterials: ["MDF", "فوم headboard"],
+      careInstructions: "گردگیری headboard؛ کشوها را ماهانه بررسی کنید.",
+    },
+    coverImageSlots: [
+      {
+        url: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304",
+        fileName: "seed-bed-cover-1.jpg",
+      },
+      {
+        url: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85",
+        fileName: "seed-bed-cover-2.jpg",
+      },
+    ],
+    setPieces: [
+      {
+        name: "تخت خواب دوبل",
+        description: "تخت با headboard بلند و ۴ کشوی ذخیره‌سازی.",
+        sortOrder: 1,
+        weightKg: 65,
+        imageSlots: [
+          {
+            url: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304",
+            fileName: "seed-bed-piece-1.jpg",
+          },
+          {
+            url: "https://images.unsplash.com/photo-1618220179428-22790b461013",
+            fileName: "seed-bed-piece-2.jpg",
+          },
+        ],
+        dimensions: [
+          {
+            label: "ابعاد تخت",
+            displayText: "۱۶۰ × ۲۰۰ سانتی‌متر",
+            widthCm: 160,
+            depthCm: 200,
+            sortOrder: 1,
+          },
+        ],
+      },
+      {
+        name: "پاتختی جفت",
+        description: "دو پاتختی هماهنگ با تخت.",
+        sortOrder: 2,
+        weightKg: 12,
+        imageSlots: [
+          {
+            url: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c",
+            fileName: "seed-bed-nightstand-1.jpg",
+          },
+        ],
+        dimensions: [
+          {
+            label: "ابعاد پاتختی",
+            displayText: "۵۰ × ۵۵ × ۴۰ سانتی‌متر",
+            widthCm: 50,
+            heightCm: 55,
+            depthCm: 40,
+            sortOrder: 1,
+          },
+        ],
+      },
+    ],
+    fabrics: [
+      {
+        patternName: "روکش headboard",
+        sortOrder: 1,
+        colors: [
+          {
+            name: "خاکستری تیره",
+            hexCode: "#4A4A4A",
+            sortOrder: 1,
+            imageSlot: {
+              url: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6",
+              fileName: "seed-bed-fabric-dark-grey.jpg",
+            },
+          },
+          {
+            name: "کرم روشن",
+            hexCode: "#F0E6D8",
+            sortOrder: 2,
+            imageSlot: {
+              url: "https://images.unsplash.com/photo-1600607687644-c7171b42498f",
+              fileName: "seed-bed-fabric-cream.jpg",
+            },
+          },
+        ],
+      },
     ],
   },
   {
@@ -232,108 +493,209 @@ const PRODUCT_DEFINITIONS: SeedProductDefinition[] = [
     description:
       "کمد دیواری سه‌درب با آینه تمام‌قد، یراق‌آلات آرام‌بند و قفسه‌بندی داخلی قابل تنظیم.",
     priceIrt: 24_000_000,
-    sortOrder: 80,
+    sortOrder: 40,
     tags: ["مبلمان", "خواب", "کمد", SEED_TAG],
-    audience: "خریدارانی که به فضای ذخیره‌سازی منظم و آینه تمام‌قد در اتاق خواب نیاز دارند",
-    promise:
-      "با راهنمای ابعاد و پیش‌نمایش AI می‌توانید جایگاه کمد دیواری را در اتاق خواب ببینید.",
-    chapters: [
-      "معرفی کمد دیواری",
-      "ابعاد و عمق",
-      "چیدمان داخلی",
-      "آینه و درب‌ها",
-      "رنگ‌ها و متریال",
-      "راهنمای پیش‌نمایش AI",
-      "نصب دیواری",
-      "نگهداری",
-      "گارانتی",
+    vendor: {
+      name: "مبلمان خواب رویال",
+      phone: "021-66554433",
+      address: "تهران، نیاوران، خیابان شهید باهنر",
+    },
+    materialProfile: {
+      texture: "ملامینه مات",
+      primaryMaterial: "MDF",
+      secondaryMaterials: ["آینه سکوریت", "یراق آرام‌بند"],
+      careInstructions: "تمیزکاری آینه با شیشه‌شور؛ گردگیری سطح کمد.",
+    },
+    coverImageSlots: [
+      {
+        url: "https://images.unsplash.com/photo-1615874959474-d609969a20ed",
+        fileName: "seed-wardrobe-cover-1.jpg",
+      },
+      {
+        url: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6",
+        fileName: "seed-wardrobe-cover-2.jpg",
+      },
+    ],
+    setPieces: [
+      {
+        name: "کمد دیواری سه‌درب",
+        description: "کمد با آینه تمام‌قد و فضای ذخیره‌سازی گسترده.",
+        sortOrder: 1,
+        weightKg: 95,
+        imageSlots: [
+          {
+            url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c",
+            fileName: "seed-wardrobe-piece-1.jpg",
+          },
+          {
+            url: "https://images.unsplash.com/photo-1600573472592-401b489a3cdc",
+            fileName: "seed-wardrobe-piece-2.jpg",
+          },
+        ],
+        dimensions: [
+          {
+            label: "ابعاد کمد",
+            displayText: "۲۴۰ × ۲۲۰ × ۶۰ سانتی‌متر",
+            widthCm: 240,
+            heightCm: 220,
+            depthCm: 60,
+            sortOrder: 1,
+          },
+        ],
+      },
+    ],
+    fabrics: [
+      {
+        patternName: "روکش بدنه کمد",
+        sortOrder: 1,
+        colors: [
+          {
+            name: "سفید مات",
+            hexCode: "#F5F5F5",
+            sortOrder: 1,
+            imageSlot: {
+              url: "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea",
+              fileName: "seed-wardrobe-finish-white.jpg",
+            },
+          },
+          {
+            name: "گردو",
+            hexCode: "#5C4033",
+            sortOrder: 2,
+            imageSlot: {
+              url: "https://images.unsplash.com/photo-1524758631624-e2822e304c36",
+              fileName: "seed-wardrobe-finish-walnut.jpg",
+            },
+          },
+        ],
+      },
     ],
   },
   {
-    title: "میز کار خانگی مدل اسکاندیناوی",
+    title: "صندلی راحتی تک‌نفره مدل کلاسیک",
     description:
-      "میز تحریر و کار خانگی با طراحی مینیمال، کشوی مخفی و پایه‌های چوبی — مناسب اتاق کار و گوشه مطالعه.",
-    priceIrt: 9_800_000,
-    sortOrder: 90,
-    tags: ["مبلمان", "دفتر", "میز کار", SEED_TAG],
-    audience: "افرادی که فضای کار یا مطالعه جمع‌وجور و هماهنگ با دکور منزل می‌خواهند",
-    promise:
-      "با پیش‌نمایش AI می‌توانید میز کار را در گوشه واقعی اتاق یا پذیرایی ببینید.",
-    chapters: [
-      "معرفی میز اسکاندیناوی",
-      "ابعاد و فضای موردنیاز",
-      "متریال و رنگ",
-      "کشو و مدیریت کابل",
-      "راهنمای پیش‌نمایش AI",
-      "ترکیب با صندلی و قفسه",
-      "تحویل",
-      "نگهداری چوب",
-      "گارانتی",
+      "صندلی راحتی تک‌نفره با فریم چوبی، پارچه مخمل و طراحی کلاسیک — مناسب پذیرایی، گوشه مطالعه و کنار پنجره.",
+    priceIrt: 14_500_000,
+    discount: { type: ProductDiscountType.PERCENTAGE, value: 10 },
+    sortOrder: 50,
+    tags: ["مبلمان", "پذیرایی", "صندلی", SEED_TAG],
+    vendor: {
+      name: "گالری مبلمان آرمان",
+      phone: "021-88776655",
+      address: "تهران، خیابان ولیعصر، پلاک ۱۲۴",
+    },
+    materialProfile: {
+      texture: "مخمل نرم",
+      primaryMaterial: "چوب راش",
+      secondaryMaterials: ["فوم HR", "پارچه مخمل"],
+      careInstructions: "جاروبرقی نرم؛ لکه‌گیری فوری با پارچه خشک.",
+    },
+    coverImageSlots: [
+      {
+        url: "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c",
+        fileName: "seed-armchair-cover-1.jpg",
+      },
+      {
+        url: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7",
+        fileName: "seed-armchair-cover-2.jpg",
+      },
     ],
-  },
-  {
-    title: "آینه دکوراتیو با قاب چوبی",
-    description:
-      "آینه دکوراتیو گرد با قاب چوب طبیعی و بافت دست‌ساز — مناسب راهرو، پذیرایی و اتاق خواب.",
-    priceIrt: 3_200_000,
-    discount: { type: ProductDiscountType.PERCENTAGE, value: 8 },
-    sortOrder: 100,
-    tags: ["دکور", "آینه", SEED_TAG],
-    audience: "کسانی که به دنبال المان دکوراتیو ظریف برای تکمیل فضای داخلی هستند",
-    promise:
-      "با پیش‌نمایش AI می‌توانید جایگاه آینه و بازتاب نور آن را در دیوار واقعی ببینید.",
-    chapters: [
-      "معرفی آینه دکوراتیو",
-      "ابعاد و قطر",
-      "قاب چوبی و بافت",
-      "راهنمای پیش‌نمایش AI",
-      "پیشنهاد جایگاه نصب",
-      "نصب ایمن",
-      "نگهداری",
+    setPieces: [
+      {
+        name: "صندلی راحتی",
+        description: "صندلی تک‌نفره با دسته‌های چوبی و نشیمن عمیق.",
+        sortOrder: 1,
+        weightKg: 18,
+        imageSlots: [
+          {
+            url: "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c",
+            fileName: "seed-armchair-piece-1.jpg",
+          },
+          {
+            url: "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91",
+            fileName: "seed-armchair-piece-2.jpg",
+          },
+        ],
+        dimensions: [
+          {
+            label: "ابعاد صندلی",
+            displayText: "۸۵ × ۹۵ × ۸۰ سانتی‌متر",
+            widthCm: 85,
+            heightCm: 95,
+            depthCm: 80,
+            sortOrder: 1,
+          },
+        ],
+      },
+      {
+        name: "پاف کوچک همراه",
+        description: "پاف مکمل برای استراحت پا.",
+        sortOrder: 2,
+        weightKg: 5,
+        imageSlots: [
+          {
+            url: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc",
+            fileName: "seed-armchair-ottoman-1.jpg",
+          },
+        ],
+        dimensions: [
+          {
+            label: "ابعاد پاف",
+            displayText: "۵۰ × ۴۰ × ۴۰ سانتی‌متر",
+            widthCm: 50,
+            heightCm: 40,
+            depthCm: 40,
+            sortOrder: 1,
+          },
+        ],
+      },
     ],
-  },
-  {
-    title: "ست آباژور و میز کنار مبل",
-    description:
-      "ست دکوراتیو شامل آباژور پارچه‌ای و میز کنار مبل با سطح مرمر مصنوعی — تکمیل‌کننده چیدمان پذیرایی.",
-    priceIrt: 4_500_000,
-    sortOrder: 110,
-    tags: ["دکور", "پذیرایی", "آباژور", SEED_TAG],
-    audience: "خریدارانی که جزئیات دکوراتیو پذیرایی را تکمیل می‌کنند",
-    promise:
-      "با پیش‌نمایش AI می‌توانید ست آباژور و میز کنار مبل را کنار مبلمان واقعی خود ببینید.",
-    chapters: [
-      "معرفی ست دکوراتیو",
-      "ابعاد آباژور و میز",
-      "پارچه و متریال",
-      "راهنمای پیش‌نمایش AI",
-      "پیشنهاد چیدمان",
-      "نگهداری",
-      "گارانتی",
-    ],
-  },
-  {
-    title: "پنل دیواری چوبی مدل طبیعت",
-    description:
-      "پنل دیواری چوبی با طرح خطوط طبیعت، مناسب accent wall در پذیرایی، دفتر خانگی و فضاهای تجاری کوچک.",
-    priceIrt: 5_800_000,
-    sortOrder: 120,
-    tags: ["نمای دیوار", "دکور", "چوب", SEED_TAG],
-    audience: "طراحان و خریدارانی که به دنبال بافت گرم چوب در فضای داخلی هستند",
-    promise:
-      "با پیش‌نمایش AI می‌توانید پنل چوبی را روی دیوار واقعی فضای خود ببینید.",
-    chapters: [
-      "معرفی پنل طبیعت",
-      "ابعاد و ماژول‌ها",
-      "بافت چوب و رنگ",
-      "راهنمای پیش‌نمایش AI",
-      "پیشنهاد accent wall",
-      "نصب",
-      "نگهداری چوب",
-      "گارانتی",
+    fabrics: [
+      {
+        patternName: "مخمل کلاسیک",
+        sortOrder: 1,
+        colors: [
+          {
+            name: "زرشکی",
+            hexCode: "#8B1A1A",
+            sortOrder: 1,
+            imageSlot: {
+              url: "https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e",
+              fileName: "seed-armchair-fabric-burgundy.jpg",
+            },
+          },
+          {
+            name: "سرمه‌ای",
+            hexCode: "#1B2A4A",
+            sortOrder: 2,
+            imageSlot: {
+              url: "https://images.unsplash.com/photo-1593784991095-a205069470b6",
+              fileName: "seed-armchair-fabric-navy.jpg",
+            },
+          },
+          {
+            name: "زیتونی",
+            hexCode: "#556B2F",
+            sortOrder: 3,
+            imageSlot: {
+              url: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc",
+              fileName: "seed-armchair-fabric-olive.jpg",
+            },
+          },
+        ],
+      },
     ],
   },
 ];
+
+type MinioEnv = {
+  endpoint: string;
+  port: number;
+  useSSL: boolean;
+  accessKey: string;
+  secretKey: string;
+  bucket: string;
+};
 
 function getRequiredEnv(name: "MONGODB_URI" | "MONGODB_DATABASE"): string {
   const value = process.env[name];
@@ -345,106 +707,459 @@ function getRequiredEnv(name: "MONGODB_URI" | "MONGODB_DATABASE"): string {
   return value;
 }
 
-function buildArticle(
-  product: SeedProductDefinition,
-  chapterTitle: string,
-  itemTitle: string,
-  chapterIndex: number,
+function getMinioEnv(): MinioEnv {
+  const rawEndpoint = process.env.MINIO_ENDPOINT?.replace(
+    /^https?:\/\//,
+    "",
+  )?.split("/")[0];
+  const rawPort = parseInt(process.env.MINIO_PORT || "9000", 10);
+  const rawUseSSL = process.env.MINIO_USE_SSL === "true";
+  const shouldUseConsoleHostMapping =
+    rawEndpoint?.startsWith("minio.") && rawPort === 443;
+
+  const endpoint = shouldUseConsoleHostMapping
+    ? rawEndpoint!.replace(/^minio\./, "")
+    : rawEndpoint;
+  const accessKey = process.env.MINIO_ACCESS_KEY;
+  const secretKey = process.env.MINIO_SECRET_KEY;
+  const bucket = process.env.MINIO_BUCKET;
+
+  if (!endpoint || !accessKey || !secretKey || !bucket) {
+    throw new Error(
+      "MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, and MINIO_BUCKET are required.",
+    );
+  }
+
+  return {
+    endpoint,
+    port: shouldUseConsoleHostMapping ? 9000 : rawPort,
+    useSSL: shouldUseConsoleHostMapping ? false : rawUseSSL,
+    accessKey,
+    secretKey,
+    bucket,
+  };
+}
+
+function createMinioClient(minioEnv: MinioEnv): MinioClient {
+  return new MinioClient({
+    endPoint: minioEnv.endpoint,
+    port: minioEnv.port,
+    useSSL: minioEnv.useSSL,
+    accessKey: minioEnv.accessKey,
+    secretKey: minioEnv.secretKey,
+  });
+}
+
+function resolveExtension(fileName: string, mimeType: string): string {
+  const fromName = extname(fileName);
+  if (fromName) {
+    return fromName;
+  }
+
+  if (mimeType === "image/png") {
+    return ".png";
+  }
+
+  if (mimeType === "image/webp") {
+    return ".webp";
+  }
+
+  return ".jpg";
+}
+
+function buildObjectKey(
+  fileName: string,
+  mimeType: string,
+  uploadedAt: Date,
 ): string {
-  return [
-    `## ${itemTitle}`,
-    "",
-    `${chapterTitle} بخش مهمی از مشخصات «${product.title}» است. ${product.audience} می‌توانند با مطالعه این بخش، جزئیات را قبل از خرید دقیق‌تر بررسی کنند.`,
-    "",
-    `برای تصمیم‌گیری بهتر، ابعاد فضای خود (اتاق، پذیرایی، آشپزخانه یا ...) را یادداشت کنید و مدل یا رنگ مورد علاقه را انتخاب کنید. سپس از پیش‌نمایش AI استفاده کنید تا ببینید محصول در فضای واقعی منزل شما چگونه دیده می‌شود.`,
-    "",
-    `در این بخش به ${itemTitle.toLowerCase()} می‌پردازیم: مشخصات فنی، نکات چیدمان، ترکیب رنگی یا راهنمای استفاده — بسته به موضوع بخش.`,
-    "",
-    `یادآوری: ${product.promise} این بخش شماره ${chapterIndex + 1} از محتوای محصول است؛ برای انتخاب نهایی، چند بخش را با هم مقایسه کنید.`,
-  ].join("\n");
+  const extension = resolveExtension(fileName, mimeType);
+  const year = uploadedAt.getUTCFullYear();
+  const month = String(uploadedAt.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(uploadedAt.getUTCDate()).padStart(2, "0");
+
+  return `${year}/${month}/${day}/${randomUUID()}${extension}`;
 }
 
-function buildItems(
-  product: SeedProductDefinition,
-  chapterTitle: string,
-  chapterIndex: number,
+async function downloadImage(url: string): Promise<{
+  buffer: Buffer;
+  mimeType: string;
+}> {
+  const response = await fetch(url, {
+    headers: {
+      "User-Agent": "SmartFurnishSeedScript/1.0",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to download ${url}: HTTP ${response.status}`);
+  }
+
+  const mimeType =
+    response.headers.get("content-type")?.split(";")[0]?.trim() ?? "image/jpeg";
+  const buffer = Buffer.from(await response.arrayBuffer());
+
+  if (buffer.length === 0) {
+    throw new Error(`Downloaded empty file from ${url}`);
+  }
+
+  return { buffer, mimeType };
+}
+
+async function ensureBucket(
+  minioClient: MinioClient,
+  bucket: string,
+): Promise<void> {
+  const exists = await minioClient.bucketExists(bucket);
+  if (!exists) {
+    await minioClient.makeBucket(bucket);
+  }
+}
+
+async function uploadImageSlot(
+  slot: ImageSlot,
+  minioClient: MinioClient,
+  bucket: string,
+  filesCollection: mongoose.mongo.Collection,
+  uploadedAt: Date,
+  cache: Map<string, Types.ObjectId>,
+  contextLabel: string,
+): Promise<Types.ObjectId> {
+  seedProgress.imageIndex += 1;
+  const imageLabel = `[image ${seedProgress.imageIndex}/${seedProgress.imageTotal}]`;
+
+  const cached = cache.get(slot.url);
+  if (cached) {
+    logSeedProgress(`${imageLabel} ${contextLabel}: reusing ${slot.fileName}`);
+    return cached;
+  }
+
+  logSeedProgress(
+    `${imageLabel} ${contextLabel}: downloading ${slot.fileName}...`,
+  );
+  const { buffer, mimeType } = await downloadImage(slot.url);
+  const objectKey = buildObjectKey(slot.fileName, mimeType, uploadedAt);
+
+  logSeedProgress(
+    `${imageLabel} ${contextLabel}: uploading ${slot.fileName} (${buffer.length} bytes)...`,
+  );
+  await minioClient.putObject(bucket, objectKey, buffer, buffer.length, {
+    "Content-Type": mimeType,
+    "X-Amz-Meta-Original-Name": encodeURIComponent(slot.fileName),
+  });
+
+  const fileId = new Types.ObjectId();
+  const storedFile: StoredFileRecord = {
+    _id: fileId,
+    name: slot.fileName,
+    mimeType,
+    sizeBytes: buffer.length,
+    path: `${bucket}/${objectKey}`,
+    bucket,
+    objectKey,
+    uploadedAt,
+    audit: {
+      createdAt: uploadedAt,
+      updatedAt: uploadedAt,
+    },
+  };
+
+  await filesCollection.insertOne(storedFile);
+  cache.set(slot.url, fileId);
+  logSeedProgress(`${imageLabel} ${contextLabel}: stored ${slot.fileName}`);
+
+  return fileId;
+}
+
+async function uploadImageSlots(
+  slots: ImageSlot[],
+  minioClient: MinioClient,
+  bucket: string,
+  filesCollection: mongoose.mongo.Collection,
+  uploadedAt: Date,
+  cache: Map<string, Types.ObjectId>,
+  contextLabel: string,
+): Promise<Types.ObjectId[]> {
+  const fileIds: Types.ObjectId[] = [];
+
+  for (const slot of slots) {
+    fileIds.push(
+      await uploadImageSlot(
+        slot,
+        minioClient,
+        bucket,
+        filesCollection,
+        uploadedAt,
+        cache,
+        contextLabel,
+      ),
+    );
+  }
+
+  return fileIds;
+}
+
+function collectProductFileIds(product: {
+  coverImageFileIds?: Types.ObjectId[];
+  setPieces?: Array<{ imageFileIds?: Types.ObjectId[] }>;
+  fabrics?: Array<{
+    colors?: Array<{ aiProductImageFileId?: Types.ObjectId }>;
+  }>;
+}): Types.ObjectId[] {
+  const fileIds: Types.ObjectId[] = [...(product.coverImageFileIds ?? [])];
+
+  for (const piece of product.setPieces ?? []) {
+    fileIds.push(...(piece.imageFileIds ?? []));
+  }
+
+  for (const fabric of product.fabrics ?? []) {
+    for (const color of fabric.colors ?? []) {
+      if (color.aiProductImageFileId) {
+        fileIds.push(color.aiProductImageFileId);
+      }
+    }
+  }
+
+  return fileIds;
+}
+
+async function deleteStoredFiles(
+  fileIds: Types.ObjectId[],
+  minioClient: MinioClient,
+  filesCollection: mongoose.mongo.Collection,
+): Promise<number> {
+  if (fileIds.length === 0) {
+    return 0;
+  }
+
+  const uniqueIds = [...new Set(fileIds.map((id) => id.toString()))].map(
+    (id) => new Types.ObjectId(id),
+  );
+
+  const files = await filesCollection
+    .find({ _id: { $in: uniqueIds } })
+    .toArray();
+
+  for (const file of files) {
+    try {
+      await minioClient.removeObject(file.bucket, file.objectKey);
+    } catch {
+      // Ignore missing objects during cleanup.
+    }
+  }
+
+  const result = await filesCollection.deleteMany({ _id: { $in: uniqueIds } });
+  return result.deletedCount;
+}
+
+async function buildSeedProduct(
+  definition: SeedProductDefinition,
+  minioClient: MinioClient,
+  bucket: string,
+  filesCollection: mongoose.mongo.Collection,
+  uploadedAt: Date,
+  cache: Map<string, Types.ObjectId>,
 ) {
-  const itemCount = (chapterIndex % 3) + 1;
-  const itemTitles = [
-    `مشخصات: ${chapterTitle}`,
-    `راهنمای عملی ${chapterTitle}`,
-    `چک‌لیست ${chapterTitle}`,
-  ];
+  seedProgress.productIndex += 1;
+  const productLabel = `[product ${seedProgress.productIndex}/${seedProgress.productTotal}]`;
+  logSeedProgress(`${productLabel} Building "${definition.title}"...`);
 
-  return itemTitles.slice(0, itemCount).map((itemTitle, itemIndex) => ({
-    title: itemTitle,
-    sortOrder: itemIndex + 1,
-    article: buildArticle(product, chapterTitle, itemTitle, chapterIndex),
-  }));
-}
+  logSeedProgress(`${productLabel} Uploading cover images...`);
+  const coverImageFileIds = await uploadImageSlots(
+    definition.coverImageSlots,
+    minioClient,
+    bucket,
+    filesCollection,
+    uploadedAt,
+    cache,
+    `${productLabel} cover`,
+  );
 
-function buildProducts(): SeedProduct[] {
-  const now = new Date();
+  const setPieces = [];
 
-  return PRODUCT_DEFINITIONS.map((product) => ({
-    title: product.title,
-    description: product.description,
-    priceIrt: product.priceIrt,
-    discount: product.discount,
+  for (const piece of definition.setPieces) {
+    logSeedProgress(
+      `${productLabel} Uploading set piece "${piece.name}" images...`,
+    );
+    const imageFileIds = await uploadImageSlots(
+      piece.imageSlots,
+      minioClient,
+      bucket,
+      filesCollection,
+      uploadedAt,
+      cache,
+      `${productLabel} set piece "${piece.name}"`,
+    );
+
+    setPieces.push({
+      key: randomUUID(),
+      name: piece.name,
+      description: piece.description,
+      sortOrder: piece.sortOrder,
+      imageFileIds,
+      dimensions: piece.dimensions ?? [],
+      weightKg: piece.weightKg,
+    });
+  }
+
+  const fabrics = [];
+
+  for (const fabric of definition.fabrics) {
+    const colors = [];
+
+    for (const color of fabric.colors) {
+      logSeedProgress(
+        `${productLabel} Uploading fabric "${fabric.patternName}" / "${color.name}" image...`,
+      );
+      const aiProductImageFileId = await uploadImageSlot(
+        color.imageSlot,
+        minioClient,
+        bucket,
+        filesCollection,
+        uploadedAt,
+        cache,
+        `${productLabel} fabric "${fabric.patternName}" / "${color.name}"`,
+      );
+
+      colors.push({
+        key: randomUUID(),
+        name: color.name,
+        hexCode: color.hexCode,
+        sortOrder: color.sortOrder,
+        isActive: true,
+        aiProductImageFileId,
+      });
+    }
+
+    fabrics.push({
+      key: randomUUID(),
+      patternName: fabric.patternName,
+      sortOrder: fabric.sortOrder,
+      isActive: true,
+      colors,
+    });
+  }
+
+  logSeedProgress(`${productLabel} Finished "${definition.title}".`);
+
+  return {
+    title: definition.title,
+    summary: definition.description,
+    fullDescription: [
+      definition.description,
+      "",
+      `متریال اصلی: ${definition.materialProfile.primaryMaterial}`,
+      `بافت: ${definition.materialProfile.texture}`,
+      `نگهداری: ${definition.materialProfile.careInstructions}`,
+    ].join("\n"),
+    coverImageFileIds,
+    priceIrt: definition.priceIrt,
+    discount: definition.discount,
     isActive: true,
     isReviewSubmissionEnabled: true,
     isReviewsSectionVisible: true,
-    sortOrder: product.sortOrder,
-    tags: product.tags,
-    chapters: product.chapters.map((chapterTitle, chapterIndex) => ({
-      key: randomUUID(),
-      title: chapterTitle,
-      description: `در این بخش از «${product.title}» به ${chapterTitle} می‌پردازیم تا قبل از خرید و پیش‌نمایش AI، اطلاعات لازم را در اختیار داشته باشید.`,
-      ...(chapterIndex > 2 && chapterIndex % 4 === 0
-        ? { visibleAfterMinutes: chapterIndex * 24 * 60 }
-        : {}),
-      isFree: chapterIndex < 2,
-      sortOrder: chapterIndex + 1,
-      items: buildItems(product, chapterTitle, chapterIndex),
-    })),
+    sortOrder: definition.sortOrder,
+    tags: definition.tags,
+    vendor: definition.vendor,
+    materialProfile: definition.materialProfile,
+    setPieces,
+    fabrics,
     audit: {
-      createdAt: now,
-      updatedAt: now,
+      createdAt: uploadedAt,
+      updatedAt: uploadedAt,
     },
-  }));
+  };
 }
 
 async function seedRealProducts(): Promise<void> {
+  logSeedProgress("Starting product seed...");
   const uri = getRequiredEnv("MONGODB_URI");
   const dbName = getRequiredEnv("MONGODB_DATABASE");
+  const minioEnv = getMinioEnv();
+  const minioClient = createMinioClient(minioEnv);
 
+  seedProgress = {
+    productIndex: 0,
+    productTotal: PRODUCT_DEFINITIONS.length,
+    imageIndex: 0,
+    imageTotal: countTotalImageSlots(PRODUCT_DEFINITIONS),
+  };
+
+  logSeedProgress(
+    `Preparing ${seedProgress.productTotal} products with ${seedProgress.imageTotal} image slots...`,
+  );
+
+  logSeedProgress("Connecting to MongoDB...");
   await mongoose.connect(uri, { dbName });
+  logSeedProgress(`Connected to database "${dbName}".`);
 
-  const products = buildProducts();
+  logSeedProgress(`Ensuring MinIO bucket "${minioEnv.bucket}" exists...`);
+  await ensureBucket(minioClient, minioEnv.bucket);
+  logSeedProgress("MinIO bucket is ready.");
+
   const productsCollection = mongoose.connection.db.collection("products");
+  const filesCollection = mongoose.connection.db.collection("files");
+  const uploadedAt = new Date();
+  const imageCache = new Map<string, Types.ObjectId>();
 
-  const existing = await productsCollection.deleteMany({ tags: SEED_TAG });
-  const result = await productsCollection.insertMany(products);
-
-  const chapterCount = products.reduce(
-    (sum, product) => sum + product.chapters.length,
-    0,
+  logSeedProgress(`Looking for previous ${SEED_TAG} products...`);
+  const previousProducts = await productsCollection
+    .find({ tags: SEED_TAG })
+    .toArray();
+  const previousFileIds = previousProducts.flatMap((product) =>
+    collectProductFileIds(
+      product as Parameters<typeof collectProductFileIds>[0],
+    ),
   );
-  const itemCount = products.reduce(
-    (sum, product) =>
-      sum +
-      product.chapters.reduce(
-        (chapterSum, chapter) => chapterSum + chapter.items.length,
-        0,
+  logSeedProgress(
+    `Found ${previousProducts.length} previous products with ${previousFileIds.length} file references.`,
+  );
+
+  const products = [];
+
+  for (const definition of PRODUCT_DEFINITIONS) {
+    products.push(
+      await buildSeedProduct(
+        definition,
+        minioClient,
+        minioEnv.bucket,
+        filesCollection,
+        uploadedAt,
+        imageCache,
       ),
-    0,
-  );
+    );
+  }
 
-  console.log(
-    `Seeded ${result.insertedCount} Smart Furnish products (${chapterCount} chapters, ${itemCount} content items).`,
+  logSeedProgress("Removing previous seed products from MongoDB...");
+  const deletedProducts = await productsCollection.deleteMany({
+    tags: SEED_TAG,
+  });
+  logSeedProgress(
+    `Removed ${deletedProducts.deletedCount} previous products. Cleaning up ${previousFileIds.length} stored files...`,
   );
+  const deletedFiles = await deleteStoredFiles(
+    previousFileIds,
+    minioClient,
+    filesCollection,
+  );
+  logSeedProgress(`Removed ${deletedFiles} previous stored files.`);
+
+  logSeedProgress("Inserting new products into MongoDB...");
+  const result = await productsCollection.insertMany(products);
+  logSeedProgress(`Inserted ${result.insertedCount} products.`);
+
+  const totalImages = imageCache.size;
+  const totalFileReferences = products.reduce((count, product) => {
+    return count + collectProductFileIds(product).length;
+  }, 0);
+
+  logSeedProgress("Seed completed successfully.");
+  console.log(`Seeded ${result.insertedCount} Smart Furnish products.`);
   console.log(
-    `Removed ${existing.deletedCount} previous ${SEED_TAG} products.`,
+    `Removed ${deletedProducts.deletedCount} previous ${SEED_TAG} products.`,
+  );
+  console.log(`Removed ${deletedFiles} previous seed stored files.`);
+  console.log(
+    `Uploaded ${totalImages} unique images (${totalFileReferences} total file references across catalog fields).`,
   );
 }
 

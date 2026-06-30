@@ -1,51 +1,39 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useMutation, useQuery } from "@apollo/client/react";
+import { useQuery } from "@apollo/client/react";
 import {
   Alert,
   Button,
   Chip,
   CircularProgress,
-  Collapse,
   Paper,
   Skeleton,
   Typography,
 } from "@mui/material";
-import AutoStoriesRoundedIcon from "@mui/icons-material/AutoStoriesRounded";
-import CardGiftcardRoundedIcon from "@mui/icons-material/CardGiftcardRounded";
-import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
-import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
+import CategoryRoundedIcon from "@mui/icons-material/CategoryRounded";
 import LockRoundedIcon from "@mui/icons-material/LockRounded";
-import OndemandVideoRoundedIcon from "@mui/icons-material/OndemandVideoRounded";
-import PhotoRoundedIcon from "@mui/icons-material/PhotoRounded";
-import PlayCircleRoundedIcon from "@mui/icons-material/PlayCircleRounded";
+import PaletteRoundedIcon from "@mui/icons-material/PaletteRounded";
 import ShoppingCartRoundedIcon from "@mui/icons-material/ShoppingCartRounded";
-import VolumeUpRoundedIcon from "@mui/icons-material/VolumeUpRounded";
-import { CHAPTER_UNLOCK_COUNTDOWN_THRESHOLD_MS } from "../../constants/product.constants";
+import StorefrontRoundedIcon from "@mui/icons-material/StorefrontRounded";
+import StraightenRoundedIcon from "@mui/icons-material/StraightenRounded";
+import ViewModuleRoundedIcon from "@mui/icons-material/ViewModuleRounded";
+import WeekendRoundedIcon from "@mui/icons-material/WeekendRounded";
 import { PAYMENTS_ENABLED } from "../../constants/payments.constants";
 import { useAuth } from "../../contexts/AuthContext";
 import { isMobileAppLayoutViewport } from "../../hooks/useMobileAppLayout";
 import { APP_SHELL_ROUTES } from "../../routing/app-shell-routes";
 import { PRODUCT_ROUTE_ID_PARAM, PRODUCTS_ROUTE_PATH } from "../../routing/product-route-path";
-import {
-  buildCloseMaxRouteLocation,
-  buildMaxRouteLocation,
-  isMaxRoutePathname,
-} from "../../routing/max-route.util";
-import { setMaxRouteOwner, clearMaxRouteOwner } from "../../routing/max-route-owner.store";
+import { isMaxRoutePathname } from "../../routing/max-route.util";
 import {
   buildProductLoginReturnState,
   buildProductPostLoginRedirect,
   setPostLoginRedirect,
 } from "../../routing/post-login-redirect";
-import { resolveFileAccessUrl, buildExistingFilePreview } from "../../utils/fileAccessUrl.util";
+import { resolveFileAccessUrl } from "../../utils/fileAccessUrl.util";
 import { CachedFileImage } from "../../shared/display/CachedFileImage";
 import { useCachedFileAccessUrl } from "../../hooks/useCachedFileAccessUrl";
 import PageBackNavigation from "../../shared/PageBackNavigation";
-import { applyBlankTargetToRichTextLinks } from "../../utils/richTextHtml.util";
 import { USER_PRODUCT_DETAIL_QUERY } from "../../graphql/queries/userProductDetail.query";
-import { PRODUCT_CHAPTER_COMPLETE_MUTATION } from "../../graphql/mutations/productChapterComplete.mutation";
 import { useProductPaymentStatusNotificationRefetch } from "../../hooks/useProductPaymentStatusNotificationRefetch";
 import { useSnackbar } from "../../hooks/useSnackbar";
 import { usePageSeoOverride } from "../../hooks/usePageSeoOverride";
@@ -58,13 +46,7 @@ import {
 import { resolveAppBaseUrl } from "../../seo/build-page-seo";
 import type { PageSeoOverride } from "../../seo/seo.types";
 import { buildSeoDescription, htmlToPlainText, resolveAbsoluteUrl } from "../../seo/seo-text.util";
-import {
-  resolveErrorMessageFromCode,
-  showErrorIfNotQueued,
-} from "../../utilities/graphql-error.util";
-import EntityModalShell from "../../shared/crud/EntityModalShell";
-import ModalFooterActions from "../../shared/crud/ModalFooterActions";
-import { ChapterCompletionCheckpoint } from "./ChapterCompletionCheckpoint";
+import { resolveErrorMessageFromCode } from "../../utilities/graphql-error.util";
 import { ProductPurchaseDialog } from "./ProductPurchaseDialog";
 import ProductDetailSectionTabs, { type ProductDetailSectionTab } from "./ProductDetailSectionTabs";
 import ProductReviewsSection from "./ProductReviewsSection";
@@ -78,210 +60,447 @@ import {
   resolveProductDetailSectionFromScroll,
   scrollToProductDetailSection,
 } from "./product-detail-section-scroll.util";
-import {
-  resolveActiveChapterKeyFromScroll,
-  scrollToProductChapter,
-} from "./product-chapter-path.util";
 import { PRODUCT_SECTION_TABS } from "./product-section-tabs.shared";
 import {
-  formatChapterUnlockCountdown,
-  formatChapterUnlockRelativeMessage,
   formatProductPrice,
-  getChapterUnlockRemainingMs,
-  getProductContentAccessNoteText,
-  getProductContentIntroText,
+  formatSetPieceDimensionText,
   getDiscountedPrice,
   getPurchaseCardAccessCaption,
-  isGradualChapterLock,
-  shouldShowChapterUnlockCountdown,
-  type ProductDetailItem,
-  type ProductChapterCompleteMutation,
-  type ProductChapterCompleteMutationVariables,
+  type ProductDetailRecord,
   type UserProductDetailQuery,
   type UserProductDetailQueryVariables,
 } from "./product-detail.api";
+import {
+  getPrimaryCoverImageAccessUrl,
+  type ProductFabricColorRow,
+  type ProductFabricRow,
+  type ProductMaterialProfileRow,
+  type ProductSetPieceRow,
+  type ProductVendorRow,
+} from "./product-list.api";
 import RichTextBox from "../../shared/forms/RichTextBox";
-import FileUploadField from "../../shared/forms/FileUploadField";
-import richTextStyles from "../../shared/forms/RichTextBox.module.scss";
-import type { ProductItemType } from "./product-list.api";
-import { buildProductItemPreviewId } from "./product-item-preview.util";
 import styles from "./styles/ProductDetail.module.scss";
 
-const ITEM_TYPE_ICON: Record<ProductItemType, ReactElement> = {
-  ARTICLE: <AutoStoriesRoundedIcon fontSize="small" />,
-  VIDEO: <OndemandVideoRoundedIcon fontSize="small" />,
-  VOICE: <VolumeUpRoundedIcon fontSize="small" />,
-  IMAGE: <PhotoRoundedIcon fontSize="small" />,
-};
-
-type ProductItemViewer = {
-  readonly previewId: string;
+type CoverImageGalleryProps = {
   readonly title: string;
-  readonly article: string;
+  readonly coverImageAccessUrls: ProductDetailRecord["coverImageAccessUrls"];
 };
 
-function buildArticleViewer(item: ProductDetailItem, previewId: string): ProductItemViewer | null {
-  const article = item.article?.trim();
-  if (!article) {
-    return null;
-  }
+function CoverImageGallery({
+  title,
+  coverImageAccessUrls,
+}: CoverImageGalleryProps): ReactElement {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const safeIndex = Math.min(activeIndex, Math.max(coverImageAccessUrls.length - 1, 0));
+  const activeAccessUrl = coverImageAccessUrls[safeIndex] ?? null;
+  const activeNetworkUrl = resolveFileAccessUrl(activeAccessUrl);
+  const { url: activeImageUrl } = useCachedFileAccessUrl(activeAccessUrl);
+  const hasMultipleImages = coverImageAccessUrls.length > 1;
 
-  return {
-    previewId,
-    title: item.title,
-    article,
-  };
-}
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [coverImageAccessUrls]);
 
-function ProductItemContent({
-  item,
-  chapterKey,
-  itemIndex,
-  onOpenArticle,
-}: {
-  readonly item: ProductDetailItem;
-  readonly chapterKey: string;
-  readonly itemIndex: number;
-  readonly onOpenArticle: (viewer: ProductItemViewer) => void;
-}): ReactElement | null {
-  const previewId = buildProductItemPreviewId(chapterKey, itemIndex);
-
-  if (item.type === "ARTICLE" && item.article?.trim()) {
-    const openArticleViewer = (): void => {
-      const viewer = buildArticleViewer(item, previewId);
-      if (viewer) {
-        onOpenArticle(viewer);
-      }
-    };
-
+  if (!activeImageUrl) {
     return (
-      <RichTextBox
-        mode="render"
-        label=""
-        renderTitle={item.title.trim() || undefined}
-        value={item.article.trim()}
-        hideLabel
-        onPreviewMaximize={openArticleViewer}
-      />
-    );
-  }
-
-  const existingFile = buildExistingFilePreview(item.fileAccessUrl, item.title.trim() || "فایل");
-  if (!existingFile) {
-    return null;
-  }
-
-  return (
-    <FileUploadField
-      previewId={previewId}
-      readOnly
-      hideLabel
-      fullWidth
-      label={existingFile.name}
-      file={null}
-      onChange={() => undefined}
-      existingFile={existingFile}
-      accept="*/*"
-      allowedFormatsLabel=""
-      maxSizeLabel=""
-      dropTitle=""
-      dropHint=""
-      removeLabel=""
-      invalidLabel=""
-    />
-  );
-}
-
-function ChapterUnlockNotice({
-  unlocksAt,
-  fallbackMessage,
-  onExpired,
-  isSingleChapter = false,
-}: {
-  readonly unlocksAt?: string | null;
-  readonly fallbackMessage: string;
-  readonly onExpired: () => void;
-  readonly isSingleChapter?: boolean;
-}): ReactElement {
-  const [now, setNow] = useState(() => new Date());
-  const hasExpiredRef = useRef(false);
-  const remainingMs = getChapterUnlockRemainingMs(unlocksAt, now);
-  const showCountdown = shouldShowChapterUnlockCountdown(unlocksAt, now);
-
-  useEffect(() => {
-    hasExpiredRef.current = false;
-  }, [unlocksAt]);
-
-  useEffect(() => {
-    if (!unlocksAt) {
-      return;
-    }
-
-    let intervalId: number | undefined;
-    let timeoutId: number | undefined;
-
-    const startTicker = (): void => {
-      setNow(new Date());
-      intervalId = window.setInterval(() => {
-        setNow(new Date());
-      }, 1000);
-    };
-
-    const remaining = getChapterUnlockRemainingMs(unlocksAt, new Date());
-    if (remaining == null || remaining <= 0) {
-      return;
-    }
-
-    if (remaining <= CHAPTER_UNLOCK_COUNTDOWN_THRESHOLD_MS) {
-      startTicker();
-    } else {
-      timeoutId = window.setTimeout(startTicker, remaining - CHAPTER_UNLOCK_COUNTDOWN_THRESHOLD_MS);
-    }
-
-    return () => {
-      if (intervalId) {
-        window.clearInterval(intervalId);
-      }
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
-    };
-  }, [unlocksAt]);
-
-  useEffect(() => {
-    if (remainingMs == null || remainingMs > 0 || hasExpiredRef.current) {
-      return;
-    }
-
-    hasExpiredRef.current = true;
-    onExpired();
-  }, [onExpired, remainingMs]);
-
-  if (showCountdown && remainingMs != null && remainingMs > 0) {
-    return (
-      <div className={styles.unlockCountdownNotice}>
-        <LockRoundedIcon />
-        <span className={styles.unlockCountdownMessage}>
-          <span className={styles.unlockCountdownLead}>
-            {isSingleChapter
-              ? "محتوای محصول به‌زودی قابل مشاهده خواهد بود."
-              : "این بخش به‌زودی قابل مشاهده خواهد بود."}
-          </span>
-          <strong className={styles.unlockCountdown} aria-live="polite">
-            {formatChapterUnlockCountdown(remainingMs)}
-          </strong>
-        </span>
+      <div className={styles.heroMedia}>
+        <div className={styles.heroGlow} />
+        <WeekendRoundedIcon className={styles.heroIcon} />
       </div>
     );
   }
 
-  const relativeMessage = formatChapterUnlockRelativeMessage(unlocksAt, now);
+  return (
+    <div className={styles.gallery}>
+      <div className={styles.galleryMain}>
+        <CachedFileImage
+          accessUrl={activeAccessUrl}
+          networkUrl={activeNetworkUrl}
+          alt={title}
+          className={styles.heroCoverImage}
+        />
+      </div>
+      {hasMultipleImages ? (
+        <div className={styles.galleryThumbnails} role="tablist" aria-label="تصاویر محصول">
+          {coverImageAccessUrls.map((accessUrl, index) => (
+            <CoverThumbnailButton
+              key={accessUrl.fileId ?? `${accessUrl.url}-${index}`}
+              accessUrl={accessUrl}
+              title={title}
+              index={index}
+              isActive={index === safeIndex}
+              onSelect={() => setActiveIndex(index)}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function CoverThumbnailButton({
+  accessUrl,
+  title,
+  index,
+  isActive,
+  onSelect,
+}: {
+  readonly accessUrl: ProductDetailRecord["coverImageAccessUrls"][number];
+  readonly title: string;
+  readonly index: number;
+  readonly isActive: boolean;
+  readonly onSelect: () => void;
+}): ReactElement {
+  const networkUrl = resolveFileAccessUrl(accessUrl);
+  const { url } = useCachedFileAccessUrl(accessUrl);
 
   return (
-    <>
-      <LockRoundedIcon />
-      <span>{relativeMessage ?? fallbackMessage}</span>
-    </>
+    <button
+      type="button"
+      role="tab"
+      aria-selected={isActive}
+      aria-label={`تصویر ${(index + 1).toLocaleString("fa-IR")}`}
+      className={`${styles.galleryThumb}${isActive ? ` ${styles.galleryThumbActive}` : ""}`}
+      onClick={onSelect}
+    >
+      {url ? (
+        <CachedFileImage
+          accessUrl={accessUrl}
+          networkUrl={networkUrl}
+          alt={`${title} — تصویر ${(index + 1).toLocaleString("fa-IR")}`}
+          className={styles.galleryThumbImage}
+        />
+      ) : (
+        <span className={styles.galleryThumbPlaceholder} />
+      )}
+    </button>
+  );
+}
+
+type FabricSelectorProps = {
+  readonly fabrics: ProductFabricRow[];
+};
+
+function FabricSelector({ fabrics }: FabricSelectorProps): ReactElement | null {
+  const activeFabrics = useMemo(
+    () =>
+      [...fabrics]
+        .filter((fabric) => fabric.isActive)
+        .sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0)),
+    [fabrics]
+  );
+  const [selectedFabricKey, setSelectedFabricKey] = useState<string | null>(null);
+  const [selectedColorKey, setSelectedColorKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (activeFabrics.length === 0) {
+      setSelectedFabricKey(null);
+      setSelectedColorKey(null);
+      return;
+    }
+
+    setSelectedFabricKey((current) =>
+      current && activeFabrics.some((fabric) => fabric.key === current) ?
+        current
+      : activeFabrics[0].key
+    );
+  }, [activeFabrics]);
+
+  const selectedFabric = useMemo(() => {
+    if (activeFabrics.length === 0) {
+      return null;
+    }
+
+    return activeFabrics.find((fabric) => fabric.key === selectedFabricKey) ?? activeFabrics[0];
+  }, [activeFabrics, selectedFabricKey]);
+
+  const activeColors = useMemo(() => {
+    if (!selectedFabric) {
+      return [];
+    }
+
+    return [...selectedFabric.colors]
+      .filter((color) => color.isActive)
+      .sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0));
+  }, [selectedFabric]);
+
+  useEffect(() => {
+    if (!selectedFabric) {
+      setSelectedColorKey(null);
+      return;
+    }
+
+    setSelectedColorKey((current) =>
+      current && activeColors.some((color) => color.key === current) ?
+        current
+      : activeColors[0]?.key ?? null
+    );
+  }, [activeColors, selectedFabric]);
+
+  const selectedColor = useMemo(() => {
+    if (activeColors.length === 0) {
+      return null;
+    }
+
+    return activeColors.find((color) => color.key === selectedColorKey) ?? activeColors[0];
+  }, [activeColors, selectedColorKey]);
+
+  if (activeFabrics.length === 0) {
+    return null;
+  }
+
+  return (
+    <Paper className={styles.fabricSelector} elevation={0}>
+      <div className={styles.fabricSelectorHeader}>
+        <PaletteRoundedIcon fontSize="small" />
+        <div>
+          <h3>انتخاب پارچه و رنگ</h3>
+          <p>الگو و رنگ دلخواه را انتخاب کنید و پیش‌نمایش هوشمند را ببینید.</p>
+        </div>
+      </div>
+
+      <div className={styles.fabricPatterns} role="tablist" aria-label="الگوهای پارچه">
+        {activeFabrics.map((fabric) => (
+          <button
+            key={fabric.key}
+            type="button"
+            role="tab"
+            aria-selected={selectedFabric?.key === fabric.key}
+            className={`${styles.fabricPatternChip}${
+              selectedFabric?.key === fabric.key ? ` ${styles.fabricPatternChipActive}` : ""
+            }`}
+            onClick={() => {
+              setSelectedFabricKey(fabric.key);
+              const firstColor = [...fabric.colors]
+                .filter((color) => color.isActive)
+                .sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0))[0];
+              setSelectedColorKey(firstColor?.key ?? null);
+            }}
+          >
+            {fabric.patternName}
+          </button>
+        ))}
+      </div>
+
+      {activeColors.length > 0 ? (
+        <div className={styles.fabricColors} role="list" aria-label="رنگ‌های پارچه">
+          {activeColors.map((color) => (
+            <FabricColorSwatch
+              key={color.key}
+              color={color}
+              isSelected={selectedColor?.key === color.key}
+              onSelect={() => setSelectedColorKey(color.key)}
+            />
+          ))}
+        </div>
+      ) : null}
+
+      {selectedColor?.aiProductImageAccessUrl ? (
+        <FabricAiPreview color={selectedColor} patternName={selectedFabric?.patternName ?? ""} />
+      ) : null}
+    </Paper>
+  );
+}
+
+function FabricColorSwatch({
+  color,
+  isSelected,
+  onSelect,
+}: {
+  readonly color: ProductFabricColorRow;
+  readonly isSelected: boolean;
+  readonly onSelect: () => void;
+}): ReactElement {
+  const swatchStyle =
+    color.hexCode?.trim() ?
+      ({ backgroundColor: color.hexCode.trim() } as const)
+    : undefined;
+
+  return (
+    <button
+      type="button"
+      role="listitem"
+      aria-label={color.name}
+      aria-pressed={isSelected}
+      className={`${styles.fabricColorSwatch}${isSelected ? ` ${styles.fabricColorSwatchActive}` : ""}`}
+      onClick={onSelect}
+    >
+      <span className={styles.fabricColorSwatchInner} style={swatchStyle} />
+      <span className={styles.fabricColorSwatchLabel}>{color.name}</span>
+    </button>
+  );
+}
+
+function FabricAiPreview({
+  color,
+  patternName,
+}: {
+  readonly color: ProductFabricColorRow;
+  readonly patternName: string;
+}): ReactElement {
+  const networkUrl = resolveFileAccessUrl(color.aiProductImageAccessUrl);
+  const { url } = useCachedFileAccessUrl(color.aiProductImageAccessUrl);
+
+  return (
+    <div className={styles.fabricPreview}>
+      <div className={styles.fabricPreviewHeader}>
+        <span>پیش‌نمایش هوشمند</span>
+        <strong>
+          {patternName} — {color.name}
+        </strong>
+      </div>
+      {url ? (
+        <CachedFileImage
+          accessUrl={color.aiProductImageAccessUrl}
+          networkUrl={networkUrl}
+          alt={`پیش‌نمایش ${patternName} — ${color.name}`}
+          className={styles.fabricPreviewImage}
+        />
+      ) : (
+        <div className={styles.fabricPreviewPlaceholder}>
+          <CircularProgress size={28} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MaterialProfileCard({
+  materialProfile,
+}: {
+  readonly materialProfile: ProductMaterialProfileRow;
+}): ReactElement {
+  const composition = materialProfile.composition ?? [];
+  const secondaryMaterials = materialProfile.secondaryMaterials ?? [];
+
+  return (
+    <Paper className={styles.catalogCard} elevation={0}>
+      <div className={styles.catalogCardHeader}>
+        <CategoryRoundedIcon fontSize="small" />
+        <h3>پروفایل متریال</h3>
+      </div>
+      <dl className={styles.catalogCardList}>
+        {materialProfile.primaryMaterial?.trim() ? (
+          <div>
+            <dt>متریال اصلی</dt>
+            <dd>{materialProfile.primaryMaterial.trim()}</dd>
+          </div>
+        ) : null}
+        {materialProfile.texture?.trim() ? (
+          <div>
+            <dt>بافت</dt>
+            <dd>{materialProfile.texture.trim()}</dd>
+          </div>
+        ) : null}
+        {secondaryMaterials.length > 0 ? (
+          <div>
+            <dt>متریال‌های فرعی</dt>
+            <dd>{secondaryMaterials.join("، ")}</dd>
+          </div>
+        ) : null}
+      </dl>
+      {composition.length > 0 ? (
+        <ul className={styles.catalogCompositionList}>
+          {composition.map((entry, index) => (
+            <li key={`${entry.label}-${index}`}>
+              <strong>{entry.label}</strong>
+              <span>
+                {[entry.material, entry.texture, entry.percentage != null ? `${entry.percentage.toLocaleString("fa-IR")}٪` : null]
+                  .filter(Boolean)
+                  .join(" — ")}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {materialProfile.careInstructions?.trim() ? (
+        <p className={styles.catalogCardNote}>{materialProfile.careInstructions.trim()}</p>
+      ) : null}
+    </Paper>
+  );
+}
+
+function VendorCard({ vendor }: { readonly vendor: ProductVendorRow }): ReactElement {
+  return (
+    <Paper className={styles.catalogCard} elevation={0}>
+      <div className={styles.catalogCardHeader}>
+        <StorefrontRoundedIcon fontSize="small" />
+        <h3>اطلاعات فروشنده</h3>
+      </div>
+      <dl className={styles.catalogCardList}>
+        <div>
+          <dt>نام</dt>
+          <dd>{vendor.name}</dd>
+        </div>
+        {vendor.phone?.trim() ? (
+          <div>
+            <dt>تلفن</dt>
+            <dd>{vendor.phone.trim()}</dd>
+          </div>
+        ) : null}
+        {vendor.address?.trim() ? (
+          <div>
+            <dt>آدرس</dt>
+            <dd>{vendor.address.trim()}</dd>
+          </div>
+        ) : null}
+      </dl>
+      {vendor.notes?.trim() ? <p className={styles.catalogCardNote}>{vendor.notes.trim()}</p> : null}
+    </Paper>
+  );
+}
+
+function SetPieceCard({ setPiece }: { readonly setPiece: ProductSetPieceRow }): ReactElement {
+  const imageAccessUrl = getPrimaryCoverImageAccessUrl(setPiece.imageAccessUrls);
+  const networkUrl = resolveFileAccessUrl(imageAccessUrl);
+  const { url: imageUrl } = useCachedFileAccessUrl(imageAccessUrl);
+  const dimensions = [...setPiece.dimensions].sort(
+    (left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0)
+  );
+
+  return (
+    <article className={styles.setPieceCard}>
+      <div className={styles.setPieceImageWrap}>
+        {imageUrl ? (
+          <CachedFileImage
+            accessUrl={imageAccessUrl}
+            networkUrl={networkUrl}
+            alt={setPiece.name}
+            className={styles.setPieceImage}
+          />
+        ) : (
+          <div className={styles.setPieceImagePlaceholder}>
+            <ViewModuleRoundedIcon />
+          </div>
+        )}
+      </div>
+      <div className={styles.setPieceBody}>
+        <h4>{setPiece.name}</h4>
+        {setPiece.description?.trim() ? <p>{setPiece.description.trim()}</p> : null}
+        {dimensions.length > 0 ? (
+          <ul className={styles.setPieceDimensions}>
+            {dimensions.map((dimension, index) => {
+              const text = formatSetPieceDimensionText(dimension);
+              if (!text) {
+                return null;
+              }
+
+              return (
+                <li key={`${dimension.label ?? "dimension"}-${index}`}>
+                  <StraightenRoundedIcon fontSize="inherit" />
+                  <span>{text}</span>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
+        {typeof setPiece.weightKg === "number" ? (
+          <span className={styles.setPieceWeight}>
+            وزن: {setPiece.weightKg.toLocaleString("fa-IR")} کیلوگرم
+          </span>
+        ) : null}
+      </div>
+    </article>
   );
 }
 
@@ -291,7 +510,6 @@ const ProductDetail = (): ReactElement => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const focusChapterKey = searchParams.get("chapter")?.trim() || null;
   const { isAuthenticated, user } = useAuth();
   const { showError, showSuccess, showWarning } = useSnackbar();
   const { t } = useTranslation();
@@ -340,16 +558,19 @@ const ProductDetail = (): ReactElement => {
     scrollRoot: "parent",
   });
 
-  const coverImageNetworkUrl = resolveFileAccessUrl(product?.coverImageAccessUrl);
-  const { url: coverImageUrl } = useCachedFileAccessUrl(product?.coverImageAccessUrl);
+  const primaryCoverAccessUrl = product ?
+    getPrimaryCoverImageAccessUrl(product.coverImageAccessUrls)
+  : null;
+  const coverImageNetworkUrl = resolveFileAccessUrl(primaryCoverAccessUrl);
+  const { url: coverImageUrl } = useCachedFileAccessUrl(primaryCoverAccessUrl);
   const discountedPrice = product ? getDiscountedPrice(product.priceIrt, product.discount) : null;
   const displayPrice = discountedPrice ?? product?.priceIrt ?? null;
   const discountLabel =
-    product?.discount && discountedPrice != null
-      ? product.discount.type === "PERCENTAGE"
-        ? `${Math.min(product.discount.value, 100).toLocaleString("fa-IR")}٪ تخفیف`
-        : `${formatProductPrice(product.discount.value)} تخفیف`
-      : null;
+    product?.discount && discountedPrice != null ?
+      product.discount.type === "PERCENTAGE" ?
+        `${Math.min(product.discount.value, 100).toLocaleString("fa-IR")}٪ تخفیف`
+      : `${formatProductPrice(product.discount.value)} تخفیف`
+    : null;
   const isPaidPurchase = product?.purchaseStatus === "PAID" || product?.isPurchased === true;
   const hasPendingManualReview = product?.isFree !== true && product?.purchaseStatus === "PENDING";
   const hasPendingPurchase = hasPendingManualReview;
@@ -360,54 +581,18 @@ const ProductDetail = (): ReactElement => {
   const shouldShowPrice = !isPaidPurchase;
   const shouldShowMobilePinnedPriceBar =
     !canAccessProduct && !hasPendingPurchase && !isPurchaseBlocked;
-  const totalItems =
-    product?.chapters.reduce((sum, chapter) => sum + (chapter.items?.length ?? 0), 0) ?? 0;
-  const isSingleChapter = (product?.chapters.length ?? 0) === 1;
-  const chapterKeys = useMemo(
-    () => product?.chapters.map((chapter) => chapter.key) ?? [],
-    [product?.chapters]
-  );
-  const isGradualRelease = product?.releaseType === "GRADUAL";
-  const hasLockedChapters = product?.chapters.some((chapter) => chapter.isLocked) ?? false;
-  const productDetailCopyContext = useMemo(
-    () => ({
-      isSingleChapter,
-      isGradualRelease: isGradualRelease ?? false,
-      hasLockedChapters,
-      canAccessProduct,
-      totalItems,
-    }),
-    [canAccessProduct, hasLockedChapters, isGradualRelease, isSingleChapter, totalItems]
-  );
-  const productContentIntroText = getProductContentIntroText(productDetailCopyContext);
-  const productContentAccessNoteText = getProductContentAccessNoteText(productDetailCopyContext);
-  const purchaseCardAccessCaption = getPurchaseCardAccessCaption(productDetailCopyContext);
-  const defaultExpandedChapterKey = useMemo(() => {
-    if (!product?.chapters.length) {
-      return null;
+  const sortedSetPieces = useMemo(() => {
+    if (!product) {
+      return [];
     }
 
-    if (product.isPurchased) {
-      const lastUnlockedChapter = [...product.chapters]
-        .reverse()
-        .find((chapter) => !chapter.isLocked);
-      return lastUnlockedChapter?.key ?? product.chapters[0]?.key ?? null;
-    }
-
-    return product.chapters[0]?.key ?? null;
+    return [...product.setPieces].sort(
+      (left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0)
+    );
   }, [product]);
-  const hasGradualLockedChapters =
-    product?.releaseType === "GRADUAL" &&
-    product.chapters.some((chapter) => isGradualChapterLock(chapter));
-  const [expandedChapterKeys, setExpandedChapterKeys] = useState<ReadonlySet<string>>(
-    () => new Set()
-  );
-  const [activeChapterKey, setActiveChapterKey] = useState<string | null>(null);
-  const [activeSectionTab, setActiveSectionTab] = useState<ProductDetailSectionTab>("intro");
 
+  const [activeSectionTab, setActiveSectionTab] = useState<ProductDetailSectionTab>("intro");
   const [isMobilePriceBarVisible, setIsMobilePriceBarVisible] = useState(false);
-  const [selectedItemViewer, setSelectedItemViewer] = useState<ProductItemViewer | null>(null);
-  const [completingChapterKey, setCompletingChapterKey] = useState<string | null>(null);
   const isPurchaseDialogOpen = location.pathname.endsWith("/purchase");
   const isMaxRouteOpen = isMaxRoutePathname(location.pathname);
 
@@ -416,8 +601,11 @@ const ProductDetail = (): ReactElement => {
       return null;
     }
 
-    const plainDescription = product.description?.trim()
-      ? htmlToPlainText(product.description)
+    const descriptionSource =
+      product.fullDescription?.trim() || product.summary?.trim() || "";
+    const plainDescription =
+      descriptionSource ?
+        htmlToPlainText(descriptionSource)
       : t("seo.pages.productDetail.description", { title: product.title });
     const seoDescription = buildSeoDescription(plainDescription);
     const appUrl = resolveAppBaseUrl(API_CONFIG.APP_URL);
@@ -426,7 +614,9 @@ const ProductDetail = (): ReactElement => {
     return {
       title: isPurchaseDialogOpen ? `${product.title} — تکمیل خرید` : product.title,
       description: seoDescription,
-      keywords: [product.title, ...product.tags, "نمایشگاه مجازی مبلمان", "محصول دکوراسیون"].join(", "),
+      keywords: [product.title, ...product.tags, "نمایشگاه مجازی مبلمان", "محصول دکوراسیون"].join(
+        ", "
+      ),
       image: coverImageNetworkUrl ?? undefined,
       imageAlt: product.title,
       canonicalPath,
@@ -463,12 +653,9 @@ const ProductDetail = (): ReactElement => {
 
   usePageSeoOverride(pageSeoOverride);
 
-  const isUnlockRefetchingRef = useRef(false);
   const purchaseIntentHandledRef = useRef(false);
   const pendingSectionTabRef = useRef<ProductDetailSectionTab | null>(null);
   const pendingSectionTabClearTimerRef = useRef<number | null>(null);
-  const pendingChapterNavigationRef = useRef<string | null>(null);
-  const pendingChapterNavigationClearTimerRef = useRef<number | null>(null);
 
   const clearPendingSectionTab = useCallback((): void => {
     const tab = pendingSectionTabRef.current;
@@ -484,20 +671,6 @@ const ProductDetail = (): ReactElement => {
     }
   }, []);
 
-  const clearPendingChapterNavigation = useCallback((): void => {
-    const chapterKey = pendingChapterNavigationRef.current;
-    pendingChapterNavigationRef.current = null;
-
-    if (pendingChapterNavigationClearTimerRef.current != null) {
-      window.clearTimeout(pendingChapterNavigationClearTimerRef.current);
-      pendingChapterNavigationClearTimerRef.current = null;
-    }
-
-    if (chapterKey) {
-      setActiveChapterKey(chapterKey);
-    }
-  }, []);
-
   useEffect(() => {
     purchaseIntentHandledRef.current = false;
   }, [productId]);
@@ -509,27 +682,11 @@ const ProductDetail = (): ReactElement => {
 
     const redirect = buildProductPostLoginRedirect(productId);
     setPostLoginRedirect(redirect);
-    const loginPath = isMobileAppLayoutViewport()
-      ? APP_SHELL_ROUTES.profileLogin
-      : APP_SHELL_ROUTES.login;
+    const loginPath = isMobileAppLayoutViewport() ?
+      APP_SHELL_ROUTES.profileLogin
+    : APP_SHELL_ROUTES.login;
     navigate(loginPath, { state: buildProductLoginReturnState(productId) });
   }, [productId, navigate]);
-
-  const [completeChapter] = useMutation<
-    ProductChapterCompleteMutation,
-    ProductChapterCompleteMutationVariables
-  >(PRODUCT_CHAPTER_COMPLETE_MUTATION);
-
-  const handleChapterUnlockExpired = useCallback(() => {
-    if (isUnlockRefetchingRef.current) {
-      return;
-    }
-
-    isUnlockRefetchingRef.current = true;
-    void refetchProductDetail().finally(() => {
-      isUnlockRefetchingRef.current = false;
-    });
-  }, [refetchProductDetail]);
 
   useEffect(() => {
     if (purchaseIntentHandledRef.current) {
@@ -582,49 +739,6 @@ const ProductDetail = (): ReactElement => {
   }, [productId, isAuthenticated, isPurchaseDialogOpen, redirectToLoginForPurchase]);
 
   useEffect(() => {
-    if (!product) {
-      return;
-    }
-
-    if (focusChapterKey) {
-      const chapterExists = product.chapters.some((chapter) => chapter.key === focusChapterKey);
-
-      if (chapterExists) {
-        setExpandedChapterKeys(new Set([focusChapterKey]));
-        setActiveChapterKey(focusChapterKey);
-        return;
-      }
-    }
-
-    setExpandedChapterKeys(
-      defaultExpandedChapterKey ? new Set([defaultExpandedChapterKey]) : new Set()
-    );
-    setActiveChapterKey(defaultExpandedChapterKey);
-  }, [product, defaultExpandedChapterKey, focusChapterKey]);
-
-  useEffect(() => {
-    if (!focusChapterKey || !product?.chapters.some((chapter) => chapter.key === focusChapterKey)) {
-      return;
-    }
-
-    pendingChapterNavigationRef.current = focusChapterKey;
-    setActiveChapterKey(focusChapterKey);
-
-    const frameId = window.requestAnimationFrame(() => {
-      scrollToProductChapter(focusChapterKey);
-    });
-
-    const clearTimerId = window.setTimeout(() => {
-      clearPendingChapterNavigation();
-    }, 900);
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-      window.clearTimeout(clearTimerId);
-    };
-  }, [clearPendingChapterNavigation, product, focusChapterKey, expandedChapterKeys]);
-
-  useEffect(() => {
     const paymentStatus = searchParams.get("payment");
     if (!paymentStatus) {
       return;
@@ -635,9 +749,9 @@ const ProductDetail = (): ReactElement => {
 
     if (paymentStatus === "success") {
       showSuccess(
-        refId
-          ? `پرداخت با موفقیت انجام شد. کد پیگیری: ${refId}`
-          : "پرداخت با موفقیت انجام شد و دسترسی محصول فعال شد."
+        refId ?
+          `پرداخت با موفقیت انجام شد. کد پیگیری: ${refId}`
+        : "پرداخت با موفقیت انجام شد و دسترسی محصول فعال شد."
       );
       void refetchProductDetail();
     } else if (paymentStatus === "cancelled") {
@@ -669,7 +783,6 @@ const ProductDetail = (): ReactElement => {
       }
 
       const rect = purchaseCard.getBoundingClientRect();
-      // Only reveal after the purchase card has scrolled above the viewport, not when it is below the fold.
       setIsMobilePriceBarVisible(rect.bottom <= 0);
     };
 
@@ -708,10 +821,6 @@ const ProductDetail = (): ReactElement => {
       if (pendingSectionTabRef.current) {
         clearPendingSectionTab();
       }
-
-      if (pendingChapterNavigationRef.current) {
-        clearPendingChapterNavigation();
-      }
     };
 
     window.addEventListener("scrollend", handleScrollEnd, { passive: true });
@@ -719,7 +828,7 @@ const ProductDetail = (): ReactElement => {
     return () => {
       window.removeEventListener("scrollend", handleScrollEnd);
     };
-  }, [clearPendingChapterNavigation, clearPendingSectionTab]);
+  }, [clearPendingSectionTab]);
 
   useEffect(() => {
     if (!product) {
@@ -746,29 +855,6 @@ const ProductDetail = (): ReactElement => {
     };
   }, [product]);
 
-  useEffect(() => {
-    if (!product || isSingleChapter || chapterKeys.length === 0) {
-      return undefined;
-    }
-
-    const syncActiveChapterFromScroll = (): void => {
-      if (pendingChapterNavigationRef.current) {
-        return;
-      }
-
-      setActiveChapterKey(resolveActiveChapterKeyFromScroll(chapterKeys));
-    };
-
-    syncActiveChapterFromScroll();
-    window.addEventListener("scroll", syncActiveChapterFromScroll, { passive: true });
-    window.addEventListener("resize", syncActiveChapterFromScroll);
-
-    return () => {
-      window.removeEventListener("scroll", syncActiveChapterFromScroll);
-      window.removeEventListener("resize", syncActiveChapterFromScroll);
-    };
-  }, [chapterKeys, product, isSingleChapter]);
-
   const handlePrimaryProductAction = (): void => {
     if (canAccessProduct) {
       document.getElementById("product-content")?.scrollIntoView({ behavior: "smooth" });
@@ -787,63 +873,6 @@ const ProductDetail = (): ReactElement => {
     navigate(`${APP_SHELL_ROUTES.products}/${productId}/purchase`);
   };
 
-  const toggleChapter = (chapterKey: string): void => {
-    setExpandedChapterKeys((current) => {
-      const next = new Set(current);
-      if (next.has(chapterKey)) {
-        next.delete(chapterKey);
-      } else {
-        next.add(chapterKey);
-      }
-      return next;
-    });
-  };
-
-  const handleChapterNavigate = useCallback(
-    (chapterKey: string): void => {
-      pendingChapterNavigationRef.current = chapterKey;
-      setActiveChapterKey(chapterKey);
-      setExpandedChapterKeys((current) => {
-        if (current.has(chapterKey)) {
-          return current;
-        }
-
-        return new Set([...current, chapterKey]);
-      });
-
-      if (pendingChapterNavigationClearTimerRef.current != null) {
-        window.clearTimeout(pendingChapterNavigationClearTimerRef.current);
-      }
-
-      scrollToProductChapter(chapterKey);
-
-      pendingChapterNavigationClearTimerRef.current = window.setTimeout(() => {
-        clearPendingChapterNavigation();
-      }, 900);
-    },
-    [clearPendingChapterNavigation]
-  );
-
-  const closeItemViewer = (): void => {
-    if (selectedItemViewer) {
-      clearMaxRouteOwner(selectedItemViewer.previewId);
-    }
-    setSelectedItemViewer(null);
-    navigate(buildCloseMaxRouteLocation(location.pathname, searchParams));
-  };
-
-  const openItemViewer = (viewer: ProductItemViewer): void => {
-    setMaxRouteOwner(viewer.previewId);
-    setSelectedItemViewer(viewer);
-    navigate(buildMaxRouteLocation(location.pathname, searchParams));
-  };
-
-  useEffect(() => {
-    if (!isMaxRouteOpen) {
-      setSelectedItemViewer(null);
-    }
-  }, [isMaxRouteOpen]);
-
   const closePurchaseDialog = (): void => {
     if (!productId) {
       return;
@@ -854,47 +883,6 @@ const ProductDetail = (): ReactElement => {
   const handlePurchaseSuccess = (): void => {
     closePurchaseDialog();
     void refetchProductDetail();
-  };
-
-  const canTrackChapterProgress = canAccessProduct && isAuthenticated && isPaidPurchase;
-  const hasProductProgress = (product?.completedChapterCount ?? 0) > 0;
-
-  const handleChapterComplete = async (chapterKey: string, chapterTitle: string): Promise<void> => {
-    if (!productId || completingChapterKey) {
-      return;
-    }
-
-    setCompletingChapterKey(chapterKey);
-    try {
-      const result = await completeChapter({
-        variables: {
-          input: {
-            productId,
-            chapterKey,
-          },
-        },
-      });
-
-      const completedCount = result.data?.productChapterComplete.completedChapterCount ?? 0;
-      const accessibleCount = result.data?.productChapterComplete.accessibleChapterCount ?? 0;
-
-      showSuccess(
-        isSingleChapter || (accessibleCount > 0 && completedCount >= accessibleCount)
-          ? isSingleChapter
-            ? "محتوای محصول را با موفقیت به پایان رساندید!"
-            : `بخش «${chapterTitle}» تکمیل شد. همه بخش‌های در دسترس را به پایان رساندید!`
-          : `بخش «${chapterTitle}» با موفقیت تکمیل شد.`
-      );
-      await refetchProductDetail();
-    } catch (error) {
-      showErrorIfNotQueued(showError, error);
-    } finally {
-      setCompletingChapterKey(null);
-    }
-  };
-
-  const handleGoToNextChapter = (nextChapterKey: string): void => {
-    handleChapterNavigate(nextChapterKey);
   };
 
   if (!productId) {
@@ -933,6 +921,16 @@ const ProductDetail = (): ReactElement => {
     );
   }
 
+  const purchaseCardAccessCaption = getPurchaseCardAccessCaption();
+  const catalogStatsLabel = [
+    sortedSetPieces.length > 0 ?
+      `${sortedSetPieces.length.toLocaleString("fa-IR")} قطعه`
+    : null,
+    product.fabrics.length > 0 ? `${product.fabrics.length.toLocaleString("fa-IR")} پارچه` : null,
+  ]
+    .filter(Boolean)
+    .join(" / ");
+
   return (
     <section className={`${styles.page} ${styles.pageWithSectionTabs}`}>
       <ProductDetailSectionTabs
@@ -954,40 +952,18 @@ const ProductDetail = (): ReactElement => {
           />
         </div>
 
-        <div className={styles.heroMedia}>
-          {coverImageUrl ? (
-            <CachedFileImage
-              accessUrl={product?.coverImageAccessUrl}
-              networkUrl={coverImageNetworkUrl}
-              alt={product.title}
-              className={styles.heroCoverImage}
-            />
-          ) : (
-            <>
-              <div className={styles.heroGlow} />
-              <AutoStoriesRoundedIcon className={styles.heroIcon} />
-            </>
-          )}
-          <div className={styles.heroStats}>
-            <span>
-              {isSingleChapter
-                ? `${totalItems.toLocaleString("fa-IR")} آیتم`
-                : `${product.chapters.length.toLocaleString("fa-IR")} بخش / ${totalItems.toLocaleString("fa-IR")} آیتم`}
-            </span>
-          </div>
+        <div className={styles.heroMediaWrap}>
+          <CoverImageGallery title={product.title} coverImageAccessUrls={product.coverImageAccessUrls} />
+          {catalogStatsLabel ? (
+            <div className={styles.heroStats}>
+              <span>{catalogStatsLabel}</span>
+            </div>
+          ) : null}
         </div>
 
         <div className={styles.heroBody}>
-          <div className={styles.kickerRow}>
-            <Chip
-              size="small"
-              variant="outlined"
-              label={product.releaseType === "GRADUAL" ? "انتشار تدریجی" : "انتشار فوری"}
-            />
-          </div>
-
           <h1>{product.title}</h1>
-          {product.description?.trim() ? <p>{product.description.trim()}</p> : null}
+          {product.summary?.trim() ? <p>{product.summary.trim()}</p> : null}
 
           {product.tags.length > 0 ? (
             <div className={styles.tags}>
@@ -1020,43 +996,35 @@ const ProductDetail = (): ReactElement => {
           <Button
             variant="contained"
             size="large"
-            startIcon={canAccessProduct ? <PlayCircleRoundedIcon /> : <ShoppingCartRoundedIcon />}
+            startIcon={canAccessProduct ? <ViewModuleRoundedIcon /> : <ShoppingCartRoundedIcon />}
             onClick={handlePrimaryProductAction}
             disabled={hasPendingPurchase || isPurchaseBlocked}
           >
-            {canAccessProduct
-              ? hasProductProgress
-                ? "ادامه محصول"
-                : "شروع محصول"
-              : hasPendingManualReview
-                ? "در انتظار تایید پرداخت"
-                : isPurchaseBlocked
-                  ? "خرید موقتاً غیرفعال"
-                  : "خرید محصول"}
+            {canAccessProduct ?
+              "مشاهده کاتالوگ"
+            : hasPendingManualReview ?
+              "در انتظار تایید پرداخت"
+            : isPurchaseBlocked ?
+              "خرید موقتاً غیرفعال"
+            : "خرید محصول"}
           </Button>
-          {isPurchaseBlocked ? (
+          {isPurchaseBlocked ?
             <Typography variant="caption" color="text.secondary">
               {t("errors.exceptions.PAYMENTS_TEMPORARILY_DISABLED")}
             </Typography>
-          ) : hasPendingManualReview ? (
+          : hasPendingManualReview ?
             <Typography variant="caption" color="text.secondary">
               درخواست پرداخت شما ثبت شده و در حال بررسی است. پس از تایید، دسترسی محصول فعال می‌شود.
             </Typography>
-          ) : !canAccessProduct ? (
+          : !canAccessProduct ?
             <Typography variant="caption" color="text.secondary">
               {purchaseCardAccessCaption}
             </Typography>
-          ) : hasGradualLockedChapters ? (
-            <Typography variant="caption" color="text.secondary">
-              {isSingleChapter
-                ? "محتوای محصول طبق زمان‌بندی انتشار تدریجی به‌تدریج باز می‌شود."
-                : "برخی بخش‌ها طبق زمان‌بندی انتشار تدریجی به‌تدریج باز می‌شوند."}
-            </Typography>
-          ) : null}
+          : null}
         </aside>
       </Paper>
 
-      {shouldShowMobilePinnedPriceBar ? (
+      {shouldShowMobilePinnedPriceBar ?
         <div
           className={`${styles.mobilePinnedPriceBar}${
             isMobilePriceBarVisible ? ` ${styles.mobilePinnedPriceBarVisible}` : ""
@@ -1068,11 +1036,9 @@ const ProductDetail = (): ReactElement => {
             <span>{product.isFree ? "دسترسی رایگان" : "قیمت محصول"}</span>
             <div className={styles.mobilePinnedPriceLine}>
               <strong>{formatProductPrice(displayPrice)}</strong>
-              {discountedPrice != null ? (
-                discountLabel ? (
-                  <span className={styles.mobilePinnedDiscountBadge}>{discountLabel}</span>
-                ) : null
-              ) : null}
+              {discountedPrice != null && discountLabel ?
+                <span className={styles.mobilePinnedDiscountBadge}>{discountLabel}</span>
+              : null}
             </div>
           </div>
           <Button
@@ -1085,278 +1051,58 @@ const ProductDetail = (): ReactElement => {
             خرید
           </Button>
         </div>
-      ) : null}
+      : null}
 
       <div id="product-content" className={`${styles.contentLayout} ${styles.sectionScrollTarget}`}>
         <div className={styles.contentHeader}>
           <div>
-            <h2>{isSingleChapter ? "جزئیات محصول" : "گالری و مشخصات محصول"}</h2>
+            <h2>کاتالوگ و مشخصات</h2>
             <p>
-              {productContentIntroText}
-              {productContentAccessNoteText}
+              {canAccessProduct ?
+                "جزئیات قطعات، متریال، پارچه‌ها و اطلاعات تکمیلی محصول را در این بخش ببینید."
+              : "برای مشاهده کاتالوگ کامل، ابتدا محصول را خریداری کنید."}
             </p>
           </div>
           {loading ? <CircularProgress size={22} /> : null}
         </div>
 
-        <div
-          className={`${styles.chapterList}${isSingleChapter ? ` ${styles.chapterListSingle}` : ""}`}
-        >
-          {product.chapters.map((chapter, chapterIndex) => {
-            const isExpanded = isSingleChapter || expandedChapterKeys.has(chapter.key);
-            const isGradualLock = isGradualChapterLock(chapter);
-            const chapterItems = chapter.items ?? [];
-            const isActiveChapter = !isSingleChapter && activeChapterKey === chapter.key;
-            const isReachedChapter =
-              !isSingleChapter &&
-              activeChapterKey != null &&
-              chapterKeys.indexOf(activeChapterKey) >= chapterIndex;
-            const nextUnlockedChapter = product.chapters
-              .slice(chapterIndex + 1)
-              .find((entry) => !entry.isLocked);
-            const showChapterCompletion = canTrackChapterProgress && !chapter.isLocked;
+        {canAccessProduct ?
+          <>
+            {product.fabrics.length > 0 ? <FabricSelector fabrics={product.fabrics} /> : null}
 
-            return (
-              <Paper
-                key={chapter.key}
-                id={`product-chapter-${chapter.key}`}
-                className={[
-                  styles.chapterCard,
-                  isSingleChapter ? styles.chapterCardSingle : "",
-                  chapter.isLocked ? styles.chapterLocked : "",
-                  chapter.isCompleted ? styles.chapterCompleted : "",
-                  isActiveChapter ? styles.chapterCardActive : "",
-                  isReachedChapter ? styles.chapterCardReached : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                elevation={0}
-              >
-                {!isSingleChapter ? (
-                  <button
-                    type="button"
-                    className={[
-                      styles.chapterPathButton,
-                      isReachedChapter ? styles.chapterPathButtonReached : "",
-                      isActiveChapter ? styles.chapterPathButtonActive : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                    aria-label={`رفتن به ابتدای بخش ${chapter.title}`}
-                    aria-current={isActiveChapter ? "step" : undefined}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handleChapterNavigate(chapter.key);
-                    }}
-                  />
-                ) : null}
-                {isSingleChapter ? (
-                  <div className={styles.chapterHeaderStatic}>
-                    <span className={styles.chapterTitleBlock}>
-                      {chapter.title.trim() ? (
-                        <span className={styles.chapterTitle}>{chapter.title}</span>
-                      ) : null}
-                    </span>
-                    <span className={styles.chapterMeta}>
-                      {chapter.isLocked ? (
-                        <Chip
-                          size="small"
-                          icon={<LockRoundedIcon />}
-                          label={isGradualLock ? "زمان‌بندی‌شده" : "قفل"}
-                          variant="outlined"
-                          className={styles.chapterLockChip}
-                        />
-                      ) : chapter.isCompleted ? (
-                        <Chip
-                          size="small"
-                          icon={<CheckCircleRoundedIcon />}
-                          label="تکمیل‌شده"
-                          color="success"
-                          variant="filled"
-                          className={styles.chapterCompletedChip}
-                        />
-                      ) : chapter.isFree ? (
-                        <Chip
-                          size="small"
-                          icon={<CardGiftcardRoundedIcon />}
-                          label="رایگان"
-                          color="success"
-                          variant="filled"
-                        />
-                      ) : null}
-                    </span>
-                    {chapter.description?.trim() ? (
-                      <span className={styles.chapterDescription}>
-                        {chapter.description.trim()}
-                      </span>
-                    ) : null}
-                  </div>
-                ) : (
-                  <div className={styles.chapterHeader}>
-                    <span
-                      className={[
-                        styles.chapterStep,
-                        chapter.isCompleted ? styles.chapterStepCompleted : "",
-                        isActiveChapter ? styles.chapterStepActive : "",
-                        isReachedChapter ? styles.chapterStepReached : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                    >
-                      <button
-                        type="button"
-                        className={styles.chapterStepButton}
-                        aria-label={`رفتن به ابتدای بخش ${chapter.title}`}
-                        aria-current={isActiveChapter ? "step" : undefined}
-                        onClick={() => handleChapterNavigate(chapter.key)}
-                      >
-                        <span className={styles.chapterNumber}>
-                          {(chapterIndex + 1).toLocaleString("fa-IR")}
-                        </span>
-                      </button>
-                      {chapter.isCompleted ? (
-                        <span className={styles.chapterStepTick} aria-label="تکمیل شده">
-                          <CheckRoundedIcon />
-                        </span>
-                      ) : null}
-                    </span>
-                    <button
-                      type="button"
-                      className={styles.chapterHeaderToggle}
-                      onClick={() => toggleChapter(chapter.key)}
-                      aria-expanded={isExpanded}
-                      aria-controls={`chapter-panel-${chapter.key}`}
-                    >
-                      <span className={styles.chapterTitleBlock}>
-                        <span className={styles.chapterTitle}>{chapter.title}</span>
-                      </span>
-                      <span className={styles.chapterMeta}>
-                        {chapter.isLocked ? (
-                          <Chip
-                            size="small"
-                            icon={<LockRoundedIcon />}
-                            label={isGradualLock ? "زمان‌بندی‌شده" : "قفل"}
-                            variant="outlined"
-                            className={styles.chapterLockChip}
-                          />
-                        ) : chapter.isCompleted ? (
-                          <Chip
-                            size="small"
-                            icon={<CheckCircleRoundedIcon />}
-                            label="تکمیل‌شده"
-                            color="success"
-                            variant="filled"
-                            className={styles.chapterCompletedChip}
-                          />
-                        ) : chapter.isFree ? (
-                          <Chip
-                            size="small"
-                            icon={<CardGiftcardRoundedIcon />}
-                            label="رایگان"
-                            color="success"
-                            variant="filled"
-                          />
-                        ) : null}
-                        <ExpandMoreRoundedIcon
-                          className={`${styles.expandIcon}${isExpanded ? ` ${styles.expandIconOpen}` : ""}`}
-                        />
-                      </span>
-                      {chapter.description?.trim() ? (
-                        <span className={styles.chapterDescription}>
-                          {chapter.description.trim()}
-                        </span>
-                      ) : null}
-                    </button>
-                  </div>
-                )}
+            {sortedSetPieces.length > 0 ?
+              <div className={styles.setPieceGrid}>
+                {sortedSetPieces.map((setPiece) => (
+                  <SetPieceCard key={setPiece.key} setPiece={setPiece} />
+                ))}
+              </div>
+            : (
+              <p className={styles.emptyCatalogMessage}>قطعه‌ای برای این محصول ثبت نشده است.</p>
+            )}
 
-                <Collapse in={isExpanded} timeout="auto" unmountOnExit={!isSingleChapter}>
-                  <div id={`chapter-panel-${chapter.key}`} className={styles.chapterPanel}>
-                    {chapter.isLocked ? (
-                      <div
-                        className={`${styles.lockedNotice}${
-                          isGradualLock ? ` ${styles.gradualLockedNotice}` : ""
-                        }`}
-                      >
-                        {isGradualLock ? (
-                          <ChapterUnlockNotice
-                            unlocksAt={chapter.unlocksAt}
-                            fallbackMessage={
-                              isSingleChapter
-                                ? "محتوای محصول طبق زمان‌بندی انتشار تدریجی به‌زودی قابل مشاهده خواهد بود."
-                                : "این بخش طبق زمان‌بندی انتشار تدریجی به‌زودی قابل مشاهده خواهد بود."
-                            }
-                            isSingleChapter={isSingleChapter}
-                            onExpired={handleChapterUnlockExpired}
-                          />
-                        ) : (
-                          <>
-                            <LockRoundedIcon />
-                            <span>
-                              {isSingleChapter
-                                ? "برای مشاهده آیتم‌های محصول، آن را خریداری کنید."
-                                : "برای مشاهده آیتم‌های این بخش، محصول را خریداری کنید."}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    ) : (
-                      <div className={styles.itemList}>
-                        {chapterItems.length === 0 ? (
-                          <p className={styles.emptyItems}>
-                            {isSingleChapter
-                              ? "آیتمی برای این محصول ثبت نشده است."
-                              : "آیتمی برای این بخش ثبت نشده است."}
-                          </p>
-                        ) : (
-                          chapterItems.map((item, itemIndex) => (
-                            <article
-                              key={`${chapter.key}-${item.title}-${itemIndex}`}
-                              className={styles.itemCard}
-                            >
-                              <div className={styles.itemMarker}>
-                                <div className={styles.itemIcon}>{ITEM_TYPE_ICON[item.type]}</div>
-                              </div>
-                              <div className={styles.itemBody}>
-                                <div className={styles.itemTitleRow}>
-                                  <h4>{item.title}</h4>
-                                </div>
-                              </div>
-                              <div className={styles.itemContent}>
-                                <ProductItemContent
-                                  item={item}
-                                  chapterKey={chapter.key}
-                                  itemIndex={itemIndex}
-                                  onOpenArticle={openItemViewer}
-                                />
-                              </div>
-                            </article>
-                          ))
-                        )}
-                        {showChapterCompletion ? (
-                          <ChapterCompletionCheckpoint
-                            chapterTitle={chapter.title}
-                            isCompleted={chapter.isCompleted}
-                            canComplete={showChapterCompletion}
-                            isSubmitting={completingChapterKey === chapter.key}
-                            hasNextChapter={Boolean(nextUnlockedChapter)}
-                            isSingleChapter={isSingleChapter}
-                            onConfirm={() => void handleChapterComplete(chapter.key, chapter.title)}
-                            onGoToNextChapter={
-                              nextUnlockedChapter
-                                ? () => handleGoToNextChapter(nextUnlockedChapter.key)
-                                : undefined
-                            }
-                          />
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-                </Collapse>
+            <div className={styles.catalogCardsRow}>
+              {product.materialProfile ? (
+                <MaterialProfileCard materialProfile={product.materialProfile} />
+              ) : null}
+              {product.vendor ? <VendorCard vendor={product.vendor} /> : null}
+            </div>
+
+            {product.fullDescription?.trim() ?
+              <Paper className={styles.catalogDescriptionCard} elevation={0}>
+                <h3>توضیحات کامل</h3>
+                <RichTextBox mode="render" label="" value={product.fullDescription.trim()} hideLabel />
               </Paper>
-            );
-          })}
-        </div>
+            : null}
+          </>
+        : (
+          <div className={styles.contentLockedNotice}>
+            <LockRoundedIcon />
+            <div>
+              <strong>کاتالوگ محصول قفل است</strong>
+              <p>برای مشاهده قطعات، پارچه‌ها و پیش‌نمایش هوشمند، محصول را خریداری کنید.</p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className={styles.sectionContentSeparator} role="separator" aria-hidden="true" />
@@ -1373,7 +1119,7 @@ const ProductDetail = (): ReactElement => {
           <p>امتیاز شرکت‌کنندگان و تجربه واقعی استفاده از محصول</p>
         </div>
 
-        {productId ? (
+        {productId ?
           <ProductReviewsSection
             productId={productId}
             reviewList={reviewList}
@@ -1390,42 +1136,10 @@ const ProductDetail = (): ReactElement => {
               isReviewSubmissionEnabled: product?.isReviewSubmissionEnabled,
             })}
           />
-        ) : null}
+        : null}
       </section>
 
-      <EntityModalShell
-        open={isMaxRouteOpen && selectedItemViewer != null}
-        onClose={closeItemViewer}
-        title={selectedItemViewer?.title ?? "نمایش محتوا"}
-        subtitle="نمایش کامل محتوای درس"
-        maxWidth="lg"
-        disableAutoFocus
-        disableRestoreFocus
-        showVisibleScrollbar
-        footer={
-          <ModalFooterActions
-            actions={[
-              {
-                key: "close",
-                isCloseButton: true,
-                onClick: closeItemViewer,
-              },
-            ]}
-          />
-        }
-      >
-        {selectedItemViewer?.article ? (
-          <div
-            className={`${richTextStyles.renderDialogContent} ${richTextStyles.renderDialogContentMax}`}
-            dir="rtl"
-            dangerouslySetInnerHTML={{
-              __html: applyBlankTargetToRichTextLinks(selectedItemViewer.article),
-            }}
-          />
-        ) : null}
-      </EntityModalShell>
-
-      {PAYMENTS_ENABLED ? (
+      {PAYMENTS_ENABLED ?
         <ProductPurchaseDialog
           open={isPurchaseDialogOpen}
           onClose={closePurchaseDialog}
@@ -1436,7 +1150,7 @@ const ProductDetail = (): ReactElement => {
           discountLabel={discountLabel}
           coverImageUrl={coverImageUrl}
         />
-      ) : null}
+      : null}
     </section>
   );
 };

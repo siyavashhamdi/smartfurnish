@@ -1,16 +1,73 @@
 import type { FileAccessUrl } from "../../utils/fileAccessUrl.util";
 import { isNativeAndroidShell } from "../../utils/nativePlatform.util";
 
-export type ProductItemType = "ARTICLE" | "VIDEO" | "VOICE" | "IMAGE";
-export type ProductReleaseType = "IMMEDIATE" | "GRADUAL";
 export type ProductDiscountType = "PERCENTAGE" | "FIXED_AMOUNT_IRT";
 export type SortOrder = "ASC" | "DESC";
+
+export type ProductMaterialCompositionRow = {
+  readonly label: string;
+  readonly material?: string | null;
+  readonly texture?: string | null;
+  readonly percentage?: number | null;
+};
+
+export type ProductMaterialProfileRow = {
+  readonly texture?: string | null;
+  readonly primaryMaterial?: string | null;
+  readonly secondaryMaterials?: string[] | null;
+  readonly composition?: ProductMaterialCompositionRow[] | null;
+  readonly careInstructions?: string | null;
+};
+
+export type ProductVendorRow = {
+  readonly name: string;
+  readonly phone?: string | null;
+  readonly address?: string | null;
+  readonly notes?: string | null;
+};
+
+export type ProductSetPieceDimensionRow = {
+  readonly label?: string | null;
+  readonly displayText?: string | null;
+  readonly widthCm?: number | null;
+  readonly heightCm?: number | null;
+  readonly depthCm?: number | null;
+  readonly sortOrder?: number | null;
+};
+
+export type ProductFabricColorRow = {
+  readonly key: string;
+  readonly name: string;
+  readonly hexCode?: string | null;
+  readonly sortOrder?: number | null;
+  readonly isActive: boolean;
+  readonly aiProductImageAccessUrl?: FileAccessUrl | null;
+};
+
+export type ProductFabricRow = {
+  readonly key: string;
+  readonly patternName: string;
+  readonly sortOrder?: number | null;
+  readonly isActive: boolean;
+  readonly colors: ProductFabricColorRow[];
+};
+
+export type ProductSetPieceRow = {
+  readonly key: string;
+  readonly name: string;
+  readonly description?: string | null;
+  readonly sortOrder?: number | null;
+  readonly imageAccessUrls: FileAccessUrl[];
+  readonly dimensions: ProductSetPieceDimensionRow[];
+  readonly weightKg?: number | null;
+  readonly materialProfile?: ProductMaterialProfileRow | null;
+};
 
 export type ProductListItemRow = {
   readonly id: string;
   readonly title: string;
-  readonly description?: string | null;
-  readonly coverImageAccessUrl?: FileAccessUrl | null;
+  readonly summary?: string | null;
+  readonly coverImageAccessUrls: FileAccessUrl[];
   readonly priceIrt?: number | null;
   readonly discount?: {
     readonly type: ProductDiscountType;
@@ -19,33 +76,17 @@ export type ProductListItemRow = {
   readonly isActive?: boolean;
   readonly sortOrder?: number | null;
   readonly tags: string[];
-  readonly releaseType: ProductReleaseType;
-  readonly chapterCount: number;
-  readonly itemCount: number;
-  readonly itemTypes: ProductItemType[];
+  readonly setPieceCount: number;
+  readonly fabricCount: number;
   readonly isPurchased?: boolean | null;
-};
-
-export type ProductDetailChapterRow = {
-  readonly title: string;
-  readonly description?: string | null;
-  readonly visibleAfterMinutes?: number | null;
-  readonly isFree: boolean;
-  readonly sortOrder?: number | null;
-  readonly items: Array<{
-    readonly title: string;
-    readonly sortOrder?: number | null;
-    readonly fileAccessUrl?: FileAccessUrl | null;
-    readonly article?: string | null;
-    readonly type: ProductItemType;
-  }>;
 };
 
 export type ProductDetailItemRow = {
   readonly id: string;
   readonly title: string;
-  readonly description?: string | null;
-  readonly coverImageAccessUrl?: FileAccessUrl | null;
+  readonly summary?: string | null;
+  readonly fullDescription?: string | null;
+  readonly coverImageAccessUrls: FileAccessUrl[];
   readonly priceIrt?: number | null;
   readonly discount?: {
     readonly type: ProductDiscountType;
@@ -54,8 +95,15 @@ export type ProductDetailItemRow = {
   readonly isActive?: boolean;
   readonly isReviewSubmissionEnabled?: boolean;
   readonly isReviewsSectionVisible?: boolean;
+  readonly sortOrder?: number | null;
   readonly tags: string[];
-  readonly chapters: ProductDetailChapterRow[];
+  readonly notes?: string | null;
+  readonly vendor?: ProductVendorRow | null;
+  readonly materialProfile?: ProductMaterialProfileRow | null;
+  readonly setPieces: ProductSetPieceRow[];
+  readonly fabrics: ProductFabricRow[];
+  readonly createdAt?: string | null;
+  readonly updatedAt?: string | null;
 };
 
 export type ProductDetailQuery = {
@@ -86,10 +134,7 @@ export type ProductListQuery = {
 type ProductListFilterInput = {
   query?: string | null;
   isActive?: boolean | null;
-  releaseType?: ProductReleaseType | null;
-  itemType?: ProductItemType | null;
   hasPrice?: boolean | null;
-  hasFreeChapter?: boolean | null;
   isPurchased?: boolean | null;
   includeUserId?: string | null;
   minPriceIrt?: number | null;
@@ -120,8 +165,8 @@ export type ProductListQueryVariables = {
 export type ProductListRecord = {
   readonly id: string;
   readonly title: string;
-  readonly description: string;
-  readonly coverImageAccessUrl: FileAccessUrl | null;
+  readonly summary: string;
+  readonly coverImageAccessUrls: FileAccessUrl[];
   readonly priceIrt: number | null;
   readonly discount: {
     readonly type: ProductDiscountType;
@@ -130,18 +175,17 @@ export type ProductListRecord = {
   readonly isActive: boolean;
   readonly sortOrder: number;
   readonly tags: string[];
-  readonly releaseType: ProductReleaseType;
-  readonly itemTypes: ProductItemType[];
-  readonly chapterCount: number;
-  readonly itemCount: number;
+  readonly setPieceCount: number;
+  readonly fabricCount: number;
   readonly isPurchased: boolean;
 };
 
 export type ProductEditRecord = {
   readonly id: string;
   readonly title: string;
-  readonly description: string;
-  readonly coverImageAccessUrl: FileAccessUrl | null;
+  readonly summary: string;
+  readonly fullDescription: string;
+  readonly coverImageAccessUrls: FileAccessUrl[];
   readonly priceIrt: number | null;
   readonly discount: {
     readonly type: ProductDiscountType;
@@ -150,30 +194,19 @@ export type ProductEditRecord = {
   readonly isActive: boolean;
   readonly isReviewSubmissionEnabled: boolean;
   readonly isReviewsSectionVisible: boolean;
+  readonly sortOrder: number | null;
   readonly tags: string[];
-  readonly chapters: Array<{
-    readonly title: string;
-    readonly description: string;
-    readonly visibleAfterMinutes: number | null;
-    readonly isFree: boolean;
-    readonly sortOrder: number | null;
-    readonly items: Array<{
-      readonly title: string;
-      readonly sortOrder: number | null;
-      readonly fileAccessUrl: FileAccessUrl | null;
-      readonly article: string;
-      readonly type: ProductItemType;
-    }>;
-  }>;
+  readonly notes: string;
+  readonly vendor: ProductVendorRow | null;
+  readonly materialProfile: ProductMaterialProfileRow | null;
+  readonly setPieces: ProductSetPieceRow[];
+  readonly fabrics: ProductFabricRow[];
 };
 
 export type ProductListFilters = {
   readonly query: string;
   readonly isActive: "ALL" | "ACTIVE" | "INACTIVE";
-  readonly releaseType: "ALL" | ProductReleaseType;
-  readonly itemType: "ALL" | ProductItemType;
   readonly hasPrice: "ALL" | "WITH_PRICE" | "FREE_OR_UNSET";
-  readonly hasFreeChapter: "ALL" | "YES" | "NO";
   readonly isPurchased: "ALL" | "YES" | "NO";
   readonly minPriceIrt: string;
   readonly maxPriceIrt: string;
@@ -196,10 +229,7 @@ export type ProductListSort = {
 export const DEFAULT_PRODUCT_LIST_FILTERS: ProductListFilters = {
   query: "",
   isActive: "ALL",
-  releaseType: "ALL",
-  itemType: "ALL",
   hasPrice: "ALL",
-  hasFreeChapter: "ALL",
   isPurchased: "ALL",
   minPriceIrt: "",
   maxPriceIrt: "",
@@ -210,6 +240,12 @@ export const DEFAULT_PRODUCT_LIST_SORT: ProductListSort = {
   field: "sortOrder",
   order: "DESC",
 };
+
+export function getPrimaryCoverImageAccessUrl(
+  coverImageAccessUrls: readonly FileAccessUrl[]
+): FileAccessUrl | null {
+  return coverImageAccessUrls[0] ?? null;
+}
 
 export function isProductFreeForList(
   item: Pick<ProductListRecord, "priceIrt" | "discount">
@@ -256,8 +292,8 @@ export function mapProductListRowToRecord(row: ProductListItemRow): ProductListR
   return {
     id: row.id,
     title: row.title,
-    description: row.description?.trim() || "",
-    coverImageAccessUrl: row.coverImageAccessUrl ?? null,
+    summary: row.summary?.trim() || "",
+    coverImageAccessUrls: row.coverImageAccessUrls ?? [],
     priceIrt: typeof row.priceIrt === "number" ? row.priceIrt : null,
     discount:
       row.discount && typeof row.discount.value === "number"
@@ -269,10 +305,8 @@ export function mapProductListRowToRecord(row: ProductListItemRow): ProductListR
     isActive: row.isActive ?? true,
     sortOrder: typeof row.sortOrder === "number" ? row.sortOrder : 0,
     tags: row.tags || [],
-    releaseType: row.releaseType,
-    itemTypes: row.itemTypes || [],
-    chapterCount: row.chapterCount,
-    itemCount: row.itemCount,
+    setPieceCount: row.setPieceCount ?? 0,
+    fabricCount: row.fabricCount ?? 0,
     isPurchased: row.isPurchased === true,
   };
 }
@@ -281,8 +315,9 @@ export function mapProductDetailRowToRecord(row: ProductDetailItemRow): ProductE
   return {
     id: row.id,
     title: row.title,
-    description: row.description?.trim() || "",
-    coverImageAccessUrl: row.coverImageAccessUrl ?? null,
+    summary: row.summary?.trim() || "",
+    fullDescription: row.fullDescription?.trim() || "",
+    coverImageAccessUrls: row.coverImageAccessUrls ?? [],
     priceIrt: typeof row.priceIrt === "number" ? row.priceIrt : null,
     discount:
       row.discount && typeof row.discount.value === "number"
@@ -294,22 +329,13 @@ export function mapProductDetailRowToRecord(row: ProductDetailItemRow): ProductE
     isActive: row.isActive ?? true,
     isReviewSubmissionEnabled: row.isReviewSubmissionEnabled !== false,
     isReviewsSectionVisible: row.isReviewsSectionVisible !== false,
+    sortOrder: typeof row.sortOrder === "number" ? row.sortOrder : null,
     tags: row.tags || [],
-    chapters: row.chapters.map((chapter) => ({
-      title: chapter.title,
-      description: chapter.description?.trim() || "",
-      visibleAfterMinutes:
-        typeof chapter.visibleAfterMinutes === "number" ? chapter.visibleAfterMinutes : null,
-      isFree: chapter.isFree,
-      sortOrder: typeof chapter.sortOrder === "number" ? chapter.sortOrder : null,
-      items: chapter.items.map((item) => ({
-        title: item.title,
-        sortOrder: typeof item.sortOrder === "number" ? item.sortOrder : null,
-        fileAccessUrl: item.fileAccessUrl ?? null,
-        article: item.article?.trim() || "",
-        type: item.type,
-      })),
-    })),
+    notes: row.notes?.trim() || "",
+    vendor: row.vendor ?? null,
+    materialProfile: row.materialProfile ?? null,
+    setPieces: row.setPieces ?? [],
+    fabrics: row.fabrics ?? [],
   };
 }
 
@@ -321,7 +347,7 @@ export type BuildProductListQueryVariablesOptions = {
 /** On Android APK, hide paid catalog entries except on the purchased tab. */
 export function applyAndroidApkFreeProductListFilters(
   filters: ProductListFilters,
-  enabled = true,
+  enabled = true
 ): ProductListFilters {
   if (!enabled || !isNativeAndroidShell() || filters.isPurchased === "YES") {
     return filters;
@@ -338,11 +364,11 @@ export function buildProductListQueryVariables(
   sort: ProductListSort,
   pageSize: number,
   startCursor?: string | null,
-  options?: BuildProductListQueryVariablesOptions,
+  options?: BuildProductListQueryVariablesOptions
 ): ProductListQueryVariables {
   const resolvedFilters = applyAndroidApkFreeProductListFilters(
     filters,
-    options?.restrictToFreeOnAndroidApk ?? false,
+    options?.restrictToFreeOnAndroidApk ?? false
   );
   const query = trimToNull(resolvedFilters.query);
   const tagsAny = parseTags(resolvedFilters.tagsAny);
@@ -355,17 +381,10 @@ export function buildProductListQueryVariables(
         query,
         isActive:
           resolvedFilters.isActive === "ALL" ? null : resolvedFilters.isActive === "ACTIVE",
-        releaseType:
-          resolvedFilters.releaseType === "ALL" ? null : resolvedFilters.releaseType,
-        itemType: resolvedFilters.itemType === "ALL" ? null : resolvedFilters.itemType,
         hasPrice:
           resolvedFilters.hasPrice === "ALL"
             ? null
             : resolvedFilters.hasPrice === "WITH_PRICE",
-        hasFreeChapter:
-          resolvedFilters.hasFreeChapter === "ALL"
-            ? null
-            : resolvedFilters.hasFreeChapter === "YES",
         isPurchased:
           resolvedFilters.isPurchased === "ALL" ? null : resolvedFilters.isPurchased === "YES",
         minPriceIrt,

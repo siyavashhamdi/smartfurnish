@@ -17,7 +17,7 @@ export class UserProductDetailQuery {
   @Query(() => UserProductDetailGqlResponse, {
     name: "userProductDetail",
     description:
-      "Get active product details for anonymous users and END_USER accounts with locked content redacted",
+      "Get active furniture product details for anonymous users and END_USER accounts",
   })
   @UseGuards(OptionalGqlAuthGuard)
   async findUserProductDetail(

@@ -1229,10 +1229,6 @@ body[data-theme="dark"] {
     text-overflow: ellipsis;
   }
 
-  .discountBadge {
-    flex: 0 0 auto;
-  }
-
   .chapterCard {
     animation: none;
   }
@@ -1241,5 +1237,473 @@ body[data-theme="dark"] {
   .chapterCard:hover,
   .chapterStepActive {
     transform: none;
+  }
+}
+
+// --- Furniture catalog layout (product detail) ---
+
+.heroMediaWrap {
+  position: relative;
+  min-block-size: 18rem;
+}
+
+.gallery {
+  display: grid;
+  gap: 0.65rem;
+  block-size: 100%;
+}
+
+.galleryMain {
+  position: relative;
+  min-block-size: 18rem;
+  border-radius: 1.1rem;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.58), transparent 31%),
+    linear-gradient(
+      135deg,
+      variables.$color-gradient-start 0%,
+      variables.$color-gradient-mid 52%,
+      #10b981 100%
+    );
+}
+
+.galleryThumbnails {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  overflow-x: auto;
+  padding-block: 0.1rem;
+  scrollbar-width: thin;
+}
+
+.galleryThumb {
+  flex: 0 0 auto;
+  inline-size: 4.1rem;
+  block-size: 4.1rem;
+  padding: 0;
+  border: 0.14rem solid transparent;
+  border-radius: 0.85rem;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--app-surface-bg) 88%, #ffffff);
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.galleryThumb:hover {
+  transform: translateY(-0.08rem);
+}
+
+.galleryThumbActive {
+  border-color: color-mix(in srgb, variables.$color-info-dark 72%, #ffffff);
+  box-shadow: 0 0.35rem 0.9rem rgba(15, 23, 42, 0.14);
+}
+
+.galleryThumbImage {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.galleryThumbPlaceholder {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  background: color-mix(in srgb, var(--app-surface-border) 55%, transparent);
+}
+
+.fabricSelector {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 72%, transparent);
+  border-radius: 1.15rem !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #ffffff 90%, var(--app-surface-bg)),
+    color-mix(in srgb, #f8fafc 72%, var(--app-surface-bg))
+  );
+}
+
+.fabricSelectorHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  color: color-mix(in srgb, variables.$color-info-dark 78%, #0b100c);
+
+  h3 {
+    margin: 0;
+    font-size: 1.05rem;
+  }
+
+  p {
+    margin: 0.2rem 0 0;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    font-size: 0.88rem;
+  }
+}
+
+.fabricPatterns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.fabricPatternChip {
+  padding: 0.42rem 0.8rem;
+  border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 80%, transparent);
+  border-radius: 999rem;
+  background: color-mix(in srgb, #ffffff 84%, var(--app-surface-bg));
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.fabricPatternChip:hover {
+  transform: translateY(-0.06rem);
+}
+
+.fabricPatternChipActive {
+  border-color: color-mix(in srgb, variables.$color-info-dark 58%, var(--app-surface-border));
+  background: color-mix(in srgb, variables.$color-info-dark 12%, #ffffff);
+}
+
+.fabricColors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.fabricColorSwatch {
+  display: grid;
+  justify-items: center;
+  gap: 0.28rem;
+  min-inline-size: 3.4rem;
+  padding: 0.2rem;
+  border: 0.12rem solid transparent;
+  border-radius: 0.85rem;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.fabricColorSwatch:hover {
+  transform: translateY(-0.06rem);
+}
+
+.fabricColorSwatchActive {
+  border-color: color-mix(in srgb, variables.$color-info-dark 62%, #ffffff);
+  background: color-mix(in srgb, #ffffff 88%, var(--app-surface-bg));
+}
+
+.fabricColorSwatchInner {
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: 999rem;
+  border: 0.0625rem solid rgba(15, 23, 42, 0.12);
+  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+  box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.65);
+}
+
+.fabricColorSwatchLabel {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.fabricPreview {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.75rem;
+  border-radius: 1rem;
+  background: color-mix(in srgb, #ffffff 82%, var(--app-surface-bg));
+  border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 70%, transparent);
+}
+
+.fabricPreviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  span {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 900;
+  }
+
+  strong {
+    color: color-mix(in srgb, variables.$color-info-dark 78%, #0b100c);
+    font-size: 0.9rem;
+  }
+}
+
+.fabricPreviewImage {
+  inline-size: 100%;
+  max-block-size: 24rem;
+  object-fit: cover;
+  border-radius: 0.9rem;
+}
+
+.fabricPreviewPlaceholder {
+  display: grid;
+  place-items: center;
+  min-block-size: 12rem;
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--app-surface-border) 35%, transparent);
+}
+
+.setPieceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr));
+  gap: 0.85rem;
+}
+
+.setPieceCard {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.8rem;
+  border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 72%, transparent);
+  border-radius: 1.05rem;
+  background: color-mix(in srgb, #ffffff 90%, var(--app-surface-bg));
+  box-shadow: 0 0.65rem 1.35rem rgba(15, 23, 42, 0.06);
+}
+
+.setPieceImageWrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.9rem;
+  aspect-ratio: 4 / 3;
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.58), transparent 31%),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, variables.$color-gradient-start 88%, #ffffff),
+      color-mix(in srgb, variables.$color-gradient-mid 72%, #ffffff)
+    );
+}
+
+.setPieceImage {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.setPieceImagePlaceholder {
+  display: grid;
+  place-items: center;
+  block-size: 100%;
+  color: color-mix(in srgb, variables.$color-info-dark 58%, #ffffff);
+
+  :global(.MuiSvgIcon-root) {
+    font-size: 2.4rem;
+  }
+}
+
+.setPieceBody {
+  display: grid;
+  gap: 0.45rem;
+
+  h4 {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.75;
+    font-size: 0.88rem;
+  }
+}
+
+.setPieceDimensions {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: color-mix(in srgb, variables.$color-info-dark 72%, #0b100c);
+    font-size: 0.82rem;
+    font-weight: 800;
+    line-height: 1.5;
+  }
+}
+
+.setPieceWeight {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.catalogCardsRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 0.85rem;
+}
+
+.catalogCard {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 72%, transparent);
+  border-radius: 1.05rem !important;
+  background: color-mix(in srgb, #ffffff 92%, var(--app-surface-bg));
+}
+
+.catalogCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: color-mix(in srgb, variables.$color-info-dark 78%, #0b100c);
+
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+  }
+}
+
+.catalogCardList {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+
+  div {
+    display: grid;
+    gap: 0.15rem;
+  }
+
+  dt {
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    font-weight: 900;
+  }
+
+  dd {
+    margin: 0;
+    line-height: 1.7;
+    font-weight: 700;
+  }
+}
+
+.catalogCompositionList {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: grid;
+    gap: 0.12rem;
+    padding: 0.55rem 0.65rem;
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, variables.$color-info-dark 6%, #ffffff);
+  }
+
+  strong {
+    font-size: 0.84rem;
+  }
+
+  span {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.6;
+  }
+}
+
+.catalogCardNote {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, #f8fafc 80%, var(--app-surface-bg));
+  color: var(--text-secondary);
+  line-height: 1.8;
+  font-size: 0.84rem;
+}
+
+.catalogDescriptionCard {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 72%, transparent);
+  border-radius: 1.05rem !important;
+
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+  }
+}
+
+.contentLockedNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.05rem;
+  border-radius: 1rem;
+  border: 0.0625rem dashed color-mix(in srgb, variables.$color-info-dark 24%, var(--app-surface-border));
+  background: color-mix(in srgb, variables.$color-info-dark 5%, #ffffff);
+  color: color-mix(in srgb, variables.$color-info-dark 78%, #0b100c);
+
+  strong {
+    display: block;
+    margin-block-end: 0.2rem;
+    font-size: 0.95rem;
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    font-size: 0.88rem;
+  }
+}
+
+.emptyCatalogMessage {
+  margin: 0;
+  padding: 1rem;
+  border-radius: 0.95rem;
+  background: color-mix(in srgb, #f8fafc 82%, var(--app-surface-bg));
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .galleryMain {
+    min-block-size: 15rem;
+  }
+
+  .heroMediaWrap {
+    min-block-size: 15rem;
+  }
+}
+
+@media (max-width: variables.$breakpoint-sm) {
+  .fabricPreviewImage {
+    max-block-size: 18rem;
+  }
+
+  .setPieceGrid {
+    grid-template-columns: 1fr;
   }
 }

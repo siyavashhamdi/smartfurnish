@@ -1,50 +1,4 @@
-import { getFileIdFromAccessUrl } from "../../utils/fileAccessUrl.util";
-import { hasRichTextContent } from "../../utils/richTextHtml.util";
-import type { DiscountKind, DraftChapter } from "./product-form-dialog/types";
-
-function normalizeDigits(value: string): string {
-  return value
-    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
-    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)));
-}
-
-function parseDraftNumber(value: string): number | undefined {
-  const trimmed = normalizeDigits(value)
-    .replace(/[,٬\s]/g, "")
-    .trim();
-  if (!trimmed) {
-    return undefined;
-  }
-  const parsed = Number(trimmed);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
-
-function resolveVisibleAfterMinutes(chapter: DraftChapter): number {
-  const parsedValue = parseDraftNumber(chapter.visibleAfterMinutes);
-  if (parsedValue == null) {
-    return 0;
-  }
-  if (chapter.visibleAfterUnit === "DAYS") {
-    return parsedValue * 24 * 60;
-  }
-  if (chapter.visibleAfterUnit === "HOURS") {
-    return parsedValue * 60;
-  }
-  return parsedValue;
-}
-
-function formatVisibleAfterDelay(minutes: number): string {
-  if (minutes <= 0) {
-    return "بلافاصله";
-  }
-  if (minutes % (24 * 60) === 0) {
-    return `${(minutes / (24 * 60)).toLocaleString("fa-IR")} روز`;
-  }
-  if (minutes % 60 === 0) {
-    return `${(minutes / 60).toLocaleString("fa-IR")} ساعت`;
-  }
-  return `${minutes.toLocaleString("fa-IR")} دقیقه`;
-}
+import type { DiscountKind, DraftFabric, DraftSetPiece, DraftVendor } from "./product-form-dialog/types";
 
 export type ProductFormValidationSection = "intro" | "content";
 
@@ -63,32 +17,11 @@ type ValidateProductFormInput = {
   readonly hasPositivePrice: boolean;
   readonly discountKind: DiscountKind;
   readonly discountValue: string;
-  readonly chapters: DraftChapter[];
+  readonly vendor: DraftVendor;
+  readonly setPieces: DraftSetPiece[];
+  readonly fabrics: DraftFabric[];
   readonly parseOptionalNumber: (value: string) => number | undefined;
 };
-
-function formatPersianNumber(value: number): string {
-  return value.toLocaleString("fa-IR");
-}
-
-function formatChapterLabel(chapterIndex: number, chapterTitle: string): string {
-  const chapterNumber = formatPersianNumber(chapterIndex + 1);
-  const trimmedTitle = chapterTitle.trim();
-  return trimmedTitle ? `بخش «${trimmedTitle}»` : `بخش ${chapterNumber}`;
-}
-
-function formatItemLabel(
-  chapterIndex: number,
-  itemIndex: number,
-  chapterTitle: string,
-  itemTitle: string
-): string {
-  const chapterLabel = formatChapterLabel(chapterIndex, chapterTitle);
-  const itemNumber = formatPersianNumber(itemIndex + 1);
-  const trimmedItemTitle = itemTitle.trim();
-  const itemLabel = trimmedItemTitle ? `آیتم «${trimmedItemTitle}»` : `آیتم ${itemNumber}`;
-  return `${itemLabel} در ${chapterLabel}`;
-}
 
 function invalid(
   message: string,
@@ -129,75 +62,37 @@ export function validateProductForm(input: ValidateProductFormInput): ProductFor
     }
   }
 
-  if (input.chapters.length === 0) {
-    return invalid("حداقل یک بخش لازم است.", "content");
+  if (
+    input.vendor.phone.trim() ||
+    input.vendor.address.trim() ||
+    input.vendor.notes.trim()
+  ) {
+    if (!input.vendor.name.trim()) {
+      return invalid("نام فروشنده الزامی است.", "content");
+    }
   }
 
-  for (let chapterIndex = 0; chapterIndex < input.chapters.length; chapterIndex += 1) {
-    const chapter = input.chapters[chapterIndex];
-    const chapterLabel = formatChapterLabel(chapterIndex, chapter.title);
+  for (const piece of input.setPieces) {
+    if (!piece.name.trim()) {
+      return invalid("نام هر قطعه ست باید پر شود یا ردیف خالی حذف شود.", "content");
+    }
+  }
 
-    if (!chapter.title.trim()) {
-      return invalid(`عنوان ${chapterLabel} الزامی است.`, "content");
+  for (const fabric of input.fabrics) {
+    if (!fabric.patternName.trim()) {
+      return invalid("نام هر طرح پارچه باید پر شود یا ردیف خالی حذف شود.", "content");
     }
 
-    const parsedVisibleAfter = input.parseOptionalNumber(chapter.visibleAfterMinutes);
-    if (parsedVisibleAfter != null && parsedVisibleAfter < 0) {
-      return invalid(`مقدار «نمایش بعد از» در ${chapterLabel} نمی‌تواند منفی باشد.`, "content");
+    if (fabric.colors.length === 0) {
+      return invalid(`طرح «${fabric.patternName.trim()}» باید حداقل یک رنگ داشته باشد.`, "content");
     }
 
-    if (chapter.items.length === 0) {
-      return invalid(`${chapterLabel} باید حداقل یک آیتم داشته باشد.`, "content");
-    }
-
-    for (let itemIndex = 0; itemIndex < chapter.items.length; itemIndex += 1) {
-      const item = chapter.items[itemIndex];
-      const itemLabel = formatItemLabel(chapterIndex, itemIndex, chapter.title, item.title);
-
-      if (!item.title.trim()) {
-        return invalid(`عنوان ${itemLabel} الزامی است.`, "content");
-      }
-
-      if (item.contentType === "FILE") {
-        const hasStoredFile =
-          item.file != null || Boolean(getFileIdFromAccessUrl(item.fileAccessUrl));
-        if (!hasStoredFile) {
-          return invalid(`برای ${itemLabel} باید فایل انتخاب شود.`, "content");
-        }
-        continue;
-      }
-
-      if (!hasRichTextContent(item.article)) {
-        return invalid(`برای ${itemLabel} باید متن مقاله وارد شود.`, "content");
+    for (const color of fabric.colors) {
+      if (!color.name.trim()) {
+        return invalid(`نام رنگ در طرح «${fabric.patternName.trim()}» الزامی است.`, "content");
       }
     }
   }
 
   return { valid: true };
-}
-
-export function getChapterVisibleAfterOrderWarnings(
-  chapters: readonly DraftChapter[]
-): readonly string[] {
-  const warnings: string[] = [];
-
-  for (let chapterIndex = 0; chapterIndex < chapters.length - 1; chapterIndex += 1) {
-    const currentChapter = chapters[chapterIndex];
-    const nextChapter = chapters[chapterIndex + 1];
-    const currentMinutes = resolveVisibleAfterMinutes(currentChapter);
-    const nextMinutes = resolveVisibleAfterMinutes(nextChapter);
-
-    if (nextMinutes >= currentMinutes) {
-      continue;
-    }
-
-    const currentChapterLabel = formatChapterLabel(chapterIndex, currentChapter.title);
-    const nextChapterLabel = formatChapterLabel(chapterIndex + 1, nextChapter.title);
-
-    warnings.push(
-      `${nextChapterLabel} (${formatVisibleAfterDelay(nextMinutes)}) قبل از ${currentChapterLabel} (${formatVisibleAfterDelay(currentMinutes)}) در دسترس قرار می‌گیرد، در حالی که در ترتیب بخش‌ها بعد از آن قرار دارد.`
-    );
-  }
-
-  return warnings;
 }

@@ -105,7 +105,8 @@ const ADMIN_REPLY_COMMENTS = [
 type SeedProduct = {
   _id: Types.ObjectId;
   title: string;
-  description?: string;
+  summary?: string;
+  fullDescription?: string;
   priceIrt?: number;
   discount?: {
     type: ProductDiscountType;
@@ -639,7 +640,8 @@ async function seedProductReviews(): Promise<void> {
       {
         projection: {
           title: 1,
-          description: 1,
+          summary: 1,
+          fullDescription: 1,
           priceIrt: 1,
           discount: 1,
           isActive: 1,
@@ -716,7 +718,7 @@ async function seedProductReviews(): Promise<void> {
         userSnapshot,
         productSnapshot: {
           title: product.title,
-          description: product.description,
+          summary: product.summary ?? product.fullDescription,
           priceIrt: priceSummary.amountIrt,
           ...(product.discount ? { discount: product.discount } : {}),
         },
