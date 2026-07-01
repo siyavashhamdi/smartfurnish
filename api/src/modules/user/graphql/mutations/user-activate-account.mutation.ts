@@ -2,6 +2,11 @@ import { Args, Mutation, Resolver } from "@nestjs/graphql";
 import { UseGuards } from "@nestjs/common";
 
 import {
+  OptionalGqlAuthGuard,
+  OptionalAnonymousRoles,
+  RolesGuard,
+} from "../../../auth";
+import {
   RateLimit,
   RateLimitGuard,
 } from "../../../auth/guards/rate-limit.guard";
@@ -17,7 +22,8 @@ export class UserActivateAccountMutation {
     description:
       "Activate a newly created account using the emailed activation link",
   })
-  @UseGuards(RateLimitGuard)
+  @UseGuards(OptionalGqlAuthGuard, RolesGuard, RateLimitGuard)
+  @OptionalAnonymousRoles()
   @RateLimit({ ttl: 60, limit: 10 })
   async activateAccount(
     @Args("token", { type: () => String }) token: string,

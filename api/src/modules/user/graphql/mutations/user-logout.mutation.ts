@@ -2,11 +2,12 @@ import { UseGuards } from "@nestjs/common";
 import { Mutation, Resolver, Context } from "@nestjs/graphql";
 
 import { UserService } from "../../user.service";
-import { GqlAuthGuard } from "../../../auth";
+import { GqlAuthGuard, AuthenticatedRoles, RolesGuard } from "../../../auth";
 import { GraphQLContext } from "../../../../types/graphql-context.types";
 
 @Resolver()
-@UseGuards(GqlAuthGuard)
+@UseGuards(GqlAuthGuard, RolesGuard)
+@AuthenticatedRoles()
 export class UserLogoutMutation {
   constructor(private readonly userService: UserService) {}
 

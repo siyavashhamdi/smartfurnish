@@ -3,7 +3,7 @@ import { Args, Context, Query, Resolver } from "@nestjs/graphql";
 
 import { GraphQLContext } from "../../../../types/graphql-context.types";
 import { GraphQLContextUtil } from "../../../../utils";
-import { GqlAuthGuard } from "../../../auth";
+import { AuthenticatedRoles, GqlAuthGuard, RolesGuard } from "../../../auth";
 import { NotificationService } from "../../notification.service";
 import { NotificationListGqlInput } from "../inputs";
 import {
@@ -12,7 +12,8 @@ import {
 } from "../responses";
 
 @Resolver(() => NotificationListGqlResponse)
-@UseGuards(GqlAuthGuard)
+@UseGuards(GqlAuthGuard, RolesGuard)
+@AuthenticatedRoles()
 export class NotificationListQuery {
   constructor(private readonly notificationService: NotificationService) {}
 

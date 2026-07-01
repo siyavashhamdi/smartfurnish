@@ -6,6 +6,7 @@ export * from "./user-verify-login-code.mutation";
 export * from "./user-resolve-auth-identity.mutation";
 export * from "./user-request-signup-code.mutation";
 export * from "./user-signup.mutation";
+export * from "./user-create-anonymous.mutation";
 export * from "./user-update.mutation";
 export * from "./user-profile-update.mutation";
 export * from "./user-forgot-password.mutation";

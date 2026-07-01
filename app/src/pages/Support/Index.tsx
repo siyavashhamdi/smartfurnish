@@ -145,7 +145,7 @@ const ContactIconLink = ({ channel, Icon, onOpen }: ContactIconLinkProps): React
 const Support = (): ReactElement => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { isAuthenticated } = useAuth();
+  const { isRegisteredUser } = useAuth();
   const { data, loading } = useQuery<SupportContactConfigQuery>(SUPPORT_CONTACT_QUERY, {
     fetchPolicy: "cache-and-network",
   });
@@ -190,7 +190,7 @@ const Support = (): ReactElement => {
   usePageSeoOverride(pageSeoOverride);
 
   const visibleChannels = useMemo(() => getVisibleChannels(supportConfig), [supportConfig]);
-  const ticketChannel = isAuthenticated
+  const ticketChannel = isRegisteredUser
     ? visibleChannels.find((channel) => channel.type === "TICKET")
     : undefined;
   const contactChannels = useMemo(

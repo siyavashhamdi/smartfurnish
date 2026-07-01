@@ -197,11 +197,21 @@ const SUPPRESSED_USER_FACING_EXCEPTION_CODES = new Set([
   "UNKNOWN_ERROR_OCCURRED",
   "FORBIDDEN",
   "UNAUTHENTICATED",
+  "SESSION_EXPIRED",
+]);
+
+const AUTH_SESSION_INVALID_EXCEPTION_CODES = new Set(["UNAUTHENTICATED", "SESSION_EXPIRED"]);
+
+const ROLE_DENIED_EXCEPTION_CODES = new Set([
+  "FORBIDDEN",
+  "END_USER_ONLY",
+  "END_USER_OR_ANONYMOUS_ONLY",
 ]);
 
 const SUPPRESSED_USER_FACING_I18N_KEYS = [
   "errors.network.failedToFetch",
   "errors.network.serverError",
+  "errors.unknown",
 ] as const;
 
 const GENERIC_BACKEND_ERROR_MESSAGES = new Set([
@@ -260,6 +270,10 @@ export function isSuppressedUserFacingErrorMessage(message: string): boolean {
   }
 
   if (normalized.startsWith("ارتباط برقرار نشد") || normalized.startsWith("خطای داخلی سرور")) {
+    return true;
+  }
+
+  if (normalized === "خطای ناشناخته رخ داد" || normalized === "خطای ناشناخته رخ داد!") {
     return true;
   }
 
@@ -385,10 +399,29 @@ type AccessDeniedGraphQLErrorInput = {
   readonly extensions?: GraphQLErrorExtensions;
 };
 
-export function isAccessDeniedGraphQLError(error: AccessDeniedGraphQLErrorInput): boolean {
-  const errorCode = error.code ?? error.extensions?.code ?? error.extensions?.exception?.code;
+export function resolveGraphQLErrorItemCode(error?: {
+  readonly message?: string;
+  readonly code?: string;
+  readonly extensions?: GraphQLErrorExtensions;
+}): string | undefined {
+  const backendMessage = extractBackendGraphQLErrorMessage(error);
+  return resolveExceptionCode(error, backendMessage);
+}
 
-  if (errorCode === "UNAUTHENTICATED" || errorCode === "FORBIDDEN") {
+export function isRoleDeniedGraphQLError(error: AccessDeniedGraphQLErrorInput): boolean {
+  const errorCode = resolveGraphQLErrorItemCode(error);
+
+  return errorCode !== undefined && ROLE_DENIED_EXCEPTION_CODES.has(errorCode);
+}
+
+export function isAccessDeniedGraphQLError(error: AccessDeniedGraphQLErrorInput): boolean {
+  if (isRoleDeniedGraphQLError(error)) {
+    return true;
+  }
+
+  const errorCode = resolveGraphQLErrorItemCode(error);
+
+  if (errorCode === "UNAUTHENTICATED") {
     return true;
   }
 
@@ -398,9 +431,17 @@ export function isAccessDeniedGraphQLError(error: AccessDeniedGraphQLErrorInput)
 
 /** True when the session is invalid and the user should be signed out (not mere role restrictions). */
 export function isAuthSessionInvalidGraphQLError(error: AccessDeniedGraphQLErrorInput): boolean {
-  const errorCode = error.code ?? error.extensions?.code ?? error.extensions?.exception?.code;
+  const errorCode = resolveGraphQLErrorItemCode(error);
 
-  return errorCode === "UNAUTHENTICATED";
+  if (!errorCode || isRoleDeniedGraphQLError({ ...error, code: errorCode })) {
+    return false;
+  }
+
+  return AUTH_SESSION_INVALID_EXCEPTION_CODES.has(errorCode);
+}
+
+export function isUnauthenticatedGraphQLError(error: AccessDeniedGraphQLErrorInput): boolean {
+  return resolveGraphQLErrorItemCode(error) === "UNAUTHENTICATED";
 }
 
 function resolveGraphQLErrorFieldMessage(error?: RawGraphQLErrorItem): string {
@@ -440,7 +481,7 @@ function resolveGraphQLErrorFieldMessage(error?: RawGraphQLErrorItem): string {
     return "";
   }
 
-  return i18n.t("errors.unknown");
+  return translateUserFacingError("errors.unknown");
 }
 
 function getGraphQLErrorCodeFromItem(error?: {
@@ -473,13 +514,13 @@ export function extractGraphQLErrorCode(error: unknown): string | undefined {
 
 export const extractGraphQLErrorMessage = (error: unknown): string => {
   if (!error) {
-    return i18n.t("errors.unknown");
+    return translateUserFacingError("errors.unknown");
   }
 
   if (CombinedGraphQLErrors.is(error)) {
     const first = error.errors[0];
     if (!first) {
-      const fallback = error.message || i18n.t("errors.unknown");
+      const fallback = error.message || translateUserFacingError("errors.unknown");
       return isSuppressedUserFacingErrorMessage(fallback) ? "" : fallback;
     }
     const ge = first as {
@@ -570,7 +611,7 @@ export const extractGraphQLErrorMessage = (error: unknown): string => {
     return translateUserFacingError("errors.network.failedToFetch");
   }
 
-  const unknownMessage = i18n.t("errors.unknown");
+  const unknownMessage = translateUserFacingError("errors.unknown");
   return isSuppressedUserFacingErrorMessage(unknownMessage) ? "" : unknownMessage;
 };
 
@@ -579,7 +620,7 @@ export function resolveErrorMessageFromCode(
   params?: Record<string, unknown>
 ): string {
   if (!code?.trim()) {
-    return i18n.t("errors.unknown");
+    return translateUserFacingError("errors.unknown");
   }
 
   const normalizedCode = code.trim();
@@ -588,7 +629,7 @@ export function resolveErrorMessageFromCode(
   }
 
   const translatedMessage = getExceptionTranslation(normalizedCode, params);
-  return translatedMessage || i18n.t("errors.unknown");
+  return translatedMessage || translateUserFacingError("errors.unknown");
 }
 
 export function showErrorIfNotQueued(

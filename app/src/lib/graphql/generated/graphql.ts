@@ -794,9 +794,7 @@ export type Mutation = {
   fileCompressMedia: FileCompressMediaGqlResponse;
   /** Broadcast a global anouncement to active users subscribed to general updates */
   globalAnouncementSend: GlobalAnouncementSendGqlResponse;
-  /** Confirm completion of an unlocked product chapter for the authenticated learner */
-  productChapterComplete: ProductChapterCompleteGqlResponse;
-  /** Create a product with chapters and items, returning calculated release and item types */
+  /** Create a furniture product with catalog fields and media references */
   productCreate: ProductListGqlResponse;
   /** Delete a product and remove its detached file attachments */
   productDelete: Scalars["Boolean"]["output"];
@@ -834,6 +832,8 @@ export type Mutation = {
   userActivateAccount: UserPasswordResetGqlResponse;
   /** Create a user account with profile, avatar file, roles, status, and initial password */
   userCreate: UserMutationGqlResponse;
+  /** Create an anonymous visitor account and start a JWT session without registration */
+  userCreateAnonymous: UserLoginGqlResponse;
   /** Request a password reset code using username, email, or phone number */
   userForgotPassword: UserPasswordResetGqlResponse;
   /** Login and get JWT access token */
@@ -886,10 +886,6 @@ export type MutationFileCompressMediaArgs = {
 
 export type MutationGlobalAnouncementSendArgs = {
   input: GlobalAnouncementSendGqlInput;
-};
-
-export type MutationProductChapterCompleteArgs = {
-  input: ProductChapterCompleteGqlInput;
 };
 
 export type MutationProductCreateArgs = {
@@ -966,6 +962,10 @@ export type MutationUserActivateAccountArgs = {
 
 export type MutationUserCreateArgs = {
   input: UserCreateGqlInput;
+};
+
+export type MutationUserCreateAnonymousArgs = {
+  input?: InputMaybe<UserCreateAnonymousGqlInput>;
 };
 
 export type MutationUserForgotPasswordArgs = {
@@ -1274,40 +1274,10 @@ export type PaymentCheckoutUsdtIrtRateGqlResponse = {
   valueIrt: Scalars["Float"]["output"];
 };
 
-export type ProductChapterCompleteGqlInput = {
-  /** Stable chapter key to mark as completed */
-  chapterKey: Scalars["String"]["input"];
-  /** Product ID containing the chapter */
-  productId: Scalars["ID"]["input"];
-};
-
-export type ProductChapterCompleteGqlResponse = {
-  __typename?: "ProductChapterCompleteGqlResponse";
-  /** Total unlocked chapters the learner can complete in this product right now */
-  accessibleChapterCount: Scalars["Int"]["output"];
-  /** Total chapters the learner has marked complete in this product */
-  completedChapterCount: Scalars["Int"]["output"];
-  /** Completed chapter key */
-  key: Scalars["String"]["output"];
-  /** Chapter title snapshot at completion time */
-  titleSnapshot: Scalars["String"]["output"];
-  /** When the learner confirmed chapter completion */
-  userCompletedAt: Scalars["DateTime"]["output"];
-};
-
-export type ProductChapterGqlInput = {
-  /** Chapter description */
-  description?: InputMaybe<Scalars["String"]["input"]>;
-  /** Whether the chapter is free to access */
-  isFree: Scalars["Boolean"]["input"];
-  /** Chapter items */
-  items: Array<ProductItemGqlInput>;
-  /** Optional chapter sort order */
-  sortOrder?: InputMaybe<Scalars["Int"]["input"]>;
-  /** Chapter title */
-  title: Scalars["String"]["input"];
-  /** Number of minutes after purchase/enrollment when visible */
-  visibleAfterMinutes?: InputMaybe<Scalars["Int"]["input"]>;
+export type ProductAiPreviewStagingDurationGqlResponse = {
+  __typename?: "ProductAiPreviewStagingDurationGqlResponse";
+  /** Estimated AI preview generation duration in seconds, maintained by the system */
+  durationSeconds: Scalars["Float"]["output"];
 };
 
 export type ProductCouponSnapshotGqlResponse = {
@@ -1327,28 +1297,38 @@ export type ProductCouponSnapshotGqlResponse = {
 };
 
 export type ProductCreateGqlInput = {
-  /** Product chapters */
-  chapters: Array<ProductChapterGqlInput>;
-  /** Stored file ID used as the product cover image */
-  coverImageFileId?: InputMaybe<Scalars["ID"]["input"]>;
-  /** Product description */
-  description?: InputMaybe<Scalars["String"]["input"]>;
+  /** Ordered stored file IDs used as product cover images */
+  coverImageFileIds?: InputMaybe<Array<Scalars["ID"]["input"]>>;
   /** Optional product discount */
   discount?: InputMaybe<ProductDiscountGqlInput>;
+  /** Admin-defined fabric pattern and color options */
+  fabrics?: InputMaybe<Array<ProductFabricGqlInput>>;
+  /** Full product description */
+  fullDescription?: InputMaybe<Scalars["String"]["input"]>;
   /** Whether the product is active */
   isActive?: InputMaybe<Scalars["Boolean"]["input"]>;
   /** Whether learners can submit reviews for this product */
   isReviewSubmissionEnabled?: InputMaybe<Scalars["Boolean"]["input"]>;
   /** Whether the reviews section is visible on the product detail page */
   isReviewsSectionVisible?: InputMaybe<Scalars["Boolean"]["input"]>;
+  /** Material and texture profile */
+  materialProfile?: InputMaybe<ProductMaterialProfileGqlInput>;
+  /** Internal notes visible to SUPER_ADMIN */
+  notes?: InputMaybe<Scalars["String"]["input"]>;
   /** Product price in IRT */
   priceIrt?: InputMaybe<Scalars["Float"]["input"]>;
+  /** Set pieces included in this product */
+  setPieces?: InputMaybe<Array<ProductSetPieceGqlInput>>;
   /** Product display rank used for manual ordering */
   sortOrder?: InputMaybe<Scalars["Float"]["input"]>;
+  /** Short product summary for list cards */
+  summary?: InputMaybe<Scalars["String"]["input"]>;
   /** Product tags */
   tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
   /** Product title */
   title: Scalars["String"]["input"];
+  /** Vendor or seller information */
+  vendor?: InputMaybe<ProductVendorGqlInput>;
 };
 
 export type ProductDeleteDependenciesGqlResponse = {
@@ -1434,6 +1414,14 @@ export type ProductDiscountGqlInput = {
   value: Scalars["Float"]["input"];
 };
 
+export type ProductDiscountGqlResponse = {
+  __typename?: "ProductDiscountGqlResponse";
+  /** Discount calculation type */
+  type: ProductDiscountType;
+  /** Discount value. Percentage for PERCENTAGE, IRT amount for FIXED_AMOUNT_IRT */
+  value: Scalars["Float"]["output"];
+};
+
 /** Product discount calculation type */
 export const ProductDiscountType = {
   FIXED_AMOUNT_IRT: "FIXED_AMOUNT_IRT",
@@ -1441,40 +1429,58 @@ export const ProductDiscountType = {
 } as const;
 
 export type ProductDiscountType = (typeof ProductDiscountType)[keyof typeof ProductDiscountType];
-export type ProductItemGqlInput = {
-  /** Article body when this item is text-based */
-  article?: InputMaybe<Scalars["String"]["input"]>;
-  /** Stored file ID attached to this item */
-  fileId?: InputMaybe<Scalars["ID"]["input"]>;
-  /** Optional item sort order inside its chapter */
+export type ProductFabricColorGqlInput = {
+  /** Stored file ID for the AI product preview image */
+  aiProductImageFileId?: InputMaybe<Scalars["ID"]["input"]>;
+  /** Hex color code */
+  hexCode?: InputMaybe<Scalars["String"]["input"]>;
+  /** Whether end users can select this color */
+  isActive?: InputMaybe<Scalars["Boolean"]["input"]>;
+  /** Fabric color name */
+  name: Scalars["String"]["input"];
+  /** Sort order */
   sortOrder?: InputMaybe<Scalars["Int"]["input"]>;
-  /** Product item title */
-  title: Scalars["String"]["input"];
 };
 
-/** Calculated product item content type */
-export const ProductItemType = {
-  ARTICLE: "ARTICLE",
-  IMAGE: "IMAGE",
-  VIDEO: "VIDEO",
-  VOICE: "VOICE",
-} as const;
-
-export type ProductItemType = (typeof ProductItemType)[keyof typeof ProductItemType];
-export type ProductListChapterGqlResponse = {
-  __typename?: "ProductListChapterGqlResponse";
-  /** Chapter description */
-  description?: Maybe<Scalars["String"]["output"]>;
-  /** Whether the chapter is free to access */
-  isFree: Scalars["Boolean"]["output"];
-  /** Chapter items */
-  items: Array<ProductListItemGqlResponse>;
-  /** Optional chapter sort order */
+export type ProductFabricColorGqlResponse = {
+  __typename?: "ProductFabricColorGqlResponse";
+  /** Signed access descriptor for the AI product preview image */
+  aiProductImageAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
+  /** Hex color code */
+  hexCode?: Maybe<Scalars["String"]["output"]>;
+  /** Whether end users can select this color */
+  isActive: Scalars["Boolean"]["output"];
+  /** Stable fabric color key */
+  key: Scalars["String"]["output"];
+  /** Fabric color name */
+  name: Scalars["String"]["output"];
+  /** Sort order */
   sortOrder?: Maybe<Scalars["Int"]["output"]>;
-  /** Chapter title */
-  title: Scalars["String"]["output"];
-  /** Number of minutes after purchase/enrollment when visible */
-  visibleAfterMinutes?: Maybe<Scalars["Int"]["output"]>;
+};
+
+export type ProductFabricGqlInput = {
+  /** Selectable colors for this pattern */
+  colors: Array<ProductFabricColorGqlInput>;
+  /** Whether end users can select this pattern */
+  isActive?: InputMaybe<Scalars["Boolean"]["input"]>;
+  /** Fabric pattern name */
+  patternName: Scalars["String"]["input"];
+  /** Sort order */
+  sortOrder?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type ProductFabricGqlResponse = {
+  __typename?: "ProductFabricGqlResponse";
+  /** Selectable colors for this pattern */
+  colors: Array<ProductFabricColorGqlResponse>;
+  /** Whether end users can select this pattern */
+  isActive: Scalars["Boolean"]["output"];
+  /** Stable fabric key */
+  key: Scalars["String"]["output"];
+  /** Fabric pattern name */
+  patternName: Scalars["String"]["output"];
+  /** Sort order */
+  sortOrder?: Maybe<Scalars["Int"]["output"]>;
 };
 
 export type ProductListCursorPageOptionsParamsInput = {
@@ -1486,19 +1492,9 @@ export type ProductListCursorPageOptionsParamsInput = {
   startCursor?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
-export type ProductListDiscountGqlResponse = {
-  __typename?: "ProductListDiscountGqlResponse";
-  /** Discount calculation type */
-  type: ProductDiscountType;
-  /** Discount value. Percentage for PERCENTAGE, IRT amount for FIXED_AMOUNT_IRT */
-  value: Scalars["Float"]["output"];
-};
-
 export type ProductListFilterInput = {
-  /** Filter products by description */
-  description?: InputMaybe<Scalars["String"]["input"]>;
-  /** Filter products that contain at least one free chapter */
-  hasFreeChapter?: InputMaybe<Scalars["Boolean"]["input"]>;
+  /** Filter products by full description */
+  fullDescription?: InputMaybe<Scalars["String"]["input"]>;
   /** Filter products by whether a paid price is set. true = priceIrt > 0, false = unset/null or priceIrt <= 0. */
   hasPrice?: InputMaybe<Scalars["Boolean"]["input"]>;
   /** Scope the product list for a specific user by excluding products they have already paid for. */
@@ -1507,16 +1503,14 @@ export type ProductListFilterInput = {
   isActive?: InputMaybe<Scalars["Boolean"]["input"]>;
   /** Filter by whether the current user has purchased the product. Used by userProductList. */
   isPurchased?: InputMaybe<Scalars["Boolean"]["input"]>;
-  /** Filter products containing at least one calculated item type. ARTICLE means an item without fileId. */
-  itemType?: InputMaybe<ProductItemType>;
   /** Maximum price in IRT */
   maxPriceIrt?: InputMaybe<Scalars["Float"]["input"]>;
   /** Minimum price in IRT */
   minPriceIrt?: InputMaybe<Scalars["Float"]["input"]>;
-  /** Search query that matches title, description, tags, chapter titles, item titles, and article text */
+  /** Search query that matches title, summary, full description, tags, vendor, materials, and set piece names */
   query?: InputMaybe<Scalars["String"]["input"]>;
-  /** Filter by calculated release type. GRADUAL means at least one chapter has visibleAfterMinutes. */
-  releaseType?: InputMaybe<ProductReleaseType>;
+  /** Filter products by summary */
+  summary?: InputMaybe<Scalars["String"]["input"]>;
   /** Return products that contain every tag in this list */
   tagsAll?: InputMaybe<Array<Scalars["String"]["input"]>>;
   /** Return products that contain at least one of these tags */
@@ -1534,16 +1528,16 @@ export type ProductListGqlInput = {
 
 export type ProductListGqlResponse = {
   __typename?: "ProductListGqlResponse";
-  /** Product chapters */
-  chapters: Array<ProductListChapterGqlResponse>;
-  /** Signed access descriptor for the product cover image */
-  coverImageAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
+  /** Signed access descriptors for product cover images */
+  coverImageAccessUrls: Array<FileAccessUrlGqlResponse>;
   /** Date when the product was created */
   createdAt?: Maybe<Scalars["DateTime"]["output"]>;
-  /** Product description */
-  description?: Maybe<Scalars["String"]["output"]>;
   /** Optional product discount */
-  discount?: Maybe<ProductListDiscountGqlResponse>;
+  discount?: Maybe<ProductDiscountGqlResponse>;
+  /** Admin-defined fabric pattern and color options */
+  fabrics: Array<ProductFabricGqlResponse>;
+  /** Full product description */
+  fullDescription?: Maybe<Scalars["String"]["output"]>;
   /** Product ID */
   id: Scalars["ID"]["output"];
   /** Whether the product is active */
@@ -1552,32 +1546,26 @@ export type ProductListGqlResponse = {
   isReviewSubmissionEnabled: Scalars["Boolean"]["output"];
   /** Whether the reviews section is visible on the product detail page */
   isReviewsSectionVisible: Scalars["Boolean"]["output"];
+  /** Material and texture profile */
+  materialProfile?: Maybe<ProductMaterialProfileGqlResponse>;
+  /** Internal notes visible to SUPER_ADMIN only */
+  notes?: Maybe<Scalars["String"]["output"]>;
   /** Product price in IRT */
   priceIrt?: Maybe<Scalars["Float"]["output"]>;
-  /** Calculated release strategy. GRADUAL means at least one chapter has visibleAfterMinutes. */
-  releaseType: ProductReleaseType;
+  /** Set pieces included in this product */
+  setPieces: Array<ProductSetPieceGqlResponse>;
   /** Product display rank used for manual ordering */
   sortOrder?: Maybe<Scalars["Float"]["output"]>;
+  /** Short product summary */
+  summary?: Maybe<Scalars["String"]["output"]>;
   /** Product tags */
   tags: Array<Scalars["String"]["output"]>;
   /** Product title */
   title: Scalars["String"]["output"];
   /** Date when the product was last updated */
   updatedAt?: Maybe<Scalars["DateTime"]["output"]>;
-};
-
-export type ProductListItemGqlResponse = {
-  __typename?: "ProductListItemGqlResponse";
-  /** Article body when this item is text-based */
-  article?: Maybe<Scalars["String"]["output"]>;
-  /** Signed access descriptor for the file attached to this item */
-  fileAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
-  /** Optional item sort order inside its chapter */
-  sortOrder?: Maybe<Scalars["Int"]["output"]>;
-  /** Product item title */
-  title: Scalars["String"]["output"];
-  /** Calculated item type. File-backed items are resolved from stored file MIME type; items without fileId are ARTICLE. */
-  type: ProductItemType;
+  /** Vendor or seller information */
+  vendor?: Maybe<ProductVendorGqlResponse>;
 };
 
 export type ProductListPaginatedCursorGqlResponse = {
@@ -1605,32 +1593,43 @@ export type ProductListSortOptionInput = {
 
 export type ProductListSummaryGqlResponse = {
   __typename?: "ProductListSummaryGqlResponse";
-  /** Number of chapters in the product */
-  chapterCount: Scalars["Int"]["output"];
-  /** Signed access descriptor for the product cover image */
-  coverImageAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
-  /** Product description */
-  description?: Maybe<Scalars["String"]["output"]>;
+  /** Signed access descriptors for product cover images */
+  coverImageAccessUrls: Array<FileAccessUrlGqlResponse>;
   /** Optional product discount */
-  discount?: Maybe<ProductListDiscountGqlResponse>;
+  discount?: Maybe<ProductDiscountGqlResponse>;
   /** Product ID */
   id: Scalars["ID"]["output"];
   /** Whether the product is active */
   isActive: Scalars["Boolean"]["output"];
-  /** Number of items in the product */
-  itemCount: Scalars["Int"]["output"];
-  /** Calculated content types available in this product */
-  itemTypes: Array<ProductItemType>;
   /** Product price in IRT */
   priceIrt?: Maybe<Scalars["Float"]["output"]>;
-  /** Calculated release strategy. GRADUAL means at least one chapter has visibleAfterMinutes. */
-  releaseType: ProductReleaseType;
   /** Product display rank used for manual ordering */
   sortOrder?: Maybe<Scalars["Float"]["output"]>;
+  /** Short product summary */
+  summary?: Maybe<Scalars["String"]["output"]>;
   /** Product tags */
   tags: Array<Scalars["String"]["output"]>;
   /** Product title */
   title: Scalars["String"]["output"];
+};
+
+export type ProductMaterialProfileGqlInput = {
+  /** Care instructions */
+  careInstructions?: InputMaybe<Scalars["String"]["input"]>;
+  /** Primary material */
+  primaryMaterial?: InputMaybe<Scalars["String"]["input"]>;
+  /** Primary texture */
+  texture?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type ProductMaterialProfileGqlResponse = {
+  __typename?: "ProductMaterialProfileGqlResponse";
+  /** Care instructions */
+  careInstructions?: Maybe<Scalars["String"]["output"]>;
+  /** Primary material */
+  primaryMaterial?: Maybe<Scalars["String"]["output"]>;
+  /** Primary texture */
+  texture?: Maybe<Scalars["String"]["output"]>;
 };
 
 export type ProductPaymentDetailGqlInput = {
@@ -1951,12 +1950,12 @@ export type ProductPaymentManualCreateGqlInput = {
 
 export type ProductPaymentProductSnapshotGqlResponse = {
   __typename?: "ProductPaymentProductSnapshotGqlResponse";
-  /** Product description snapshot */
-  description?: Maybe<Scalars["String"]["output"]>;
   /** Product ID */
   id: Scalars["ID"]["output"];
   /** Original product price in IRT */
   priceIrt: Scalars["Float"]["output"];
+  /** Product summary snapshot */
+  summary?: Maybe<Scalars["String"]["output"]>;
   /** Product title snapshot */
   title: Scalars["String"]["output"];
 };
@@ -2063,13 +2062,6 @@ export type ProductPurchaseSubmitGqlResponse = {
   transactionId?: Maybe<Scalars["String"]["output"]>;
 };
 
-/** Calculated product release strategy */
-export const ProductReleaseType = {
-  GRADUAL: "GRADUAL",
-  IMMEDIATE: "IMMEDIATE",
-} as const;
-
-export type ProductReleaseType = (typeof ProductReleaseType)[keyof typeof ProductReleaseType];
 export type ProductReviewListCursorPageOptionsParamsInput = {
   /** Maximum number of records to return */
   limit?: InputMaybe<Scalars["Int"]["input"]>;
@@ -2317,15 +2309,83 @@ export const ProductReviewVisibility = {
 
 export type ProductReviewVisibility =
   (typeof ProductReviewVisibility)[keyof typeof ProductReviewVisibility];
-export type ProductUpdateGqlInput = {
-  /** Product chapters */
-  chapters: Array<ProductChapterGqlInput>;
-  /** Stored file ID used as the product cover image */
-  coverImageFileId?: InputMaybe<Scalars["ID"]["input"]>;
-  /** Product description */
+export type ProductSetPieceDimensionGqlInput = {
+  /** Depth in centimeters */
+  depthCm?: InputMaybe<Scalars["Float"]["input"]>;
+  /** Display text for the dimension */
+  displayText?: InputMaybe<Scalars["String"]["input"]>;
+  /** Height in centimeters */
+  heightCm?: InputMaybe<Scalars["Float"]["input"]>;
+  /** Dimension label */
+  label?: InputMaybe<Scalars["String"]["input"]>;
+  /** Sort order */
+  sortOrder?: InputMaybe<Scalars["Int"]["input"]>;
+  /** Width in centimeters */
+  widthCm?: InputMaybe<Scalars["Float"]["input"]>;
+};
+
+export type ProductSetPieceDimensionGqlResponse = {
+  __typename?: "ProductSetPieceDimensionGqlResponse";
+  /** Depth in centimeters */
+  depthCm?: Maybe<Scalars["Float"]["output"]>;
+  /** Display text for the dimension */
+  displayText?: Maybe<Scalars["String"]["output"]>;
+  /** Height in centimeters */
+  heightCm?: Maybe<Scalars["Float"]["output"]>;
+  /** Dimension label */
+  label?: Maybe<Scalars["String"]["output"]>;
+  /** Sort order */
+  sortOrder?: Maybe<Scalars["Int"]["output"]>;
+  /** Width in centimeters */
+  widthCm?: Maybe<Scalars["Float"]["output"]>;
+};
+
+export type ProductSetPieceGqlInput = {
+  /** Set piece description */
   description?: InputMaybe<Scalars["String"]["input"]>;
+  /** Dimensions for this set piece */
+  dimensions?: InputMaybe<Array<ProductSetPieceDimensionGqlInput>>;
+  /** Stored file IDs attached to this set piece */
+  imageFileIds?: InputMaybe<Array<Scalars["ID"]["input"]>>;
+  /** Optional material profile for this set piece */
+  materialProfile?: InputMaybe<ProductMaterialProfileGqlInput>;
+  /** Set piece name */
+  name: Scalars["String"]["input"];
+  /** Sort order */
+  sortOrder?: InputMaybe<Scalars["Int"]["input"]>;
+  /** Weight in kilograms */
+  weightKg?: InputMaybe<Scalars["Float"]["input"]>;
+};
+
+export type ProductSetPieceGqlResponse = {
+  __typename?: "ProductSetPieceGqlResponse";
+  /** Set piece description */
+  description?: Maybe<Scalars["String"]["output"]>;
+  /** Dimensions for this set piece */
+  dimensions: Array<ProductSetPieceDimensionGqlResponse>;
+  /** Signed access descriptors for set piece images */
+  imageAccessUrls: Array<FileAccessUrlGqlResponse>;
+  /** Stable set piece key */
+  key: Scalars["String"]["output"];
+  /** Optional material profile for this set piece */
+  materialProfile?: Maybe<ProductMaterialProfileGqlResponse>;
+  /** Set piece name */
+  name: Scalars["String"]["output"];
+  /** Sort order */
+  sortOrder?: Maybe<Scalars["Int"]["output"]>;
+  /** Weight in kilograms */
+  weightKg?: Maybe<Scalars["Float"]["output"]>;
+};
+
+export type ProductUpdateGqlInput = {
+  /** Ordered stored file IDs used as product cover images */
+  coverImageFileIds?: InputMaybe<Array<Scalars["ID"]["input"]>>;
   /** Optional product discount */
   discount?: InputMaybe<ProductDiscountGqlInput>;
+  /** Admin-defined fabric pattern and color options */
+  fabrics?: InputMaybe<Array<ProductFabricGqlInput>>;
+  /** Full product description */
+  fullDescription?: InputMaybe<Scalars["String"]["input"]>;
   /** Product ID */
   id: Scalars["ID"]["input"];
   /** Whether the product is active */
@@ -2334,14 +2394,47 @@ export type ProductUpdateGqlInput = {
   isReviewSubmissionEnabled?: InputMaybe<Scalars["Boolean"]["input"]>;
   /** Whether the reviews section is visible on the product detail page */
   isReviewsSectionVisible?: InputMaybe<Scalars["Boolean"]["input"]>;
+  /** Material and texture profile */
+  materialProfile?: InputMaybe<ProductMaterialProfileGqlInput>;
+  /** Internal notes visible to SUPER_ADMIN */
+  notes?: InputMaybe<Scalars["String"]["input"]>;
   /** Product price in IRT */
   priceIrt?: InputMaybe<Scalars["Float"]["input"]>;
+  /** Set pieces included in this product */
+  setPieces?: InputMaybe<Array<ProductSetPieceGqlInput>>;
   /** Product display rank used for manual ordering */
   sortOrder?: InputMaybe<Scalars["Float"]["input"]>;
+  /** Short product summary for list cards */
+  summary?: InputMaybe<Scalars["String"]["input"]>;
   /** Product tags */
   tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
   /** Product title */
   title: Scalars["String"]["input"];
+  /** Vendor or seller information */
+  vendor?: InputMaybe<ProductVendorGqlInput>;
+};
+
+export type ProductVendorGqlInput = {
+  /** Vendor address */
+  address?: InputMaybe<Scalars["String"]["input"]>;
+  /** Vendor or seller name */
+  name: Scalars["String"]["input"];
+  /** Internal vendor notes */
+  notes?: InputMaybe<Scalars["String"]["input"]>;
+  /** Vendor phone number */
+  phone?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type ProductVendorGqlResponse = {
+  __typename?: "ProductVendorGqlResponse";
+  /** Vendor address */
+  address?: Maybe<Scalars["String"]["output"]>;
+  /** Vendor or seller name */
+  name: Scalars["String"]["output"];
+  /** Internal vendor notes */
+  notes?: Maybe<Scalars["String"]["output"]>;
+  /** Vendor phone number */
+  phone?: Maybe<Scalars["String"]["output"]>;
 };
 
 /** Actor that changed a product purchase status */
@@ -2399,9 +2492,11 @@ export type Query = {
   me: UserMeGqlResponse;
   /** Get payment checkout settings for product purchases */
   paymentCheckoutConfig: PaymentCheckoutConfigGqlResponse;
+  /** Estimated AI product preview generation duration in seconds. Value is read from app settings and updated by the system after each successful generation. */
+  productAiPreviewStagingDuration: ProductAiPreviewStagingDurationGqlResponse;
   /** Inspect related records before deleting a product, including retained and removed dependencies */
   productDeleteDependencies: ProductDeleteDependenciesGqlResponse;
-  /** Get full product data for SUPER_ADMIN, including chapters and items for editing */
+  /** Get full product data for SUPER_ADMIN, including furniture catalog fields for editing */
   productDetail: ProductListGqlResponse;
   /** Get a paginated, filterable, sortable admin list of products with calculated release and item types */
   productList: ProductListPaginatedCursorGqlResponse;
@@ -2427,7 +2522,7 @@ export type Query = {
   userLoginCaptcha: UserLoginCaptchaGqlResponse;
   /** Get a cursor-paginated, filterable, sortable list of notifications visible to the current user */
   userNotificationList: NotificationListPaginatedCursorGqlResponse;
-  /** Get active product details for anonymous users and END_USER accounts with locked content redacted */
+  /** Get active furniture product details for anonymous users and END_USER accounts */
   userProductDetail: UserProductDetailGqlResponse;
   /** Get active products for anonymous users and END_USER views with purchase state */
   userProductList: UserProductListPaginatedCursorGqlResponse;
@@ -2989,6 +3084,11 @@ export type UnregisterPushSubscriptionGqlInput = {
   endpoint: Scalars["String"]["input"];
 };
 
+export type UserCreateAnonymousGqlInput = {
+  /** Client device and browser context captured at session creation time */
+  clientContext?: InputMaybe<SessionClientContextGqlInput>;
+};
+
 export type UserCreateGqlInput = {
   /** Initial account password */
   password: Scalars["String"]["input"];
@@ -3269,30 +3369,6 @@ export type UserPreferencesGqlResponse = {
   timezone?: Maybe<Scalars["String"]["output"]>;
 };
 
-export type UserProductDetailChapterGqlResponse = {
-  __typename?: "UserProductDetailChapterGqlResponse";
-  /** Chapter description */
-  description?: Maybe<Scalars["String"]["output"]>;
-  /** Whether the authenticated learner has confirmed completion of this chapter */
-  isCompleted: Scalars["Boolean"]["output"];
-  /** Whether this chapter is free to access */
-  isFree: Scalars["Boolean"]["output"];
-  /** Whether this chapter content is hidden from the current viewer */
-  isLocked: Scalars["Boolean"]["output"];
-  /** Chapter items. Null when the chapter is locked for the current viewer. */
-  items?: Maybe<Array<UserProductDetailItemGqlResponse>>;
-  /** Stable chapter key */
-  key: Scalars["String"]["output"];
-  /** Chapter title */
-  title: Scalars["String"]["output"];
-  /** When this chapter becomes available for a paid viewer under gradual release */
-  unlocksAt?: Maybe<Scalars["DateTime"]["output"]>;
-  /** When the learner confirmed completion of this chapter */
-  userCompletedAt?: Maybe<Scalars["DateTime"]["output"]>;
-  /** Number of minutes after purchase/enrollment when visible */
-  visibleAfterMinutes?: Maybe<Scalars["Int"]["output"]>;
-};
-
 export type UserProductDetailGqlInput = {
   /** Product ID */
   id: Scalars["ID"]["input"];
@@ -3300,21 +3376,17 @@ export type UserProductDetailGqlInput = {
 
 export type UserProductDetailGqlResponse = {
   __typename?: "UserProductDetailGqlResponse";
-  /** Number of chapters currently unlocked and eligible for completion */
-  accessibleChapterCount: Scalars["Int"]["output"];
-  /** Product chapters with locked content redacted */
-  chapters: Array<UserProductDetailChapterGqlResponse>;
-  /** Number of unlocked chapters the learner has confirmed complete */
-  completedChapterCount: Scalars["Int"]["output"];
-  /** Signed access descriptor for the product cover image */
-  coverImageAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
-  /** Product description */
-  description?: Maybe<Scalars["String"]["output"]>;
+  /** Signed access descriptors for product cover images */
+  coverImageAccessUrls: Array<FileAccessUrlGqlResponse>;
   /** Optional public product discount */
   discount?: Maybe<UserProductListDiscountGqlResponse>;
+  /** Active fabric pattern and color options selectable by users */
+  fabrics: Array<ProductFabricGqlResponse>;
+  /** Full product description */
+  fullDescription?: Maybe<Scalars["String"]["output"]>;
   /** Product ID */
   id: Scalars["ID"]["output"];
-  /** Whether this product is free to access */
+  /** Whether the display price resolves to zero. Does not gate catalog access. */
   isFree: Scalars["Boolean"]["output"];
   /** Whether the current END_USER has a paid purchase for this product */
   isPurchased: Scalars["Boolean"]["output"];
@@ -3322,28 +3394,20 @@ export type UserProductDetailGqlResponse = {
   isReviewSubmissionEnabled: Scalars["Boolean"]["output"];
   /** Whether the reviews section is visible on the product detail page */
   isReviewsSectionVisible: Scalars["Boolean"]["output"];
+  /** Material and texture profile */
+  materialProfile?: Maybe<ProductMaterialProfileGqlResponse>;
   /** Product price in IRT */
   priceIrt?: Maybe<Scalars["Float"]["output"]>;
   /** Current END_USER purchase status for this product, if any */
   purchaseStatus?: Maybe<UserProductPurchaseStatus>;
-  /** Calculated release strategy. GRADUAL means at least one chapter has visibleAfterMinutes. */
-  releaseType: ProductReleaseType;
+  /** Set pieces included in this product */
+  setPieces: Array<ProductSetPieceGqlResponse>;
+  /** Short product summary */
+  summary?: Maybe<Scalars["String"]["output"]>;
   /** Product tags */
   tags: Array<Scalars["String"]["output"]>;
   /** Product title */
   title: Scalars["String"]["output"];
-};
-
-export type UserProductDetailItemGqlResponse = {
-  __typename?: "UserProductDetailItemGqlResponse";
-  /** Article body for unlocked text-based items */
-  article?: Maybe<Scalars["String"]["output"]>;
-  /** Signed access descriptor for an unlocked file-backed item */
-  fileAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
-  /** Product item title */
-  title: Scalars["String"]["output"];
-  /** Calculated item content type */
-  type: ProductItemType;
 };
 
 export type UserProductListDiscountGqlResponse = {
@@ -3356,26 +3420,18 @@ export type UserProductListDiscountGqlResponse = {
 
 export type UserProductListGqlResponse = {
   __typename?: "UserProductListGqlResponse";
-  /** Number of chapters in the product */
-  chapterCount: Scalars["Int"]["output"];
-  /** Signed access descriptor for the product cover image */
-  coverImageAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
-  /** Product description */
-  description?: Maybe<Scalars["String"]["output"]>;
+  /** Signed access descriptors for product cover images */
+  coverImageAccessUrls: Array<FileAccessUrlGqlResponse>;
   /** Optional public product discount */
   discount?: Maybe<UserProductListDiscountGqlResponse>;
   /** Product ID */
   id: Scalars["ID"]["output"];
   /** Whether the current END_USER has a paid purchase for this product */
   isPurchased: Scalars["Boolean"]["output"];
-  /** Number of items in the product */
-  itemCount: Scalars["Int"]["output"];
-  /** Calculated content types available in this product */
-  itemTypes: Array<ProductItemType>;
   /** Product price in IRT */
   priceIrt?: Maybe<Scalars["Float"]["output"]>;
-  /** Calculated release strategy. GRADUAL means at least one chapter has visibleAfterMinutes. */
-  releaseType: ProductReleaseType;
+  /** Short product summary */
+  summary?: Maybe<Scalars["String"]["output"]>;
   /** Product tags */
   tags: Array<Scalars["String"]["output"]>;
   /** Product title */
@@ -3584,6 +3640,7 @@ export type UserResolveAuthIdentityGqlResponse = {
 
 /** Role of the user in the system */
 export const UserRole = {
+  ANONYMOUS: "ANONYMOUS",
   END_USER: "END_USER",
   SUPER_ADMIN: "SUPER_ADMIN",
 } as const;
@@ -3971,22 +4028,6 @@ export type UnregisterNativePushTokenMutation = {
   };
 };
 
-export type ProductChapterCompleteMutationVariables = Exact<{
-  input: ProductChapterCompleteGqlInput;
-}>;
-
-export type ProductChapterCompleteMutation = {
-  __typename?: "Mutation";
-  productChapterComplete: {
-    __typename?: "ProductChapterCompleteGqlResponse";
-    key: string;
-    titleSnapshot: string;
-    userCompletedAt: any;
-    completedChapterCount: number;
-    accessibleChapterCount: number;
-  };
-};
-
 export type ProductCreateMutationVariables = Exact<{
   input: ProductCreateGqlInput;
 }>;
@@ -4153,6 +4194,24 @@ export type UserActivateAccountMutation = {
     __typename?: "UserPasswordResetGqlResponse";
     success: boolean;
     message: string;
+  };
+};
+
+export type UserCreateAnonymousMutationVariables = Exact<{
+  input?: InputMaybe<UserCreateAnonymousGqlInput>;
+}>;
+
+export type UserCreateAnonymousMutation = {
+  __typename?: "Mutation";
+  userCreateAnonymous: {
+    __typename?: "UserLoginGqlResponse";
+    accessToken: string;
+    user: {
+      __typename?: "UserLoginUserGqlResponse";
+      id: string;
+      username: string;
+      roles: Array<UserRole>;
+    };
   };
 };
 
@@ -4527,6 +4586,16 @@ export type PaymentCheckoutConfigQuery = {
   };
 };
 
+export type ProductAiPreviewStagingDurationQueryVariables = Exact<{ [key: string]: never }>;
+
+export type ProductAiPreviewStagingDurationQuery = {
+  __typename?: "Query";
+  productAiPreviewStagingDuration: {
+    __typename?: "ProductAiPreviewStagingDurationGqlResponse";
+    durationSeconds: number;
+  };
+};
+
 export type ProductDeleteDependenciesQueryVariables = Exact<{
   input: ProductDeleteGqlInput;
 }>;
@@ -4800,6 +4869,28 @@ export type UserNotificationListQuery = {
       createdAt?: any | null;
       updatedAt?: any | null;
     }>;
+    pagination: {
+      __typename?: "PaginationCursorResponse";
+      limit: number;
+      total: number;
+      count: number;
+      startCursor?: string | null;
+      endCursor?: string | null;
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+    };
+  };
+};
+
+export type UserProductListQueryVariables = Exact<{
+  input: ProductListGqlInput;
+}>;
+
+export type UserProductListQuery = {
+  __typename?: "Query";
+  productList: {
+    __typename?: "UserProductListPaginatedCursorGqlResponse";
+    items: Array<{ __typename?: "UserProductListGqlResponse"; isPurchased: boolean }>;
     pagination: {
       __typename?: "PaginationCursorResponse";
       limit: number;
@@ -5286,58 +5377,6 @@ export const UnregisterNativePushTokenDocument = {
 } as unknown as DocumentNode<
   UnregisterNativePushTokenMutation,
   UnregisterNativePushTokenMutationVariables
->;
-export const ProductChapterCompleteDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "mutation",
-      name: { kind: "Name", value: "ProductChapterComplete" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "input" } },
-          type: {
-            kind: "NonNullType",
-            type: {
-              kind: "NamedType",
-              name: { kind: "Name", value: "ProductChapterCompleteGqlInput" },
-            },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "productChapterComplete" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "input" },
-                value: { kind: "Variable", name: { kind: "Name", value: "input" } },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "key" } },
-                { kind: "Field", name: { kind: "Name", value: "titleSnapshot" } },
-                { kind: "Field", name: { kind: "Name", value: "userCompletedAt" } },
-                { kind: "Field", name: { kind: "Name", value: "completedChapterCount" } },
-                { kind: "Field", name: { kind: "Name", value: "accessibleChapterCount" } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  ProductChapterCompleteMutation,
-  ProductChapterCompleteMutationVariables
 >;
 export const ProductCreateDocument = {
   kind: "Document",
@@ -5900,6 +5939,57 @@ export const UserActivateAccountDocument = {
     },
   ],
 } as unknown as DocumentNode<UserActivateAccountMutation, UserActivateAccountMutationVariables>;
+export const UserCreateAnonymousDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "UserCreateAnonymous" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "input" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "UserCreateAnonymousGqlInput" } },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "userCreateAnonymous" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: { kind: "Variable", name: { kind: "Name", value: "input" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "accessToken" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "user" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      { kind: "Field", name: { kind: "Name", value: "username" } },
+                      { kind: "Field", name: { kind: "Name", value: "roles" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<UserCreateAnonymousMutation, UserCreateAnonymousMutationVariables>;
 export const UserForgotPasswordDocument = {
   kind: "Document",
   definitions: [
@@ -6881,6 +6971,32 @@ export const PaymentCheckoutConfigDocument = {
     },
   ],
 } as unknown as DocumentNode<PaymentCheckoutConfigQuery, PaymentCheckoutConfigQueryVariables>;
+export const ProductAiPreviewStagingDurationDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "ProductAiPreviewStagingDuration" },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "productAiPreviewStagingDuration" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [{ kind: "Field", name: { kind: "Name", value: "durationSeconds" } }],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  ProductAiPreviewStagingDurationQuery,
+  ProductAiPreviewStagingDurationQueryVariables
+>;
 export const ProductDeleteDependenciesDocument = {
   kind: "Document",
   definitions: [
@@ -7495,6 +7611,72 @@ export const UserNotificationListDocument = {
     },
   ],
 } as unknown as DocumentNode<UserNotificationListQuery, UserNotificationListQueryVariables>;
+export const UserProductListDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "UserProductList" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "input" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ProductListGqlInput" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            alias: { kind: "Name", value: "productList" },
+            name: { kind: "Name", value: "userProductList" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: { kind: "Variable", name: { kind: "Name", value: "input" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "items" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [{ kind: "Field", name: { kind: "Name", value: "isPurchased" } }],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "pagination" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "limit" } },
+                      { kind: "Field", name: { kind: "Name", value: "total" } },
+                      { kind: "Field", name: { kind: "Name", value: "count" } },
+                      { kind: "Field", name: { kind: "Name", value: "startCursor" } },
+                      { kind: "Field", name: { kind: "Name", value: "endCursor" } },
+                      { kind: "Field", name: { kind: "Name", value: "hasNextPage" } },
+                      { kind: "Field", name: { kind: "Name", value: "hasPreviousPage" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<UserProductListQuery, UserProductListQueryVariables>;
 export const UserProductReviewListDocument = {
   kind: "Document",
   definitions: [

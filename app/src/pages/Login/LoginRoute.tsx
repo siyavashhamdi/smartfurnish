@@ -9,7 +9,7 @@ import Login from "./Login";
 const LoginRoute = (): ReactElement => {
   const isMobileAppLayout = useMobileAppLayout();
   const location = useLocation();
-  const { isAuthenticated, isLoading, isPostLoginRedirectPending } = useAuth();
+  const { isRegisteredUser, isLoading, isPostLoginRedirectPending } = useAuth();
 
   if (isMobileAppLayout) {
     return <Navigate to={APP_SHELL_ROUTES.profileLogin} replace state={location.state} />;
@@ -19,7 +19,7 @@ const LoginRoute = (): ReactElement => {
     return <></>;
   }
 
-  if (isAuthenticated) {
+  if (isRegisteredUser) {
     if (isPostLoginRedirectPending || peekPostLoginRedirect()) {
       return <></>;
     }

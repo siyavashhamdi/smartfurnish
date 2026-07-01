@@ -32,6 +32,12 @@ import { USER_LOGOUT_MUTATION } from "../graphql/mutations/userLogout.mutation";
 import { subscribeAuthSessionExpired } from "../lib/auth-session-expired-listeners";
 import { unregisterWebPushSubscriptionFromServer } from "../utils/pushSubscription.util";
 import { isNativeCapacitorShell } from "../utils/apiBaseUrl.util";
+import { isAnonymousUser } from "../utils/authRole.util";
+import {
+  ensureAnonymousAuthSession,
+  resetAnonymousSessionCreationBlock,
+} from "../utils/anonymousAuthSession.util";
+import { clearUnauthenticatedReloadGuard } from "../lib/auth-unauthenticated-reload.util";
 import { unregisterNativePushFromServer } from "../native/nativePushRegistration";
 
 /**
@@ -52,6 +58,8 @@ interface AuthContextValue {
   user: User | null;
   accessToken: string | null;
   isAuthenticated: boolean;
+  isRegisteredUser: boolean;
+  isAnonymousUser: boolean;
   isLoading: boolean;
   isPostLoginRedirectPending: boolean;
   login: (token: string, user: User) => void;
@@ -98,26 +106,64 @@ export const AuthProvider = ({ children }: AuthProviderProps): ReactElement => {
     setPostLoginRedirectTarget(redirect);
   }, []);
 
-  // Initialize auth state from localStorage
-  useEffect(() => {
+  const applyAuthSession = useCallback((token: string, userData: User): void => {
+    clearUnauthenticatedReloadGuard();
+    resetAnonymousSessionCreationBlock();
+    localStorage.setItem(LOCAL_STORAGE_KEYS.ACCESS_TOKEN, token);
+    localStorage.setItem("user", JSON.stringify(userData));
+    setAccessToken(token);
+    setUser(userData);
+  }, []);
+
+  const restoreAuthSessionFromStorage = useCallback((): boolean => {
     const token = localStorage.getItem(LOCAL_STORAGE_KEYS.ACCESS_TOKEN);
     const userStr = localStorage.getItem("user");
 
-    if (token && userStr) {
-      try {
-        const parsedUser = JSON.parse(userStr) as User;
-        setAccessToken(token);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error("خواندن اطلاعات کاربر از حافظه محلی ناموفق بود.", error);
-        // Clear invalid data
-        localStorage.removeItem(LOCAL_STORAGE_KEYS.ACCESS_TOKEN);
-        localStorage.removeItem("user");
-      }
+    if (!token || !userStr) {
+      return false;
     }
 
-    setIsLoading(false);
-  }, []);
+    try {
+      const parsedUser = JSON.parse(userStr) as User;
+      applyAuthSession(token, parsedUser);
+      return true;
+    } catch (error) {
+      console.error("خواندن اطلاعات کاربر از حافظه محلی ناموفق بود.", error);
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.ACCESS_TOKEN);
+      localStorage.removeItem("user");
+      return false;
+    }
+  }, [applyAuthSession]);
+
+  // ApolloBootstrap ensures an anonymous session exists before children mount.
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      if (restoreAuthSessionFromStorage()) {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      const anonymousUser = await ensureAnonymousAuthSession();
+      if (!cancelled && anonymousUser) {
+        const token = localStorage.getItem(LOCAL_STORAGE_KEYS.ACCESS_TOKEN);
+        if (token) {
+          applyAuthSession(token, anonymousUser);
+        }
+      }
+
+      if (!cancelled) {
+        setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applyAuthSession, restoreAuthSessionFromStorage]);
 
   useEffect(() => {
     if (!postLoginRedirectTarget) {
@@ -160,10 +206,7 @@ export const AuthProvider = ({ children }: AuthProviderProps): ReactElement => {
    */
   const login = useCallback(
     (token: string, userData: User): void => {
-      localStorage.setItem(LOCAL_STORAGE_KEYS.ACCESS_TOKEN, token);
-      localStorage.setItem("user", JSON.stringify(userData));
-      setAccessToken(token);
-      setUser(userData);
+      applyAuthSession(token, userData);
 
       const redirect = resolvePendingPostLoginRedirect(location.state);
       if (redirect) {
@@ -180,7 +223,7 @@ export const AuthProvider = ({ children }: AuthProviderProps): ReactElement => {
 
       navigate(APP_SHELL_ROUTES.products);
     },
-    [beginPostLoginRedirect, location.state, navigate]
+    [applyAuthSession, beginPostLoginRedirect, location.state, navigate]
   );
 
   const syncUser = useCallback((userData: User): void => {
@@ -195,6 +238,7 @@ export const AuthProvider = ({ children }: AuthProviderProps): ReactElement => {
   }, []);
 
   const clearLocalAuthSession = useCallback((): void => {
+    resetAnonymousSessionCreationBlock();
     setAccessToken(null);
     setUser(null);
     setPostLoginRedirectTarget(null);
@@ -273,19 +317,19 @@ export const AuthProvider = ({ children }: AuthProviderProps): ReactElement => {
     navigate(shouldUseProfileAuthShell() ? APP_SHELL_ROUTES.profileLogin : APP_SHELL_ROUTES.login);
   }, [navigate]);
 
-  const forceLogoutToProfile = useCallback((): void => {
+  const forceLogoutOnSessionExpired = useCallback((): void => {
     const stayOnPage = isStandaloneShellRoute(window.location.pathname);
 
     runServerLogout(() => {
       if (!stayOnPage) {
-        navigate(APP_SHELL_ROUTES.profile, { replace: true });
+        redirectToLoginAfterLogout();
       }
     });
-  }, [navigate, runServerLogout]);
+  }, [redirectToLoginAfterLogout, runServerLogout]);
 
   useEffect(() => {
-    return subscribeAuthSessionExpired(forceLogoutToProfile);
-  }, [forceLogoutToProfile]);
+    return subscribeAuthSessionExpired(forceLogoutOnSessionExpired);
+  }, [forceLogoutOnSessionExpired]);
 
   /**
    * Logout function
@@ -299,6 +343,9 @@ export const AuthProvider = ({ children }: AuthProviderProps): ReactElement => {
     user,
     accessToken,
     isAuthenticated: Boolean(accessToken) && Boolean(user),
+    isRegisteredUser:
+      Boolean(accessToken) && Boolean(user) && !isAnonymousUser(user?.roles ?? []),
+    isAnonymousUser: Boolean(user) && isAnonymousUser(user?.roles ?? []),
     isLoading,
     isPostLoginRedirectPending: postLoginRedirectTarget !== null,
     login,

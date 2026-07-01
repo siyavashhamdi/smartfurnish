@@ -1,10 +1,9 @@
 import { Args, Context, Query, Resolver } from "@nestjs/graphql";
-import { ForbiddenException, UseGuards } from "@nestjs/common";
+import { UseGuards } from "@nestjs/common";
 
-import { EXCEPTION_CONSTANT } from "../../../../constants/exception.constant";
-
-import { UserRole } from "../../../../enums";
-import { OptionalGqlAuthGuard } from "../../../auth";
+import { AuthenticatedRoles, GqlAuthGuard, RolesGuard } from "../../../auth";
+import { assertEndUserOrAnonymousAccess, isEndUserRole } from "../../../../utils/end-user-access.util";
+import { GraphQLContextUtil } from "../../../../utils";
 import { GraphQLContext } from "../../../../types/graphql-context.types";
 import { ProductService } from "../../product.service";
 import { ProductListGqlInput } from "../inputs";
@@ -22,23 +21,19 @@ export class UserProductListQuery {
     description:
       "Get active products for anonymous users and END_USER views with purchase state",
   })
-  @UseGuards(OptionalGqlAuthGuard)
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @AuthenticatedRoles()
   async findUserProducts(
     @Args("input") input: ProductListGqlInput,
     @Context() context: GraphQLContext,
   ): Promise<UserProductListPaginatedCursorGqlResponse> {
-    const user = context.req?.user;
-    const isEndUser = user?.roles?.includes(UserRole.END_USER) === true;
-
-    if (user && !isEndUser) {
-      throw new ForbiddenException(
-        EXCEPTION_CONSTANT.END_USER_OR_ANONYMOUS_ONLY,
-      );
-    }
+    const user = GraphQLContextUtil.getUser(context);
+    assertEndUserOrAnonymousAccess(user);
+    const isEndUser = isEndUserRole(user?.roles);
 
     return this.productService.listForUser(
       input,
-      isEndUser ? user.userId : undefined,
+      isEndUser ? user!.userId : undefined,
     );
   }
 }

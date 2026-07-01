@@ -9,12 +9,13 @@ import { FileService } from "../../../file/file.service";
 import { resolveAvatarAccessUrl } from "../../../file/file-access-url.util";
 import { GraphQLContextUtil } from "../../../../utils";
 import { UserDocument } from "../../../../database/schemas";
-import { GqlAuthGuard } from "../../../auth";
+import { GqlAuthGuard, AuthenticatedRoles, RolesGuard } from "../../../auth";
 import { GraphQLContext } from "../../../../types/graphql-context.types";
 import { UserMeGqlResponse } from "../responses/user-me.gql.response";
 
 @Resolver(() => UserMeGqlResponse)
-@UseGuards(GqlAuthGuard)
+@UseGuards(GqlAuthGuard, RolesGuard)
+@AuthenticatedRoles()
 export class UserMeQuery {
   constructor(
     private readonly userService: UserService,

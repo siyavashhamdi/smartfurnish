@@ -3,6 +3,7 @@ import { resolveApiUrl } from "./apiBaseUrl.util";
 import type { FileUploadPolicyId } from "../constants/fileUploadPolicies";
 import { FILE_UPLOAD_POLICY_MAX_SIZE_BYTES } from "../constants/fileUploadPolicies";
 import { resolveErrorMessageFromCode } from "../utilities/graphql-error.util";
+import { reloadPageOnUnauthenticated } from "../lib/auth-unauthenticated-reload.util";
 import type { FileAccessUrl } from "./fileAccessUrl.util";
 import { compressImageForUpload } from "./imageCompression.util";
 import {
@@ -177,6 +178,10 @@ export async function uploadFile(
           );
         }
         return;
+      }
+
+      if (xhr.status === 401) {
+        reloadPageOnUnauthenticated();
       }
 
       let message = resolveErrorMessageFromCode("INTERNAL_SERVER_ERROR");

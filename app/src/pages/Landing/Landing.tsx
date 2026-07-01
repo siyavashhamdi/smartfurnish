@@ -114,7 +114,7 @@ const NavCard = ({ to, className, style, children }: NavCardProps): ReactElement
 const Landing = (): ReactElement => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isRegisteredUser } = useAuth();
 
   const { products: featuredProducts, loading: productsLoading } = useLandingFeaturedProducts();
 
@@ -162,7 +162,7 @@ const Landing = (): ReactElement => {
     [handleProductOpen]
   );
 
-  const primaryCtaLabel = isAuthenticated
+  const primaryCtaLabel = isRegisteredUser
     ? t("pages.landing.nav.myProducts")
     : t("pages.landing.hero.ctaPrimary");
 
@@ -200,7 +200,7 @@ const Landing = (): ReactElement => {
   const stepItems = [
     {
       key: "signup",
-      to: isAuthenticated ? APP_SHELL_ROUTES.profile : APP_SHELL_ROUTES.profileSignup,
+      to: isRegisteredUser ? APP_SHELL_ROUTES.profile : APP_SHELL_ROUTES.profileSignup,
       number: "۰۱",
       icon: <PersonRounded />,
       title: t("pages.landing.steps.items.signup.title"),
@@ -283,7 +283,7 @@ const Landing = (): ReactElement => {
               >
                 {primaryCtaLabel}
               </Button>
-              {!isAuthenticated ? (
+              {!isRegisteredUser ? (
                 <Button
                   component={Link}
                   to={APP_SHELL_ROUTES.profileSignup}
@@ -469,7 +469,7 @@ const Landing = (): ReactElement => {
               >
                 {t("pages.landing.cta.primary")}
               </Button>
-              {!isAuthenticated ? (
+              {!isRegisteredUser ? (
                 <Button
                   component={Link}
                   to={APP_SHELL_ROUTES.profileSignup}

@@ -119,7 +119,8 @@ const More = (): ReactElement => {
   const [isHardReloading, setIsHardReloading] = useState(false);
   const isDarkMode = preferredTheme === "dark";
   const isUpdatingPreferences = updatePreferencesResult.loading;
-  const shouldShowBugReport = isAuthenticated && !isSuperAdmin;
+  const isEndUser = roles.includes(UserRole.END_USER);
+  const shouldShowBugReport = isEndUser && !isSuperAdmin;
   const privacyPolicyPage = data?.appPrivacyPolicyPageConfig ?? EMPTY_APP_PRIVACY_POLICY_PAGE;
   const termsOfUsePage = termsOfUseData?.appTermsOfUsePageConfig ?? EMPTY_APP_TERMS_OF_USE_PAGE;
   const shouldShowPrivacyPolicy = shouldShowPublicInfoCards && hasText(privacyPolicyPage.html);

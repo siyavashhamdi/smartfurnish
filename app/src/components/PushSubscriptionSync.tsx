@@ -11,7 +11,7 @@ import { syncWebPushSubscriptionWithServer } from "../utils/pushSubscription.uti
  * browser permission is granted (login, session restore, preference changes).
  */
 export function PushSubscriptionSync(): ReactElement | null {
-  const { isAuthenticated } = useAuth();
+  const { isRegisteredUser } = useAuth();
   const { user } = useMe();
   const { permission } = useBrowserNotificationPermission();
   const notificationsEnabled = readStoredNotificationsEnabled(
@@ -19,7 +19,7 @@ export function PushSubscriptionSync(): ReactElement | null {
   );
 
   useEffect(() => {
-    if (!isAuthenticated || permission !== "granted" || !notificationsEnabled) {
+    if (!isRegisteredUser || permission !== "granted" || !notificationsEnabled) {
       return;
     }
 
@@ -41,7 +41,7 @@ export function PushSubscriptionSync(): ReactElement | null {
       navigator.serviceWorker.removeEventListener("controllerchange", retryOnServiceWorkerReady);
       window.removeEventListener("smart-furnish:sw-ready", retryOnServiceWorkerReady);
     };
-  }, [isAuthenticated, notificationsEnabled, permission, user?.id]);
+  }, [isRegisteredUser, notificationsEnabled, permission, user?.id]);
 
   return null;
 }

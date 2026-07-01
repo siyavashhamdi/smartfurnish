@@ -2,10 +2,12 @@ import { Box, CircularProgress, Typography } from "@mui/material";
 import { useEffect, useState, type ReactElement, type ReactNode } from "react";
 import type { ApolloClient } from "@apollo/client";
 import { ApolloProvider } from "@apollo/client/react";
+import { LOCAL_STORAGE_KEYS } from "../constants";
 import { hydrateApolloCache } from "../lib/apollo-cache-persist";
 import { initApolloClient } from "../lib/apollo-client";
 import { initFileContentCache } from "../lib/file-content-cache";
 import { initBrowserOfflineListeners } from "../lib/offline-state";
+import { ensureAnonymousAuthSession } from "../utils/anonymousAuthSession.util";
 type ApolloBootstrapProps = {
   readonly children: ReactNode;
 };
@@ -21,6 +23,14 @@ export function ApolloBootstrap({ children }: ApolloBootstrapProps): ReactElemen
     const bootstrap = async (): Promise<void> => {
       try {
         const fastClient = await initApolloClient({ deferCacheHydrate: true });
+
+        const hasAccessToken = Boolean(
+          localStorage.getItem(LOCAL_STORAGE_KEYS.ACCESS_TOKEN)?.trim(),
+        );
+        if (!hasAccessToken) {
+          await ensureAnonymousAuthSession();
+        }
+
         if (cancelled) {
           return;
         }

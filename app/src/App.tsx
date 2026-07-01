@@ -34,7 +34,7 @@ const emotionRtlCache = createCache({
 
 const AppShell = (): ReactElement => {
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isRegisteredUser } = useAuth();
   const isUnderConstructionHome =
     API_CONFIG.UNDER_CONSTRUCTION && location.pathname === APP_SHELL_ROUTES.home;
 
@@ -43,7 +43,7 @@ const AppShell = (): ReactElement => {
   }
 
   return (
-    <MainLayout showSessionTools={isAuthenticated}>
+    <MainLayout showSessionTools={isRegisteredUser}>
       <DashboardAppRoutes />
     </MainLayout>
   );

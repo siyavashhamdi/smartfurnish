@@ -67,6 +67,7 @@ import {
 } from "../../constants/fileUploadPolicies";
 import { USER_LIST_QUERY } from "../../graphql/queries/userList.query";
 import { USER_DETAIL_QUERY } from "../../graphql/queries/userDetail.query";
+import { useAuth } from "../../contexts/AuthContext";
 import { useDebounce } from "../../hooks/useDebounce";
 import { useMutationWithSnackbar } from "../../hooks/useMutationWithSnackbar";
 import {
@@ -107,8 +108,10 @@ import DateTimeValue from "../../shared/display/DateTimeValue";
 import {
   EMPTY_MANAGED_USERS_LIST_FILTERS,
   hasManagedUsersColumnFiltersApplied,
+  resolveManagedUsersRoleFilter,
   type ManagedUserRecord,
   type ManagedUsersListFilters,
+  type UsersManagementRoleFilterTab,
 } from "./users-management.types";
 import {
   buildUserListQueryVariables,
@@ -123,12 +126,14 @@ import {
   type UserStatus,
 } from "./users-management-list.api";
 import { UserRole } from "../../lib/graphql/generated";
+import { isAnonymousUser, isSuperAdminRole } from "../../utils/authRole.util";
 import { APP_SHELL_ROUTES } from "../../routing/app-shell-routes";
+import UsersManagementFilterTabs from "./UsersManagementFilterTabs";
 import confirmDialogStyles from "./styles/users-management-confirm.module.scss";
 import AppTooltip from "../../shared/AppTooltip";
 
 const COLUMN_WIDTH_BY_ID: Record<string, string> = {
-  avatarAccessUrl: "4.5rem",
+  avatarAccessUrl: "3.5rem",
   username: "12rem",
   firstName: "10rem",
   lastName: "11rem",
@@ -144,7 +149,7 @@ const COLUMN_WIDTH_BY_ID: Record<string, string> = {
 };
 
 const MOBILE_COLUMN_WIDTH_BY_ID: Record<string, string> = {
-  avatarAccessUrl: "5rem",
+  avatarAccessUrl: "4rem",
   username: "24rem",
   firstName: "20rem",
   lastName: "22rem",
@@ -182,12 +187,22 @@ const persianFieldInputProps = {
   dir: "rtl",
 } as const;
 
-const ROLE_OPTIONS: readonly UserRole[] = [UserRole.SUPER_ADMIN, UserRole.END_USER];
+const ASSIGNABLE_ROLE_OPTIONS: readonly UserRole[] = [
+  UserRole.SUPER_ADMIN,
+  UserRole.END_USER,
+];
+
+const ROLE_FILTER_OPTIONS: readonly UserRole[] = [
+  UserRole.SUPER_ADMIN,
+  UserRole.END_USER,
+  UserRole.ANONYMOUS,
+];
 const STATUS_OPTIONS: readonly UserStatus[] = ["ACTIVE", "DEACTIVE", "SUSPENDED", "BANNED"];
 
 const ROLE_LABEL: Record<UserRole, string> = {
   [UserRole.SUPER_ADMIN]: "سوپر ادمین",
-  [UserRole.END_USER]: "کاربر",
+  [UserRole.END_USER]: "ثبت‌نام‌شده",
+  [UserRole.ANONYMOUS]: "میهمان",
 };
 
 const STATUS_LABEL: Record<UserStatus, string> = {
@@ -296,6 +311,11 @@ function buildCreateFormState(): UserEditFormState {
 }
 
 function buildEditFormState(record: ManagedUserRecord): UserEditFormState {
+  const recordRoles = record.roles.filter(
+    (role): role is UserRole =>
+      ASSIGNABLE_ROLE_OPTIONS.includes(role as UserRole) || role === UserRole.ANONYMOUS
+  );
+
   return {
     username: editableValue(record.username),
     firstName: editableValue(record.firstName),
@@ -304,7 +324,7 @@ function buildEditFormState(record: ManagedUserRecord): UserEditFormState {
     phoneNumber: editableValue(record.phoneNumber),
     avatarAccessUrl: record.avatarAccessUrl,
     bio: editableValue(record.bio),
-    roles: record.roles.filter((role): role is UserRole => ROLE_OPTIONS.includes(role as UserRole)),
+    roles: recordRoles.length > 0 ? recordRoles : [UserRole.END_USER],
     status: STATUS_OPTIONS.includes(record.status as UserStatus)
       ? (record.status as UserStatus)
       : "ACTIVE",
@@ -333,13 +353,15 @@ function UserAvatarCell({
   const initial = resolveAvatarInitial(displayName);
 
   return (
-    <CachedFileAvatar
-      accessUrl={avatarAccessUrl}
-      alt=""
-      sx={{ width: 32, height: 32, bgcolor: "action.hover", mx: "auto" }}
-    >
-      <AvatarInitial initial={initial} />
-    </CachedFileAvatar>
+    <Box sx={{ py: 0.5, display: "flex", justifyContent: "center" }}>
+      <CachedFileAvatar
+        accessUrl={avatarAccessUrl}
+        alt=""
+        sx={{ width: 28, height: 28, bgcolor: "action.hover" }}
+      >
+        <AvatarInitial initial={initial} />
+      </CachedFileAvatar>
+    </Box>
   );
 }
 
@@ -367,6 +389,8 @@ function selectUserListPage(
 const UsersManagementList = (): ReactElement => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
+  const isSuperAdmin = isSuperAdminRole(authUser?.roles ?? []);
   const isMobile = useMediaQuery((muiTheme: Theme) => muiTheme.breakpoints.down("md"));
   const { t } = useTranslation();
   const { showError } = useSnackbar();
@@ -439,6 +463,8 @@ const UsersManagementList = (): ReactElement => {
   const [pendingFilters, setPendingFilters] = useState<ManagedUsersListFilters>(
     EMPTY_MANAGED_USERS_LIST_FILTERS
   );
+  const [activeRoleFilterTab, setActiveRoleFilterTab] =
+    useState<UsersManagementRoleFilterTab>("END_USER");
   const debouncedPendingFilters = useDebounce(pendingFilters, 500);
   const applyFiltersRef = useRef<(() => void) | null>(null);
   const [dialogMode, setDialogMode] = useState<UserDialogMode>("edit");
@@ -454,10 +480,41 @@ const UsersManagementList = (): ReactElement => {
     [appliedFilters, debouncedSearchQuery]
   );
 
+  const effectiveRoleFilter = useMemo(
+    () => resolveManagedUsersRoleFilter(isSuperAdmin, activeRoleFilterTab, appliedFilters),
+    [activeRoleFilterTab, appliedFilters, isSuperAdmin]
+  );
+
+  const listQueryFilters = useMemo(
+    (): ManagedUsersListFilters => ({
+      ...appliedFilters,
+      role: effectiveRoleFilter,
+    }),
+    [appliedFilters, effectiveRoleFilter]
+  );
+
+  const tableHiddenColumns = useMemo(() => {
+    if (!isSuperAdmin) {
+      return null;
+    }
+
+    const hidden: Record<string, boolean> = {};
+
+    if (activeRoleFilterTab !== "ALL") {
+      hidden.roles = true;
+    }
+
+    if (activeRoleFilterTab === "ANONYMOUS") {
+      hidden.actions = true;
+    }
+
+    return Object.keys(hidden).length > 0 ? hidden : null;
+  }, [activeRoleFilterTab, isSuperAdmin]);
+
   const buildVariables = useCallback(
     ({ page, pageSize }: { page: number; pageSize: number }) =>
-      buildUserListQueryVariables(debouncedSearchQuery, appliedFilters, page, pageSize),
-    [appliedFilters, debouncedSearchQuery]
+      buildUserListQueryVariables(debouncedSearchQuery, listQueryFilters, page, pageSize),
+    [debouncedSearchQuery, listQueryFilters]
   );
 
   const {
@@ -476,7 +533,7 @@ const UsersManagementList = (): ReactElement => {
     variables: buildVariables,
     selectPage: selectUserListPage,
     mapItem: mapUserListItemRowToRecord,
-    resetPageDeps: [debouncedSearchQuery, appliedFilters],
+    resetPageDeps: [debouncedSearchQuery, appliedFilters, activeRoleFilterTab],
   });
 
   const returnToEditUserDialog = useCallback((): void => {
@@ -569,6 +626,19 @@ const UsersManagementList = (): ReactElement => {
       toUserEditSnapshot(editForm)
     );
   }, [dialogMode, editForm, initialEditForm]);
+
+  const isEditingAnonymousUser = useMemo(
+    () => editUserRecord != null && isAnonymousUser(editUserRecord.roles),
+    [editUserRecord]
+  );
+
+  const editRolePickerOptions = useMemo((): readonly UserRole[] => {
+    if (dialogMode === "create") {
+      return ASSIGNABLE_ROLE_OPTIONS;
+    }
+
+    return ROLE_FILTER_OPTIONS;
+  }, [dialogMode]);
 
   const loginImpactChanges = useMemo(
     () => editSensitiveChanges.filter((kind) => kind !== "role"),
@@ -710,18 +780,26 @@ const UsersManagementList = (): ReactElement => {
       {
         id: "actions",
         header: t("table.columns.actions"),
-        cell: ({ row }) => (
-          <CrudRowActions
-            onEdit={() => {
-              navigate(`${APP_SHELL_ROUTES.users}/edit/${row.original.id}`);
-            }}
-          />
-        ),
+        cell: ({ row }) => {
+          const canEditUser = !isAnonymousUser(row.original.roles);
+
+          return (
+            <CrudRowActions
+              onEdit={
+                canEditUser
+                  ? () => {
+                      navigate(`${APP_SHELL_ROUTES.users}/edit/${row.original.id}`);
+                    }
+                  : undefined
+              }
+            />
+          );
+        },
         enableSorting: false,
         enableHiding: false,
       },
     ],
-    [t]
+    [navigate, t]
   );
 
   const table = useReactTable({
@@ -743,6 +821,25 @@ const UsersManagementList = (): ReactElement => {
     setPendingFilters(EMPTY_MANAGED_USERS_LIST_FILTERS);
     setAppliedFilters(EMPTY_MANAGED_USERS_LIST_FILTERS);
     setSearchQuery("");
+    if (isSuperAdmin) {
+      setActiveRoleFilterTab("END_USER");
+    }
+  };
+
+  const handleRoleFilterTabChange = (tab: UsersManagementRoleFilterTab): void => {
+    setActiveRoleFilterTab(tab);
+    if (tab === "ALL") {
+      return;
+    }
+
+    setPendingFilters((prev) => ({
+      ...prev,
+      role: "ALL",
+    }));
+    setAppliedFilters((prev) => ({
+      ...prev,
+      role: "ALL",
+    }));
   };
 
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>): void => {
@@ -907,10 +1004,13 @@ const UsersManagementList = (): ReactElement => {
       );
     }
     if (column.id === "roles") {
+      if (isSuperAdmin && activeRoleFilterTab !== "ALL") {
+        return null;
+      }
       return renderSelectFilter(
         "role",
         t("table.pages.usersManagement.columns.roles"),
-        ROLE_OPTIONS,
+        ROLE_FILTER_OPTIONS,
         ROLE_LABEL
       );
     }
@@ -1029,7 +1129,7 @@ const UsersManagementList = (): ReactElement => {
   };
 
   const performUserUpdate = async (): Promise<void> => {
-    if (!editForm || !editTarget) {
+    if (!editForm || !editTarget || isEditingAnonymousUser) {
       return;
     }
 
@@ -1062,7 +1162,7 @@ const UsersManagementList = (): ReactElement => {
             avatarFileId,
             bio: optionalInput(editForm.bio),
           },
-          roles: editForm.roles,
+          ...(isEditingAnonymousUser ? {} : { roles: editForm.roles }),
           status: editForm.status,
           password: optionalInput(editForm.password) ?? undefined,
         },
@@ -1079,7 +1179,16 @@ const UsersManagementList = (): ReactElement => {
   };
 
   useEffect(() => {
-    if (!isEditConfirmRoute || !editUserId || !initialEditForm || !editForm) {
+    if (!isEditConfirmRoute || !editUserId) {
+      return;
+    }
+
+    if (isEditingAnonymousUser) {
+      navigate(`${APP_SHELL_ROUTES.users}/edit/${editUserId}`, { replace: true });
+      return;
+    }
+
+    if (!initialEditForm || !editForm) {
       return;
     }
 
@@ -1092,13 +1201,14 @@ const UsersManagementList = (): ReactElement => {
     editUserId,
     initialEditForm,
     isEditConfirmRoute,
+    isEditingAnonymousUser,
     navigate,
   ]);
 
   const handleSubmitEdit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
 
-    if (!editForm) {
+    if (!editForm || isEditingAnonymousUser) {
       return;
     }
 
@@ -1201,6 +1311,15 @@ const UsersManagementList = (): ReactElement => {
         })}
         onNewClick={handleOpenCreateDialog}
         toolbarOptions={TABLE_TOOLBAR_OPTIONS}
+        filtersBelowToolbar={
+          isSuperAdmin ? (
+            <UsersManagementFilterTabs
+              activeTab={activeRoleFilterTab}
+              onChange={handleRoleFilterTabChange}
+            />
+          ) : null
+        }
+        hiddenColumns={tableHiddenColumns}
         showColumnFilters={showColumnFilters}
         onShowColumnFiltersChange={setShowColumnFilters}
         onApplyFilters={handleApplyFilters}
@@ -1210,14 +1329,18 @@ const UsersManagementList = (): ReactElement => {
         noDataLabel={error ? t("errors.general.loadData") : undefined}
         hasActiveFilters={hasAppliedFilters}
         pagination={pagination}
-        onRowClick={(row) => navigate(`${APP_SHELL_ROUTES.users}/edit/${row.id}`)}
+        onRowClick={(row) => {
+          if (!isAnonymousUser(row.roles)) {
+            navigate(`${APP_SHELL_ROUTES.users}/edit/${row.id}`);
+          }
+        }}
       />
 
       <EntityModalShell
         open={userDialogOpen}
         onClose={handleCloseEditDialog}
         disableClose={isSavingUser}
-        hasUnsavedChanges={canSubmitUserForm}
+        hasUnsavedChanges={!isEditingAnonymousUser && canSubmitUserForm}
         maxWidth="lg"
         resetKey={editUserId != null ? `${editUserId}-${Boolean(editUserRecord)}` : undefined}
         title={
@@ -1232,31 +1355,43 @@ const UsersManagementList = (): ReactElement => {
               editUserRecord?.username?.trim() ||
               t("pages.usersManagement.edit.subtitle")
         }
-        useFormWrapper
-        onSubmit={handleSubmitEdit}
-        closeOnSave
+        useFormWrapper={!isEditingAnonymousUser}
+        onSubmit={isEditingAnonymousUser ? undefined : handleSubmitEdit}
+        closeOnSave={!isEditingAnonymousUser}
         footer={
-          <ModalFooterActions
-            actions={[
-              {
-                key: "close",
-                isCloseButton: true,
-                onClick: handleCloseEditDialog,
-                disabled: isSavingUser,
-              },
-              {
-                key: "submit",
-                label: isSavingUser
-                  ? t("pages.usersManagement.edit.saving")
-                  : dialogMode === "create"
-                    ? t("pages.usersManagement.create.save")
-                    : t("pages.usersManagement.edit.save"),
-                type: "submit",
-                icon: dialogMode === "create" ? <AddRoundedIcon /> : undefined,
-                disabled: isSavingUser || !editForm || !canSubmitUserForm,
-              },
-            ]}
-          />
+          isEditingAnonymousUser ? (
+            <ModalFooterActions
+              actions={[
+                {
+                  key: "close",
+                  isCloseButton: true,
+                  onClick: handleCloseEditDialog,
+                },
+              ]}
+            />
+          ) : (
+            <ModalFooterActions
+              actions={[
+                {
+                  key: "close",
+                  isCloseButton: true,
+                  onClick: handleCloseEditDialog,
+                  disabled: isSavingUser,
+                },
+                {
+                  key: "submit",
+                  label: isSavingUser
+                    ? t("pages.usersManagement.edit.saving")
+                    : dialogMode === "create"
+                      ? t("pages.usersManagement.create.save")
+                      : t("pages.usersManagement.edit.save"),
+                  type: "submit",
+                  icon: dialogMode === "create" ? <AddRoundedIcon /> : undefined,
+                  disabled: isSavingUser || !editForm || !canSubmitUserForm,
+                },
+              ]}
+            />
+          )
         }
       >
         {editUserId != null && userDetailLoading ? (
@@ -1266,6 +1401,10 @@ const UsersManagementList = (): ReactElement => {
               در حال دریافت اطلاعات کاربر...
             </Typography>
           </Stack>
+        ) : isEditingAnonymousUser ? (
+          <Alert severity="info" sx={{ mt: 1 }}>
+            {t("pages.usersManagement.edit.anonymousNotEditable")}
+          </Alert>
         ) : editForm ? (
           <Stack spacing={3} sx={{ pt: 1 }}>
             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
@@ -1476,8 +1615,12 @@ const UsersManagementList = (): ReactElement => {
               InputLabelProps={{ required: false, shrink: true }}
               inputProps={{ "aria-required": true }}
             >
-              {ROLE_OPTIONS.map((role) => (
-                <MenuItem key={role} value={role}>
+              {editRolePickerOptions.map((role) => (
+                <MenuItem
+                  key={role}
+                  value={role}
+                  disabled={role === UserRole.ANONYMOUS}
+                >
                   <Checkbox checked={editForm.roles.includes(role)} size="small" />
                   <ListItemText primary={ROLE_LABEL[role]} />
                 </MenuItem>
@@ -1488,7 +1631,7 @@ const UsersManagementList = (): ReactElement => {
       </EntityModalShell>
 
       <EntityConfirmDialogShell
-        open={isEditConfirmRoute && editSensitiveChanges.length > 0}
+        open={isEditConfirmRoute && !isEditingAnonymousUser && editSensitiveChanges.length > 0}
         onClose={handleCloseSensitiveConfirm}
         title={t("pages.usersManagement.edit.confirm.title")}
         resetKey={editSensitiveChanges.join(",")}

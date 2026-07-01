@@ -125,12 +125,12 @@ const SORT_ORDER_LABEL: Record<"ASC" | "DESC", string> = {
 
 const ProductsIndex = (): ReactElement => {
   const { t } = useTranslation();
-  const { user: authUser } = useAuth();
+  const { user: authUser, isRegisteredUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useMediaQuery("(max-width:600px)");
   const isEndUser = authUser?.roles?.includes(UserRole.END_USER) === true;
-  const isPublicProductView = !authUser || isEndUser;
+  const isPublicProductView = !isRegisteredUser || isEndUser;
 
   const [filters, setFilters] = useState<ProductListFilters>(DEFAULT_PRODUCT_LIST_FILTERS);
   const [searchQuery, setSearchQuery] = useState(DEFAULT_PRODUCT_LIST_FILTERS.query);

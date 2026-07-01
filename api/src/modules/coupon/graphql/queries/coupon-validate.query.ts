@@ -5,13 +5,14 @@ import { Args, Context, Query, Resolver } from "@nestjs/graphql";
 
 import { UserRole } from "../../../../enums";
 import { GraphQLContext } from "../../../../types/graphql-context.types";
-import { GqlAuthGuard } from "../../../auth";
+import { GqlAuthGuard, RegisteredUserRoles, RolesGuard } from "../../../auth";
 import { CouponService } from "../../coupon.service";
 import { CouponValidateGqlInput } from "../inputs";
 import { CouponValidateGqlResponse } from "../responses";
 
 @Resolver(() => CouponValidateGqlResponse)
-@UseGuards(GqlAuthGuard)
+@UseGuards(GqlAuthGuard, RolesGuard)
+@RegisteredUserRoles()
 export class CouponValidateQuery {
   constructor(private readonly couponService: CouponService) {}
 

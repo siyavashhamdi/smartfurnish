@@ -2,7 +2,8 @@ import { UserRole } from "../lib/graphql/generated";
 
 export const USER_ROLE_LABELS: Record<UserRole, string> = {
   [UserRole.SUPER_ADMIN]: "سوپر ادمین",
-  [UserRole.END_USER]: "کاربر",
+  [UserRole.END_USER]: "ثبت‌نام‌شده",
+  [UserRole.ANONYMOUS]: "میهمان",
 };
 
 export function getUserRoleLabel(role: string): string {

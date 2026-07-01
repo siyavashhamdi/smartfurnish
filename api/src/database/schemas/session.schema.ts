@@ -31,6 +31,9 @@ export class Session {
     enum: Object.values(SessionStatus),
   })
   status: SessionStatus;
+
+  @Prop({ type: Types.ObjectId, index: true })
+  replacedBySessionId?: Types.ObjectId;
 }
 
 export const SessionSchema = SchemaFactory.createForClass(Session);

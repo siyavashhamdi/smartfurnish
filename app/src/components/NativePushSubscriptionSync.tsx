@@ -10,7 +10,7 @@ import { readStoredNotificationsEnabled } from "../utils/userPreferences.util";
  * launcher badge counts and deliver native notifications while the app is closed.
  */
 export function NativePushSubscriptionSync(): ReactElement | null {
-  const { isAuthenticated } = useAuth();
+  const { isRegisteredUser } = useAuth();
   const { user } = useMe();
   const { permission } = useBrowserNotificationPermission();
   const notificationsEnabled = readStoredNotificationsEnabled(
@@ -18,12 +18,12 @@ export function NativePushSubscriptionSync(): ReactElement | null {
   );
 
   useEffect(() => {
-    if (!isAuthenticated || permission !== "granted" || !notificationsEnabled) {
+    if (!isRegisteredUser || permission !== "granted" || !notificationsEnabled) {
       return;
     }
 
     void syncNativePushRegistrationWithServer();
-  }, [isAuthenticated, notificationsEnabled, permission, user?.id]);
+  }, [isRegisteredUser, notificationsEnabled, permission, user?.id]);
 
   return null;
 }

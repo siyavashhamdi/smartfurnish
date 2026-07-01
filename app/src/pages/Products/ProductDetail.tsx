@@ -130,7 +130,7 @@ const ProductDetail = (): ReactElement => {
     open: openAiPreviewDialog,
     close: closeAiPreviewDialog,
   } = useProductAiPreviewRoute(productId);
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isRegisteredUser, user } = useAuth();
   const { t } = useTranslation();
   const purchaseCardRef = useRef<HTMLElement | null>(null);
   const fabricAiPreviewObserverRef = useRef<IntersectionObserver | null>(null);
@@ -155,7 +155,7 @@ const ProductDetail = (): ReactElement => {
   }, [refetch]);
 
   useProductPaymentStatusNotificationRefetch({
-    enabled: isAuthenticated && Boolean(productId),
+    enabled: isRegisteredUser && Boolean(productId),
     productId,
     refetch: () => {
       void refetchProductDetail();
@@ -644,7 +644,7 @@ const ProductDetail = (): ReactElement => {
                 isReviewsSectionVisible={product.isReviewsSectionVisible !== false}
                 isReviewSubmissionEnabled={product.isReviewSubmissionEnabled !== false}
                 canSubmitReview={resolveCanSubmitProductReview({
-                  isAuthenticated,
+                  isAuthenticated: isRegisteredUser,
                   roles: user?.roles,
                   isReviewsSectionVisible: product?.isReviewsSectionVisible,
                   isReviewSubmissionEnabled: product?.isReviewSubmissionEnabled,

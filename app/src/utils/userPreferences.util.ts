@@ -42,6 +42,22 @@ export function applyThemeToDocument(mode: PaletteMode): void {
   document.body.setAttribute("data-theme", mode);
 }
 
+export function persistNotificationsEnabledPreference(
+  notificationsEnabled: boolean | null | undefined,
+): boolean {
+  if (typeof notificationsEnabled !== "boolean") {
+    return false;
+  }
+
+  const storedValue = String(notificationsEnabled);
+  if (localStorage.getItem(LOCAL_STORAGE_KEYS.NOTIFICATIONS_ENABLED) === storedValue) {
+    return false;
+  }
+
+  localStorage.setItem(LOCAL_STORAGE_KEYS.NOTIFICATIONS_ENABLED, storedValue);
+  return true;
+}
+
 export function applyUserPreferences(preferences: UserPreferencesLike | null | undefined): void {
   if (!preferences) {
     return;
@@ -55,11 +71,7 @@ export function applyUserPreferences(preferences: UserPreferencesLike | null | u
     changed = true;
   }
 
-  if (typeof preferences.notificationsEnabled === "boolean") {
-    localStorage.setItem(
-      LOCAL_STORAGE_KEYS.NOTIFICATIONS_ENABLED,
-      String(preferences.notificationsEnabled)
-    );
+  if (persistNotificationsEnabledPreference(preferences.notificationsEnabled)) {
     changed = true;
 
     if (preferences.notificationsEnabled && getBrowserNotificationPermission() === "granted") {

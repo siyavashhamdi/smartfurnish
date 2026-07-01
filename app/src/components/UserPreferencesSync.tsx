@@ -9,17 +9,17 @@ import { applyUserPreferences } from "../utils/userPreferences.util";
  * whenever authenticated `me` data is available (login and session restore).
  */
 export function UserPreferencesSync(): ReactElement | null {
-  const { isAuthenticated, syncUser } = useAuth();
+  const { isRegisteredUser, syncUser } = useAuth();
   const { user } = useMe();
 
   useEffect(() => {
-    if (!isAuthenticated || !user) {
+    if (!isRegisteredUser || !user) {
       return;
     }
 
     syncUser(mapMeToUser(user));
   }, [
-    isAuthenticated,
+    isRegisteredUser,
     syncUser,
     user?.id,
     user?.username,
@@ -29,12 +29,12 @@ export function UserPreferencesSync(): ReactElement | null {
   ]);
 
   useEffect(() => {
-    if (!isAuthenticated || !user?.preferences) {
+    if (!isRegisteredUser || !user?.preferences) {
       return;
     }
 
     applyUserPreferences(user.preferences);
-  }, [isAuthenticated, user?.preferences]);
+  }, [isRegisteredUser, user?.preferences]);
 
   return null;
 }

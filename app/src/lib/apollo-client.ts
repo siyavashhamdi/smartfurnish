@@ -10,10 +10,13 @@ import { LOCAL_STORAGE_KEYS } from "../constants";
 import { paginatedQueryTypePolicies } from "./apollo/paginated-query-cache.policy";
 import { queueApolloError } from "../components/apollo-error-queue";
 import { notifyAuthSessionExpired } from "./auth-session-expired-listeners";
+import { reloadPageOnUnauthenticated } from "./auth-unauthenticated-reload.util";
 import {
   extractGraphQLErrorMessage,
-  isAccessDeniedGraphQLError,
   isAuthSessionInvalidGraphQLError,
+  isRoleDeniedGraphQLError,
+  isUnauthenticatedGraphQLError,
+  resolveGraphQLErrorItemCode,
   type ApolloErrorLike,
   type GraphQLErrorExtensions,
 } from "../utilities/graphql-error.util";
@@ -114,6 +117,67 @@ function isIgnorableSocketClosedError(error: unknown): boolean {
   );
 }
 
+type GraphQLErrorLike = {
+  readonly message: string;
+  readonly code?: string;
+  readonly extensions?: GraphQLErrorExtensions;
+};
+
+function toGraphQLErrorInput(graphQLError: GraphQLErrorLike) {
+  return {
+    message: graphQLError.message,
+    code: resolveGraphQLErrorItemCode({
+      message: graphQLError.message,
+      code: graphQLError.code,
+      extensions: graphQLError.extensions,
+    }),
+    extensions: graphQLError.extensions,
+  };
+}
+
+function applyAuthRecoveryFromGraphQlErrors(
+  graphQLErrors: readonly GraphQLErrorLike[],
+  options: { readonly suppressUserErrors: boolean },
+): boolean {
+  let shouldReloadOnUnauthenticated = false;
+  let shouldLogout = false;
+
+  for (const graphQLError of graphQLErrors) {
+    const graphQLErrorInput = toGraphQLErrorInput(graphQLError);
+    const errorMessage = extractGraphQLErrorMessage(apolloLikeFromGraphQlField(graphQLError));
+    const isRoleForbidden = isRoleDeniedGraphQLError(graphQLErrorInput);
+
+    if (
+      !options.suppressUserErrors &&
+      !(shouldIgnoreAuthSessionExpiry() && isRoleForbidden) &&
+      errorMessage.trim()
+    ) {
+      queueApolloError(errorMessage);
+    }
+
+    if (!isRoleForbidden && isUnauthenticatedGraphQLError(graphQLErrorInput)) {
+      shouldReloadOnUnauthenticated = true;
+      continue;
+    }
+
+    if (!isRoleForbidden && isAuthSessionInvalidGraphQLError(graphQLErrorInput)) {
+      shouldLogout = true;
+    }
+  }
+
+  if (shouldReloadOnUnauthenticated) {
+    reloadPageOnUnauthenticated();
+    return true;
+  }
+
+  if (shouldLogout) {
+    notifyAuthSessionExpired();
+    return true;
+  }
+
+  return false;
+}
+
 const errorLink = new ErrorLink(({ error, operation }) => {
   if (isIgnorableSocketClosedError(error)) {
     return;
@@ -126,6 +190,18 @@ const errorLink = new ErrorLink(({ error, operation }) => {
       for (const graphQLError of error.errors) {
         logGraphQlDiagnostic(graphQLError.message, graphQLError.locations, graphQLError.path);
       }
+
+      if (
+        applyAuthRecoveryFromGraphQlErrors(
+          error.errors as readonly GraphQLErrorLike[],
+          { suppressUserErrors: true },
+        )
+      ) {
+        return;
+      }
+    } else if (ServerError.is(error) && error.statusCode === 401) {
+      reloadPageOnUnauthenticated();
+      return;
     } else if (error) {
       const rawMessage =
         error instanceof Error
@@ -139,45 +215,13 @@ const errorLink = new ErrorLink(({ error, operation }) => {
   }
 
   if (CombinedGraphQLErrors.is(error)) {
-    let shouldLogout = false;
-
     for (const graphQLError of error.errors) {
       logGraphQlDiagnostic(graphQLError.message, graphQLError.locations, graphQLError.path);
-
-      const gql = graphQLError as { code?: string };
-      const errorCode =
-        gql.code ?? (graphQLError.extensions as { code?: string } | undefined)?.code;
-      const errorMessage = extractGraphQLErrorMessage(apolloLikeFromGraphQlField(graphQLError));
-      const isRoleForbidden =
-        isAccessDeniedGraphQLError({
-          message: graphQLError.message,
-          code: errorCode,
-          extensions: graphQLError.extensions as GraphQLErrorExtensions | undefined,
-        }) &&
-        !isAuthSessionInvalidGraphQLError({
-          message: graphQLError.message,
-          code: errorCode,
-          extensions: graphQLError.extensions as GraphQLErrorExtensions | undefined,
-        });
-
-      if (!(shouldIgnoreAuthSessionExpiry() && isRoleForbidden) && errorMessage.trim()) {
-        queueApolloError(errorMessage);
-      }
-
-      if (
-        isAuthSessionInvalidGraphQLError({
-          message: graphQLError.message,
-          code: errorCode,
-          extensions: graphQLError.extensions as GraphQLErrorExtensions | undefined,
-        })
-      ) {
-        shouldLogout = true;
-      }
     }
 
-    if (shouldLogout && !shouldIgnoreAuthSessionExpiry()) {
-      notifyAuthSessionExpired();
-    }
+    applyAuthRecoveryFromGraphQlErrors(error.errors as readonly GraphQLErrorLike[], {
+      suppressUserErrors: false,
+    });
     return;
   }
 
@@ -197,8 +241,14 @@ const errorLink = new ErrorLink(({ error, operation }) => {
       queueApolloError(userFriendlyMessage);
     }
 
-    if (error.statusCode === 401 && !shouldIgnoreAuthSessionExpiry()) {
-      notifyAuthSessionExpired();
+    if (error.statusCode === 401) {
+      const hasStoredToken = Boolean(localStorage.getItem(LOCAL_STORAGE_KEYS.ACCESS_TOKEN)?.trim());
+
+      if (!hasStoredToken) {
+        reloadPageOnUnauthenticated();
+      } else {
+        notifyAuthSessionExpired();
+      }
     }
     return;
   }

@@ -15,6 +15,8 @@ import {
   RateLimit,
   RateLimitGuard,
   RestAuthGuard,
+  AuthenticatedRoles,
+  RestRolesGuard,
 } from "../auth";
 import { StageProductAiPreviewDto } from "./dto/stage-product-ai-preview.dto";
 import { ProductAiPreviewService } from "./services/product-ai-preview.service";
@@ -32,7 +34,8 @@ export class ProductAiPreviewController {
   ) {}
 
   @Post("stage")
-  @UseGuards(RestAuthGuard, RateLimitGuard)
+  @UseGuards(RestAuthGuard, RestRolesGuard, RateLimitGuard)
+  @AuthenticatedRoles()
   @RateLimit({ ttl: 60, limit: 5 })
   async stageRoom(
     @Body() body: StageProductAiPreviewDto,

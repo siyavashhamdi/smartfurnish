@@ -170,10 +170,10 @@ const NotificationsContent = (): ReactElement => {
 };
 
 const Notifications = (): ReactElement => {
-  const { isAuthenticated } = useAuth();
+  const { isRegisteredUser } = useAuth();
   const { t } = useTranslation();
 
-  if (!isAuthenticated) {
+  if (!isRegisteredUser) {
     return (
       <LoginRequiredState
         eyebrow={t("pages.notifications.eyebrow")}

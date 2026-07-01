@@ -1,6 +1,8 @@
 import { JwtModule } from "@nestjs/jwt";
 import { Module, forwardRef } from "@nestjs/common";
 
+import { AnonymousUserExpiryCron } from "../../cron/jobs";
+import { AnonymousUserExpiryService } from "./anonymous-user-expiry.service";
 import { UserService } from "./user.service";
 import { UserSecurityService } from "./user.security.service";
 import { UserCaptchaService } from "./user-captcha.service";
@@ -24,6 +26,7 @@ import {
   UserActivateAccountMutation,
   UserRequestEmailVerificationMutation,
   UserSignupMutation,
+  UserCreateAnonymousMutation,
   UserProfileUpdateMutation,
   UserResetPasswordMutation,
   UserUpdateMutation,
@@ -50,6 +53,8 @@ import * as UserSubscriptions from "./graphql/subscriptions";
     }),
   ],
   providers: [
+    AnonymousUserExpiryCron,
+    AnonymousUserExpiryService,
     UserService,
     UserSecurityService,
     UserCaptchaService,
@@ -64,6 +69,7 @@ import * as UserSubscriptions from "./graphql/subscriptions";
     UserActivateAccountMutation,
     UserRequestEmailVerificationMutation,
     UserSignupMutation,
+    UserCreateAnonymousMutation,
     UserProfileUpdateMutation,
     UserResetPasswordMutation,
     UserUpdateMutation,

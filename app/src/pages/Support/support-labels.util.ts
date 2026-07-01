@@ -23,7 +23,7 @@ export const TICKET_STATUS_LABEL: Record<TicketStatus, string> = {
 
 export const TICKET_CLOSED_BY_LABEL: Record<TicketClosedBy, string> = {
   SUPPORT: "پشتیبانی",
-  END_USER: "کاربر",
+  END_USER: "ثبت‌نام‌شده",
   SYSTEM: "سیستم",
 };
 

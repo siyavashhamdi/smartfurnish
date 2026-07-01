@@ -26,12 +26,15 @@ type UseLandingFeaturedProductsResult = {
  * never triggers forbidden errors for logged-in admins.
  */
 export function useLandingFeaturedProducts(): UseLandingFeaturedProductsResult {
-  const { isAuthenticated, user, isLoading: isAuthLoading } = useAuth();
+  const { isRegisteredUser, user, isLoading: isAuthLoading, isAuthenticated } = useAuth();
 
   const isEndUser = user?.roles?.includes(UserRole.END_USER) === true;
   const isSuperAdmin = user?.roles?.includes(UserRole.SUPER_ADMIN) === true;
-  const usePublicList = !isAuthenticated || isEndUser;
-  const canFetchProducts = !isAuthLoading && (usePublicList || (isAuthenticated && isSuperAdmin));
+  const usePublicList = !isRegisteredUser || isEndUser;
+  const canFetchProducts =
+    !isAuthLoading &&
+    isAuthenticated &&
+    (usePublicList || (isRegisteredUser && isSuperAdmin));
 
   const variables = useMemo(
     () =>
@@ -50,7 +53,7 @@ export function useLandingFeaturedProducts(): UseLandingFeaturedProductsResult {
       variables,
       fetchPolicy: "cache-first",
       skip: !canFetchProducts,
-      errorPolicy: "ignore",
+      errorPolicy: "all",
     }
   );
 

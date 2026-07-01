@@ -10,9 +10,9 @@ export type ActiveEndUserOption = {
   readonly row: UserListItemRow;
 };
 
-export const ACTIVE_END_USER_COMBOBOX_LABEL = "کاربر";
+export const ACTIVE_END_USER_COMBOBOX_LABEL = "ثبت‌نام‌شده";
 export const ACTIVE_END_USER_COMBOBOX_PLACEHOLDER = "جستجو براساس نام، نام کاربری، ایمیل یا موبایل";
-export const ACTIVE_END_USER_COMBOBOX_NO_OPTIONS_TEXT = "کاربر فعال با نقش کاربر نهایی پیدا نشد.";
+export const ACTIVE_END_USER_COMBOBOX_NO_OPTIONS_TEXT = "کاربر فعال با نقش ثبت‌نام‌شده پیدا نشد.";
 
 export const ACTIVE_END_USER_DEFAULT_OPTIONS_LIMIT = 10;
 export const ACTIVE_END_USER_SEARCH_OPTIONS_LIMIT = 200;

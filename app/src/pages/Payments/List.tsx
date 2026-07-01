@@ -1650,7 +1650,7 @@ const PaymentsList = (): ReactElement => {
               items={[
                 {
                   label: "ثبت اولیه توسط",
-                  value: reviewPayment.submittedInitiallyByAdmin ? "پشتیبانی" : "کاربر",
+                  value: reviewPayment.submittedInitiallyByAdmin ? "پشتیبانی" : "ثبت‌نام‌شده",
                 },
                 {
                   label: "ثبت‌کننده",

@@ -1,3 +1,4 @@
+export * from "./anonymous-user-expiry.cron";
 export * from "./gateway-payment-expiry.cron";
 export * from "./ticket-auto-close.cron";
 export * from "./unreferenced-file-cleanup.cron";

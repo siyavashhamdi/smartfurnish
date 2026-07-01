@@ -1,9 +1,13 @@
+import { UseGuards } from "@nestjs/common";
 import { Query, Resolver } from "@nestjs/graphql";
 
+import { AuthenticatedRoles, GqlAuthGuard, RolesGuard } from "../../../auth";
 import { AppSettingsService } from "../../../app-settings";
 import { ProductAiPreviewStagingDurationGqlResponse } from "../responses/product-ai-preview-staging-duration.gql.response";
 
 @Resolver(() => ProductAiPreviewStagingDurationGqlResponse)
+@UseGuards(GqlAuthGuard, RolesGuard)
+@AuthenticatedRoles()
 export class ProductAiPreviewStagingDurationQuery {
   constructor(private readonly appSettingsService: AppSettingsService) {}
 

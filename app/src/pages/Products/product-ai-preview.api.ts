@@ -9,6 +9,7 @@ import { resolveApiUrl } from "../../utils/apiBaseUrl.util";
 import { getFileIdFromAccessUrl } from "../../utils/fileAccessUrl.util";
 import { FileUploadError, uploadFile } from "../../utils/fileUpload.util";
 import { resolveErrorMessageFromCode } from "../../utilities/graphql-error.util";
+import { reloadPageOnUnauthenticated } from "../../lib/auth-unauthenticated-reload.util";
 
 export type ProductAiPreviewProgress = {
   readonly step: string;
@@ -267,6 +268,9 @@ export async function stageProductAiPreview(params: {
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      reloadPageOnUnauthenticated();
+    }
     throw new Error(await parseError(response));
   }
 

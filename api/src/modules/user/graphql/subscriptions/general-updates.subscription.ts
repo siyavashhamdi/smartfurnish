@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { BadRequestException, UseGuards } from "@nestjs/common";
 import { Args, Context, Resolver, Subscription } from "@nestjs/graphql";
 
-import { OptionalGqlAuthGuard } from "../../../auth";
+import { AuthenticatedRoles, GqlAuthGuard, RolesGuard } from "../../../auth";
 import { GeneralSubscriptionUpdateType } from "../../../../enums";
 import { GraphQLContext } from "../../../../types/graphql-context.types";
 import { GraphQLContextUtil } from "../../../../utils/graphql-context.util";
@@ -57,7 +57,8 @@ export class GeneralUpdatesSubscription {
     resolve: (payload: GeneralUpdatesTopicPayload) =>
       payload.generalUpdates.data,
   })
-  @UseGuards(OptionalGqlAuthGuard)
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @AuthenticatedRoles()
   subscribe(
     @Args("updateTypes", {
       type: () => [GeneralSubscriptionUpdateType],

@@ -6,6 +6,7 @@ import { useMemo, type ReactElement } from "react";
 import { OverflowTooltip } from "../shared/OverflowTooltip";
 import { useAuth } from "../contexts/AuthContext";
 import { UserRole } from "../lib/graphql/generated";
+import { isAnonymousUser } from "../utils/authRole.util";
 import { AppShellNavItemIcon } from "./AppShellNavItemIcon";
 import {
   APP_SHELL_NAV_ITEMS,
@@ -50,18 +51,19 @@ export function SideMenuNav({
   const { user } = useAuth();
   const roles = user?.roles ?? [];
   const isEndUser = roles.includes(UserRole.END_USER);
+  const isRegisteredUser = Boolean(user) && !isAnonymousUser(roles);
   const navContext = {
     roles,
-    isAuthenticated: Boolean(user),
+    isAuthenticated: isRegisteredUser,
   };
   const navDataContext = useMemo(
     () => ({
       roles,
-      isAuthenticated: Boolean(user),
-      userId: user?.id ?? null,
+      isAuthenticated: isRegisteredUser,
+      userId: isRegisteredUser ? (user?.id ?? null) : null,
       isEndUser,
     }),
-    [isEndUser, roles, user]
+    [isEndUser, isRegisteredUser, roles, user?.id]
   );
   const visibleItems = filterAppShellNavItems(APP_SHELL_NAV_ITEMS, navContext);
 

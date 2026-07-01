@@ -12,6 +12,7 @@ import {
   NotFoundException,
   forwardRef,
   ConflictException,
+  ForbiddenException,
 } from "@nestjs/common";
 
 import {
@@ -168,6 +169,7 @@ export class UserService {
     captchaValue?: string,
     rememberMe: boolean = false,
     clientContext?: SessionClientContext,
+    previousSessionId?: string,
   ): Promise<UserLoginGqlResponse> {
     const user = await this.findByIdentityOrThrow(identity);
     this.userSecurityService.throwIfAccountIsLocked(user);
@@ -187,7 +189,12 @@ export class UserService {
       throw new BadRequestException(EXCEPTION_CONSTANT.INVALID_CREDENTIALS);
     }
 
-    return this.createLoginSession(user, rememberMe, clientContext);
+    return this.createLoginSession(
+      user,
+      rememberMe,
+      clientContext,
+      previousSessionId,
+    );
   }
 
   private shouldRequireLoginCaptcha(user: UserDocument): boolean {
@@ -646,6 +653,7 @@ export class UserService {
   async signup(
     input: UserSignupGqlInput,
     clientContext?: SessionClientContext,
+    previousSessionId?: string,
   ): Promise<UserLoginGqlResponse> {
     if (env.CAPTCHA_ENABLED) {
       this.throwIfCaptchaIsInvalid(input.captchaId, input.captchaValue);
@@ -758,7 +766,36 @@ export class UserService {
       createdUser,
       input.rememberMe === true,
       clientContext,
+      previousSessionId,
     );
+  }
+
+  async createAnonymousUser(
+    clientContext?: SessionClientContext,
+  ): Promise<UserLoginGqlResponse> {
+    const username = await this.generateUniqueUsername(
+      `anon_${randomBytes(8).toString("hex")}`,
+    );
+    const passwordSalt = await bcrypt.genSalt(this.SALT_ROUNDS);
+    const passwordHash = await bcrypt.hash(
+      randomBytes(24).toString("base64url"),
+      passwordSalt,
+    );
+
+    const [createdUser] = await this.userModel.create([
+      {
+        username,
+        authentication: {
+          passwordHash,
+          passwordSalt,
+          failedLoginAttempts: 0,
+        },
+        roles: [UserRole.ANONYMOUS],
+        status: UserStatus.ACTIVE,
+      },
+    ]);
+
+    return this.createLoginSession(createdUser, false, clientContext);
   }
 
   async verifyLoginCode(
@@ -766,6 +803,7 @@ export class UserService {
     code: string,
     rememberMe: boolean = false,
     clientContext?: SessionClientContext,
+    previousSessionId?: string,
   ): Promise<UserVerifyLoginCodeGqlResponse> {
     const user = await this.findByIdentityOrThrow(identity);
     this.userSecurityService.throwIfAccountIsLocked(user);
@@ -792,6 +830,7 @@ export class UserService {
       user,
       rememberMe,
       clientContext,
+      previousSessionId,
     );
 
     return {
@@ -806,6 +845,7 @@ export class UserService {
     user: UserDocument,
     rememberMe: boolean = false,
     clientContext?: SessionClientContext,
+    previousSessionId?: string,
   ): Promise<UserLoginGqlResponse> {
     // Update last login
     await this.userModel.updateOne(
@@ -834,6 +874,20 @@ export class UserService {
     // Use session._id as jti in JWT
     const sessionId = session._id.toString();
 
+    if (previousSessionId) {
+      const previousSession =
+        await this.sessionService.findSessionById(previousSessionId);
+
+      await this.sessionService.expireSessionReplacedBy(
+        previousSessionId,
+        sessionId,
+      );
+
+      if (previousSession?.userId) {
+        await this.deactivateReplacedAnonymousUser(previousSession.userId);
+      }
+    }
+
     // Generate JWT token with session._id as jti
     // All user data (userId, username, roles) will be fetched from database via session
     const payload: JwtPayload = {
@@ -850,6 +904,19 @@ export class UserService {
         roles: user.roles || [],
       },
     };
+  }
+
+  private async deactivateReplacedAnonymousUser(
+    userId: Types.ObjectId,
+  ): Promise<void> {
+    await this.userModel.updateOne(
+      {
+        _id: userId,
+        roles: UserRole.ANONYMOUS,
+        status: UserStatus.ACTIVE,
+      },
+      { status: UserStatus.DEACTIVE },
+    );
   }
 
   private async findByIdentityOrThrow(identity: string): Promise<UserDocument> {
@@ -1398,6 +1465,8 @@ export class UserService {
       mobile,
     });
 
+    this.throwIfAssignableRolesIncludeAnonymous(input.roles);
+
     const passwordSalt = await bcrypt.genSalt(this.SALT_ROUNDS);
     const passwordHash = await bcrypt.hash(password, passwordSalt);
     let createdUser: UserDocument;
@@ -1429,7 +1498,10 @@ export class UserService {
     );
   }
 
-  async update(input: UserUpdateGqlInput): Promise<UserMutationGqlResponse> {
+  async update(
+    input: UserUpdateGqlInput,
+    options?: { readonly source?: "management" | "profile" },
+  ): Promise<UserMutationGqlResponse> {
     const existingUser = await this.userModel
       .findOne({
         _id: input.id,
@@ -1443,6 +1515,15 @@ export class UserService {
     if (!existingUser) {
       throw new NotFoundException(EXCEPTION_CONSTANT.USER_NOT_FOUND);
     }
+
+    const updateSource = options?.source ?? "management";
+
+    this.throwIfAssignableRolesIncludeAnonymous(input.roles);
+    this.throwIfAnonymousUserManagementUpdateIsRestricted(
+      existingUser.roles ?? [],
+      input,
+      updateSource,
+    );
 
     await this.assertUpdateIdentityFieldsAreUnique(input);
 
@@ -1493,7 +1574,10 @@ export class UserService {
   async updateProfile(
     userId: Types.ObjectId,
     input: UserProfileUpdateGqlInput,
+    roles: UserRole[],
   ): Promise<UserMutationGqlResponse> {
+    this.throwIfAnonymousProfileUpdateIsRestricted(roles, input);
+
     if (this.hasOwnInputField(input, "password")) {
       await this.throwIfCurrentPasswordIsInvalid(userId, input.currentPassword);
     }
@@ -1505,10 +1589,70 @@ export class UserService {
       id: userId,
     } as UserUpdateGqlInput;
 
-    return this.update({
-      ...updateInput,
-      id: userId,
-    });
+    return this.update(
+      {
+        ...updateInput,
+        id: userId,
+      },
+      { source: "profile" },
+    );
+  }
+
+  private throwIfAnonymousProfileUpdateIsRestricted(
+    roles: UserRole[],
+    input: UserProfileUpdateGqlInput,
+  ): void {
+    if (!roles.includes(UserRole.ANONYMOUS)) {
+      return;
+    }
+
+    const restrictedFields: (keyof UserProfileUpdateGqlInput)[] = [
+      "username",
+      "profile",
+      "password",
+      "currentPassword",
+    ];
+
+    for (const field of restrictedFields) {
+      if (this.hasOwnInputField(input, field)) {
+        throw new ForbiddenException(EXCEPTION_CONSTANT.FORBIDDEN);
+      }
+    }
+  }
+
+  private throwIfAssignableRolesIncludeAnonymous(roles?: UserRole[]): void {
+    if (roles?.includes(UserRole.ANONYMOUS)) {
+      throw new BadRequestException(
+        EXCEPTION_CONSTANT.ANONYMOUS_ROLE_NOT_ASSIGNABLE,
+      );
+    }
+  }
+
+  private hasUserUpdatePayload(input: UserUpdateGqlInput): boolean {
+    return (
+      this.hasOwnInputField(input, "username") ||
+      input.profile !== undefined ||
+      input.preferences !== undefined ||
+      input.roles !== undefined ||
+      input.status !== undefined ||
+      this.hasOwnInputField(input, "password")
+    );
+  }
+
+  private throwIfAnonymousUserManagementUpdateIsRestricted(
+    existingRoles: UserRole[],
+    input: UserUpdateGqlInput,
+    source: "management" | "profile",
+  ): void {
+    if (!existingRoles.includes(UserRole.ANONYMOUS) || source === "profile") {
+      return;
+    }
+
+    if (this.hasUserUpdatePayload(input)) {
+      throw new BadRequestException(
+        EXCEPTION_CONSTANT.ANONYMOUS_USER_NOT_EDITABLE,
+      );
+    }
   }
 
   private async throwIfLockedProfileIdentityIsUpdated(

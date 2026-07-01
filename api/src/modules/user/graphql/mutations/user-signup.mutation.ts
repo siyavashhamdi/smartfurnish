@@ -6,11 +6,12 @@ import {
   RateLimit,
   RateLimitGuard,
 } from "../../../auth/guards/rate-limit.guard";
+import { OptionalGqlAuthGuard, OptionalAnonymousRoles, RolesGuard } from "../../../auth";
 import { GraphQLContext } from "../../../../types/graphql-context.types";
+import { GraphQLContextUtil } from "../../../../utils";
 import { buildSessionClientContext } from "../../../../utils/session-client-context.util";
 import { UserSignupGqlInput } from "../inputs";
 import { UserLoginGqlResponse } from "../responses";
-import { UserRole } from "../../../../enums";
 
 @Resolver(() => UserLoginGqlResponse)
 export class UserSignupMutation {
@@ -21,23 +22,20 @@ export class UserSignupMutation {
     description:
       "Create an END_USER account using username/email/mobile and start a session",
   })
-  @UseGuards(RateLimitGuard)
+  @UseGuards(OptionalGqlAuthGuard, RolesGuard, RateLimitGuard)
+  @OptionalAnonymousRoles()
   @RateLimit({ ttl: 60, limit: 5 })
   async signup(
     @Args("input") input: UserSignupGqlInput,
     @Context() context: GraphQLContext,
   ): Promise<UserLoginGqlResponse> {
+    const currentUser = GraphQLContextUtil.getUser(context, false);
     const signupResult = await this.userService.signup(
       input,
       buildSessionClientContext(context.req, input.clientContext),
+      currentUser?.sessionId,
     );
 
-    return {
-      ...signupResult,
-      user: {
-        ...signupResult.user,
-        roles: (signupResult.user.roles || []) as UserRole[],
-      },
-    };
+    return signupResult;
   }
 }

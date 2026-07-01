@@ -1,7 +1,7 @@
 import { UseGuards } from "@nestjs/common";
 import { Context, Mutation, Resolver } from "@nestjs/graphql";
 
-import { GqlAuthGuard } from "../../../auth";
+import { GqlAuthGuard, RegisteredUserRoles, RolesGuard } from "../../../auth";
 import {
   RateLimit,
   RateLimitGuard,
@@ -20,7 +20,8 @@ export class UserRequestEmailVerificationMutation {
     description:
       "Send a verification email to the authenticated user's address",
   })
-  @UseGuards(GqlAuthGuard, RateLimitGuard)
+  @UseGuards(GqlAuthGuard, RolesGuard, RateLimitGuard)
+  @RegisteredUserRoles()
   @RateLimit({ ttl: 60, limit: 5 })
   async requestEmailVerification(
     @Context() context: GraphQLContext,

@@ -1,9 +1,13 @@
+import { UseGuards } from "@nestjs/common";
 import { Query, Resolver } from "@nestjs/graphql";
 
+import { AuthenticatedRoles, GqlAuthGuard, RolesGuard } from "../../../auth";
 import { PushNotificationService } from "../../push-notification.service";
 import { PushNotificationConfigGqlResponse } from "../responses";
 
 @Resolver(() => PushNotificationConfigGqlResponse)
+@UseGuards(GqlAuthGuard, RolesGuard)
+@AuthenticatedRoles()
 export class PushNotificationConfigQuery {
   constructor(
     private readonly pushNotificationService: PushNotificationService,

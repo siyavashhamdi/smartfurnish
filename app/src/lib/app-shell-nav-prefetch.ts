@@ -168,7 +168,7 @@ function buildPrefetchOperationsForItem(
   context: AppShellNavPrefetchContext
 ): readonly PrefetchOperation[] {
   const isSuperAdmin = context.roles.includes(UserRole.SUPER_ADMIN);
-  const isPublicProductView = !context.userId || context.isEndUser;
+  const isPublicProductView = !context.isAuthenticated || context.isEndUser;
 
   switch (item.id) {
     case "products":

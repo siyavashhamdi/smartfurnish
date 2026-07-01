@@ -1125,20 +1125,20 @@ const AuthenticatedProfile = (): ReactElement => {
 };
 
 const Profile = (): ReactElement => {
-  const { isAuthenticated, isPostLoginRedirectPending } = useAuth();
+  const { isRegisteredUser, isPostLoginRedirectPending } = useAuth();
   const useProfileAuthShell = shouldUseProfileAuthShell();
   const location = useLocation();
 
-  if (isAuthenticated && (isPostLoginRedirectPending || peekPostLoginRedirect())) {
+  if (isRegisteredUser && (isPostLoginRedirectPending || peekPostLoginRedirect())) {
     return <></>;
   }
 
-  if (isAuthenticated && isProfileAuthRoute(location.pathname)) {
+  if (isRegisteredUser && isProfileAuthRoute(location.pathname)) {
     return <Navigate to={APP_SHELL_ROUTES.profile} replace />;
   }
 
-  if (!isAuthenticated) {
-    if (useProfileAuthShell) {
+  if (!isRegisteredUser) {
+    if (useProfileAuthShell && isProfileAuthRoute(location.pathname)) {
       return (
         <section className={styles.page}>
           <ProfileAuthRoutes />

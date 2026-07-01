@@ -1,9 +1,13 @@
+import { UseGuards } from "@nestjs/common";
 import { Query, Resolver } from "@nestjs/graphql";
 
+import { AuthenticatedRoles, GqlAuthGuard, RolesGuard } from "../../../auth";
 import { AppSettingsService } from "../../app-settings.service";
 import { AppTermsOfUsePageConfigGqlResponse } from "../responses";
 
 @Resolver(() => AppTermsOfUsePageConfigGqlResponse)
+@UseGuards(GqlAuthGuard, RolesGuard)
+@AuthenticatedRoles()
 export class AppTermsOfUsePageConfigQuery {
   constructor(private readonly appSettingsService: AppSettingsService) {}
 

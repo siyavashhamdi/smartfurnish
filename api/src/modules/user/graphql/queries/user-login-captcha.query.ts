@@ -1,6 +1,7 @@
 import { UseGuards } from "@nestjs/common";
 import { Query, Resolver } from "@nestjs/graphql";
 
+import { OptionalGqlAuthGuard, RolesGuard } from "../../../auth";
 import {
   RateLimit,
   RateLimitGuard,
@@ -16,7 +17,7 @@ export class UserLoginCaptchaQuery {
     name: "userLoginCaptcha",
     description: "Generate a captcha challenge for password login",
   })
-  @UseGuards(RateLimitGuard)
+  @UseGuards(OptionalGqlAuthGuard, RolesGuard, RateLimitGuard)
   @RateLimit({ ttl: 60, limit: 30 })
   userLoginCaptcha(): UserLoginCaptchaGqlResponse {
     return this.userCaptchaService.issueCaptcha();

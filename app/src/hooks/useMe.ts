@@ -1,9 +1,14 @@
 import { useQuery, type QueryResult } from "@apollo/client/react";
+import { useEffect } from "react";
 import { LOCAL_STORAGE_KEYS } from "../constants";
 import { USER_ME_QUERY } from "../graphql/queries/userMe.query";
 import { useCachedFileAccessUrl } from "./useCachedFileAccessUrl";
 import { resolveQueryFetchPolicy } from "../lib/offline-fetch-policy.util";
 import { type FileAccessUrl } from "../utils/fileAccessUrl.util";
+import {
+  persistNotificationsEnabledPreference,
+  USER_PREFERENCES_CHANGED_EVENT,
+} from "../utils/userPreferences.util";
 
 export type UserMeGqlResponse = {
   readonly id: string;
@@ -52,6 +57,16 @@ export const useMe = (): UseMeResult => {
   const { url: avatarUrl } = useCachedFileAccessUrl(data?.me?.profile?.avatarAccessUrl, {
     enabled: hasAccessToken,
   });
+
+  useEffect(() => {
+    if (!hasAccessToken) {
+      return;
+    }
+
+    if (persistNotificationsEnabledPreference(data?.me?.preferences?.notificationsEnabled)) {
+      window.dispatchEvent(new Event(USER_PREFERENCES_CHANGED_EVENT));
+    }
+  }, [data?.me?.preferences?.notificationsEnabled, hasAccessToken]);
 
   return {
     user: data?.me ?? null,

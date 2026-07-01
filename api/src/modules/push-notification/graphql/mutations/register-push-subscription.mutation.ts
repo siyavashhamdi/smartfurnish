@@ -3,13 +3,14 @@ import { Args, Context, Mutation, Resolver } from "@nestjs/graphql";
 
 import { GraphQLContext } from "../../../../types/graphql-context.types";
 import { GraphQLContextUtil } from "../../../../utils";
-import { GqlAuthGuard } from "../../../auth";
+import { AuthenticatedRoles, GqlAuthGuard, RolesGuard } from "../../../auth";
 import { PushNotificationService } from "../../push-notification.service";
 import { RegisterPushSubscriptionGqlInput } from "../inputs";
 import { PushSubscriptionMutationGqlResponse } from "../responses";
 
 @Resolver(() => PushSubscriptionMutationGqlResponse)
-@UseGuards(GqlAuthGuard)
+@UseGuards(GqlAuthGuard, RolesGuard)
+@AuthenticatedRoles()
 export class RegisterPushSubscriptionMutation {
   constructor(
     private readonly pushNotificationService: PushNotificationService,

@@ -1,16 +1,15 @@
 import { Args, Context, Mutation, Resolver } from "@nestjs/graphql";
 import { UseGuards } from "@nestjs/common";
 
-import { UserRole } from "../../../../enums";
 import { GraphQLContext } from "../../../../types/graphql-context.types";
-import { GqlAuthGuard, Roles, RolesGuard } from "../../../auth";
+import { GqlAuthGuard, EndUserOrAnonymousRoles, RolesGuard } from "../../../auth";
 import { TicketService } from "../../ticket.service";
 import { UserTicketSendGqlInput } from "../inputs";
 import { UserTicketListGqlResponse } from "../responses";
 
 @Resolver(() => UserTicketListGqlResponse)
 @UseGuards(GqlAuthGuard, RolesGuard)
-@Roles(UserRole.END_USER)
+@EndUserOrAnonymousRoles()
 export class UserTicketSendMutation {
   constructor(private readonly ticketService: TicketService) {}
 

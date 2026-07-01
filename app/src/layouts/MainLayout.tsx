@@ -224,7 +224,7 @@ export function MainLayout({
   const location = useLocation();
   const { t } = useTranslation();
   const { mode, toggleTheme } = useThemeMode();
-  const { logout, user: authUser, isLoading: authLoading } = useAuth();
+  const { logout, user: authUser, isLoading: authLoading, isRegisteredUser } = useAuth();
   const { user, avatarUrl, loading: userLoading } = useMe();
 
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<HTMLButtonElement | null>(null);
@@ -265,14 +265,14 @@ export function MainLayout({
   const helpPopoverId = isHelpOpen ? "main-layout-help-popover" : undefined;
   const userPopoverId = isUserOpen ? "main-layout-user-popover" : undefined;
   const roles = authUser?.roles ?? [];
-  const isAuthenticated = Boolean(authUser);
+  const isAuthenticated = isRegisteredUser;
   const isEndUser = roles.includes(UserRole.END_USER);
   const appShellNavContext = useMemo(
     () => ({
       roles,
-      isAuthenticated: Boolean(authUser),
+      isAuthenticated: isRegisteredUser,
     }),
-    [authUser, roles]
+    [isRegisteredUser, roles]
   );
   const visibleAppShellNavItems = useMemo(
     () => filterAppShellNavItems(APP_SHELL_NAV_ITEMS, appShellNavContext),
@@ -493,24 +493,28 @@ export function MainLayout({
 
   const fallbackUser = t("layout.mainLayout.fallbackUser");
 
-  const userRoleTitle = user?.roles?.filter((role) => role !== UserRole.END_USER).join("، ") ?? "";
+  const userRoleTitle =
+    isRegisteredUser && user?.roles
+      ? (user.roles.filter((role) => role !== UserRole.END_USER).join("، ") ?? "")
+      : "";
   const adminRoleBadgeLabel = authUser?.roles?.includes(UserRole.SUPER_ADMIN)
     ? SUPER_ADMIN_ROLE_BADGE_LABEL
     : null;
 
   const { userDisplayName, userInitial } = useMemo(() => {
     const name =
-      userLoading || !user
-        ? resolveStoredUserDisplayName(authUser, fallbackUser)
-        : resolveMeUserDisplayName(user, fallbackUser);
+      isRegisteredUser && !userLoading && user
+        ? resolveMeUserDisplayName(user, fallbackUser)
+        : resolveStoredUserDisplayName(isRegisteredUser ? authUser : null, fallbackUser);
     const trimmed = name.trim();
     return {
       userDisplayName: name,
       userInitial: resolveAvatarInitial(trimmed),
     };
-  }, [authUser, fallbackUser, user, userLoading]);
+  }, [authUser, fallbackUser, isRegisteredUser, user, userLoading]);
 
-  const profileAvatar = authUser && avatarUrl ? { src: avatarUrl, alt: userDisplayName } : null;
+  const profileAvatar =
+    isRegisteredUser && avatarUrl ? { src: avatarUrl, alt: userDisplayName } : null;
 
   const themeToggleLabel =
     mode === "light"
@@ -676,7 +680,7 @@ export function MainLayout({
             <div className="main-layout__header-tools">
               <div className="main-layout__tools-start">
                 <div className="main-layout__quick-actions">
-                  {authUser ? (
+                  {isRegisteredUser ? (
                     <>
                       <AppTooltip title={t("layout.header.actions.notifications")}>
                         <Badge

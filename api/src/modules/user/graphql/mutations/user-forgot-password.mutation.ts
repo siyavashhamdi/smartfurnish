@@ -2,6 +2,11 @@ import { UseGuards } from "@nestjs/common";
 import { Args, Mutation, Resolver } from "@nestjs/graphql";
 
 import {
+  OptionalGqlAuthGuard,
+  OptionalAnonymousRoles,
+  RolesGuard,
+} from "../../../auth";
+import {
   RateLimit,
   RateLimitGuard,
 } from "../../../auth/guards/rate-limit.guard";
@@ -18,7 +23,8 @@ export class UserForgotPasswordMutation {
     description:
       "Request a password reset code using username, email, or phone number",
   })
-  @UseGuards(RateLimitGuard)
+  @UseGuards(OptionalGqlAuthGuard, RolesGuard, RateLimitGuard)
+  @OptionalAnonymousRoles()
   @RateLimit({ ttl: 60, limit: 5 })
   async forgotPassword(
     @Args("input") input: UserForgotPasswordGqlInput,

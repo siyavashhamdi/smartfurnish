@@ -48,6 +48,34 @@ export class SessionService {
   }
 
   /**
+   * Mark a session as expired because the user authenticated into a newer session.
+   */
+  async expireSessionReplacedBy(
+    sessionId: string,
+    successorSessionId: string,
+  ): Promise<void> {
+    if (
+      !Types.ObjectId.isValid(sessionId) ||
+      !Types.ObjectId.isValid(successorSessionId) ||
+      sessionId === successorSessionId
+    ) {
+      return;
+    }
+
+    await this.sessionModel.updateOne(
+      {
+        _id: new Types.ObjectId(sessionId),
+        status: SessionStatus.ACTIVE,
+      },
+      {
+        status: SessionStatus.REVOKED,
+        revokedAt: new Date(),
+        replacedBySessionId: new Types.ObjectId(successorSessionId),
+      },
+    );
+  }
+
+  /**
    * Mark a specific session as logged out.
    */
   async logoutSession(sessionId: string): Promise<void> {

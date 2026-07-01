@@ -2,6 +2,11 @@ import { UseGuards } from "@nestjs/common";
 import { Args, Mutation, Resolver } from "@nestjs/graphql";
 
 import {
+  OptionalGqlAuthGuard,
+  OptionalAnonymousRoles,
+  RolesGuard,
+} from "../../../auth";
+import {
   RateLimit,
   RateLimitGuard,
 } from "../../../auth/guards/rate-limit.guard";
@@ -17,7 +22,8 @@ export class UserRequestLoginCodeMutation {
     name: "requestLoginCode",
     description: "Request login code using username, email, or phone identity",
   })
-  @UseGuards(RateLimitGuard)
+  @UseGuards(OptionalGqlAuthGuard, RolesGuard, RateLimitGuard)
+  @OptionalAnonymousRoles()
   @RateLimit({ ttl: 60, limit: 5 })
   async requestLoginCode(
     @Args("input") input: UserRequestLoginCodeGqlInput,

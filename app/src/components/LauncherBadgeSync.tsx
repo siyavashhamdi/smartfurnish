@@ -19,16 +19,16 @@ type BadgeCountQuery = {
  * Keeps the Android launcher icon badge in sync with unread notification count.
  */
 export function LauncherBadgeSync(): ReactElement | null {
-  const { isAuthenticated } = useAuth();
+  const { isRegisteredUser } = useAuth();
   const { data, refetch } = useQuery<BadgeCountQuery>(BADGE_COUNT_QUERY, {
-    skip: !isAuthenticated || !isAndroidApp(),
+    skip: !isRegisteredUser || !isAndroidApp(),
     fetchPolicy: "cache-and-network",
   });
 
   const notificationBadgeCount = data?.badgeCount.notifications ?? 0;
 
   const syncLauncherBadgeFromServer = useCallback(async (): Promise<void> => {
-    if (!isAuthenticated || !isAndroidApp()) {
+    if (!isRegisteredUser || !isAndroidApp()) {
       return;
     }
 
@@ -39,20 +39,20 @@ export function LauncherBadgeSync(): ReactElement | null {
     } catch (error) {
       console.warn("[LauncherBadge] Failed to refetch badge count for launcher sync.", error);
     }
-  }, [isAuthenticated, refetch]);
+  }, [isRegisteredUser, refetch]);
 
   useEffect(() => {
-    if (!isAuthenticated || !isAndroidApp()) {
+    if (!isRegisteredUser || !isAndroidApp()) {
       return;
     }
 
     return subscribeBadgeCountUpdates(() => {
       void syncLauncherBadgeFromServer();
     });
-  }, [isAuthenticated, syncLauncherBadgeFromServer]);
+  }, [isRegisteredUser, syncLauncherBadgeFromServer]);
 
   useEffect(() => {
-    if (!isAuthenticated || !isAndroidApp()) {
+    if (!isRegisteredUser || !isAndroidApp()) {
       return;
     }
 
@@ -61,10 +61,10 @@ export function LauncherBadgeSync(): ReactElement | null {
         void syncLauncherBadgeFromServer();
       }
     });
-  }, [isAuthenticated, syncLauncherBadgeFromServer]);
+  }, [isRegisteredUser, syncLauncherBadgeFromServer]);
 
   useEffect(() => {
-    if (!isAuthenticated || !isAndroidApp()) {
+    if (!isRegisteredUser || !isAndroidApp()) {
       return;
     }
 
@@ -92,16 +92,16 @@ export function LauncherBadgeSync(): ReactElement | null {
 
       void listenerPromise.then((listener) => listener.remove());
     };
-  }, [isAuthenticated, syncLauncherBadgeFromServer]);
+  }, [isRegisteredUser, syncLauncherBadgeFromServer]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isRegisteredUser) {
       void clearLauncherBadgeCount();
       return;
     }
 
     void syncLauncherBadgeCount(notificationBadgeCount);
-  }, [isAuthenticated, notificationBadgeCount]);
+  }, [isRegisteredUser, notificationBadgeCount]);
 
   return null;
 }

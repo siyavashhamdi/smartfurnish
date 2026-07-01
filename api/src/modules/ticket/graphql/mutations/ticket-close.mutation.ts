@@ -5,7 +5,7 @@ import { Types } from "mongoose";
 
 import { UserRole } from "../../../../enums";
 import { GraphQLContext } from "../../../../types/graphql-context.types";
-import { GqlAuthGuard, Roles, RolesGuard } from "../../../auth";
+import { GqlAuthGuard, EndUserOrAnonymousRoles, Roles, RolesGuard } from "../../../auth";
 import { TicketService } from "../../ticket.service";
 import { TicketListGqlResponse, UserTicketListGqlResponse } from "../responses";
 
@@ -41,7 +41,7 @@ export class TicketCloseMutation {
     name: "userTicketClose",
     description: "Close one of the current end-user's support tickets",
   })
-  @Roles(UserRole.END_USER)
+  @EndUserOrAnonymousRoles()
   async closeByEndUser(
     @Args("id", { type: () => ID }) id: string,
     @Context() context: GraphQLContext,

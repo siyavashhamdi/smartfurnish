@@ -2,7 +2,8 @@ import { UseGuards } from "@nestjs/common";
 import { Context, Query, Resolver } from "@nestjs/graphql";
 
 import { GraphQLContext } from "../../../../types/graphql-context.types";
-import { OptionalGqlAuthGuard } from "../../../auth";
+import { AuthenticatedRoles, GqlAuthGuard, RolesGuard } from "../../../auth";
+import { GraphQLContextUtil } from "../../../../utils";
 import { BadgeService } from "../../badge.service";
 import { BadgeCountGqlResponse } from "../responses";
 
@@ -15,11 +16,12 @@ export class BadgeCountQuery {
     description:
       "Get role-aware sidebar badge counts. Anonymous users receive active product count only.",
   })
-  @UseGuards(OptionalGqlAuthGuard)
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @AuthenticatedRoles()
   async getBadgeCount(
     @Context() context: GraphQLContext,
   ): Promise<BadgeCountGqlResponse> {
-    const user = context.req?.user ?? null;
+    const user = GraphQLContextUtil.getUser(context);
 
     return this.badgeService.getCount(user);
   }

@@ -15,7 +15,7 @@ import { EXCEPTION_CONSTANT } from "../../../constants/exception.constant";
 import { Request, Response } from "express";
 
 import { SecurityConfig } from "../../../config/security.config";
-import { RestAuthGuard } from "../../auth";
+import { RestAuthGuard, AuthenticatedRoles, RestRolesGuard } from "../../auth";
 import { FileService } from "../file.service";
 import {
   assertFileAllowedByPolicy,
@@ -27,7 +27,8 @@ export class FileController {
   constructor(private readonly fileService: FileService) {}
 
   @Put("upload")
-  @UseGuards(RestAuthGuard)
+  @UseGuards(RestAuthGuard, RestRolesGuard)
+  @AuthenticatedRoles()
   async upload(
     @Req() request: Request,
     @Headers("content-type") contentType?: string,

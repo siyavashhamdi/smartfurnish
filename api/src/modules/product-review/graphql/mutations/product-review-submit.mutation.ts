@@ -10,7 +10,7 @@ import { ProductReviewSubmitGqlResponse } from "../responses";
 
 @Resolver(() => ProductReviewSubmitGqlResponse)
 @UseGuards(GqlAuthGuard, RolesGuard)
-@Roles(UserRole.END_USER, UserRole.SUPER_ADMIN)
+@Roles(UserRole.ANONYMOUS, UserRole.END_USER, UserRole.SUPER_ADMIN)
 export class ProductReviewSubmitMutation {
   constructor(private readonly productReviewService: ProductReviewService) {}
 

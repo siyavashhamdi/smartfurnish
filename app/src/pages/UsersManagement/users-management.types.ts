@@ -74,3 +74,17 @@ export function hasManagedUsersSupplementaryFiltersApplied(
 ): boolean {
   return false;
 }
+
+export type UsersManagementRoleFilterTab = "END_USER" | "SUPER_ADMIN" | "ANONYMOUS" | "ALL";
+
+export function resolveManagedUsersRoleFilter(
+  isSuperAdmin: boolean,
+  activeRoleFilterTab: UsersManagementRoleFilterTab,
+  appliedFilters: ManagedUsersListFilters
+): string {
+  if (isSuperAdmin && activeRoleFilterTab !== "ALL") {
+    return activeRoleFilterTab;
+  }
+
+  return appliedFilters.role;
+}
