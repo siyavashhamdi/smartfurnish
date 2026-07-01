@@ -1,6 +1,7 @@
 import type { FileAccessUrl } from "../../../utils/fileAccessUrl.util";
 import { getFileIdFromAccessUrl } from "../../../utils/fileAccessUrl.util";
 import type { ProductEditRecord } from "../product-list.api";
+import { isProductFreeForColors } from "../product-pricing.util";
 import type {
   DiscountKind,
   DraftCoverImage,
@@ -18,6 +19,18 @@ let tempIdCounter = 0;
 export function createTempId(prefix: string): string {
   tempIdCounter += 1;
   return `${prefix}-${Date.now()}-${tempIdCounter}`;
+}
+
+function stripNumberSeparators(value: string): string {
+  return value.replace(/[,٬\s]/g, "");
+}
+
+export function formatIntegerWithThousands(value: string): string {
+  const digits = stripNumberSeparators(value).replace(/\D/g, "");
+  if (!digits) {
+    return "";
+  }
+  return Number(digits).toLocaleString("en-US");
 }
 
 export function createEmptyMaterialProfile(): DraftMaterialProfile {
@@ -84,6 +97,10 @@ export function createDraftFabricColor(): DraftFabricColor {
     id: createTempId("fabric-color"),
     name: "",
     hexCode: "",
+    priceIrt: "",
+    discountEnabled: false,
+    discountKind: "PERCENTAGE",
+    discountValue: "",
     sortOrder: "",
     isActive: true,
     aiImage: createDraftSetPieceImage(),
@@ -98,6 +115,44 @@ export function createDraftFabric(): DraftFabric {
     isActive: true,
     colors: [createDraftFabricColor()],
   };
+}
+
+export function resolveDraftMinPriceIrt(fabrics: readonly DraftFabric[]): number | null {
+  const prices = fabrics.flatMap((fabric) =>
+    fabric.colors
+      .map((color) => parseOptionalNumber(color.priceIrt))
+      .filter((price): price is number => price != null && price > 0)
+  );
+
+  if (prices.length === 0) {
+    return null;
+  }
+
+  return Math.min(...prices);
+}
+
+export function isDraftProductFreeCandidate(fabrics: readonly DraftFabric[]): boolean {
+  return isProductFreeForColors({
+    fabrics: fabrics.map((fabric) => ({
+      isActive: fabric.isActive,
+      colors: fabric.colors.map((color) => {
+        const priceIrt = parseOptionalNumber(color.priceIrt) ?? null;
+        const discountValue = parseOptionalNumber(color.discountValue);
+
+        return {
+          isActive: color.isActive,
+          priceIrt,
+          discount:
+            color.discountEnabled && priceIrt != null && priceIrt > 0 && discountValue != null
+              ? {
+                  type: color.discountKind,
+                  value: discountValue,
+                }
+              : null,
+        };
+      }),
+    })),
+  });
 }
 
 function mapMaterialProfileFromRecord(
@@ -169,6 +224,17 @@ export function createDraftsFromProduct(product: ProductEditRecord | null): {
         id: createTempId("fabric-color"),
         name: color.name,
         hexCode: color.hexCode?.trim() || "",
+        priceIrt:
+          typeof color.priceIrt === "number" && color.priceIrt > 0
+            ? formatIntegerWithThousands(String(color.priceIrt))
+            : "",
+        discountEnabled: color.discount != null,
+        discountKind: color.discount?.type ?? "PERCENTAGE",
+        discountValue: color.discount
+          ? color.discount.type === "PERCENTAGE"
+            ? String(color.discount.value)
+            : formatIntegerWithThousands(String(color.discount.value))
+          : "",
         sortOrder: typeof color.sortOrder === "number" ? String(color.sortOrder) : "",
         isActive: color.isActive,
         aiImage: createDraftSetPieceImage(color.aiProductImageAccessUrl ?? null),
@@ -243,15 +309,10 @@ export function buildProductWriteMutationInput(input: {
   readonly summary: string;
   readonly fullDescription: string;
   readonly notes: string;
-  readonly priceIrt: number;
   readonly isActive: boolean;
   readonly isReviewSubmissionEnabled: boolean;
   readonly isReviewsSectionVisible: boolean;
   readonly tags: string[];
-  readonly discountEnabled: boolean;
-  readonly hasPositivePrice: boolean;
-  readonly discountKind: DiscountKind;
-  readonly parsedDiscountValue: number | undefined;
   readonly coverImages: DraftCoverImage[];
   readonly vendor: DraftVendor;
   readonly materialProfile: DraftMaterialProfile;
@@ -274,7 +335,6 @@ export function buildProductWriteMutationInput(input: {
     fullDescription: trimToNull(input.fullDescription),
     notes: trimToNull(input.notes),
     coverImageFileIds,
-    priceIrt: input.priceIrt,
     isActive: input.isActive === true,
     isReviewSubmissionEnabled: input.isReviewSubmissionEnabled === true,
     isReviewsSectionVisible: input.isReviewsSectionVisible === true,
@@ -316,27 +376,37 @@ export function buildProductWriteMutationInput(input: {
         isActive: fabric.isActive,
         colors: fabric.colors
           .filter((color) => color.name.trim())
-          .map((color, colorIndex) => ({
-            name: color.name.trim(),
-            hexCode: trimToNull(color.hexCode),
-            sortOrder: parseOptionalNumber(color.sortOrder) ?? colorIndex + 1,
-            isActive: color.isActive,
-            aiProductImageFileId: resolveStoredFileId(
-              input.uploadedFiles.fabricColorImageFileIds[color.aiImage.id],
-              color.aiImage.accessUrl
-            ),
-          })),
+          .map((color, colorIndex) => {
+            const parsedColorPrice = parseOptionalNumber(color.priceIrt);
+            const parsedDiscountValue = parseOptionalNumber(color.discountValue);
+            const hasColorDiscount =
+              color.discountEnabled &&
+              parsedColorPrice != null &&
+              parsedColorPrice > 0 &&
+              parsedDiscountValue != null;
+
+            return {
+              name: color.name.trim(),
+              hexCode: trimToNull(color.hexCode),
+              priceIrt: parsedColorPrice ?? null,
+              discount: hasColorDiscount
+                ? {
+                    type: color.discountKind,
+                    value: parsedDiscountValue,
+                  }
+                : input.isEditMode
+                  ? null
+                  : undefined,
+              sortOrder: parseOptionalNumber(color.sortOrder) ?? colorIndex + 1,
+              isActive: color.isActive,
+              aiProductImageFileId: resolveStoredFileId(
+                input.uploadedFiles.fabricColorImageFileIds[color.aiImage.id],
+                color.aiImage.accessUrl
+              ),
+            };
+          }),
       })),
   };
-
-  if (input.discountEnabled && input.hasPositivePrice && input.parsedDiscountValue != null) {
-    mutationInput.discount = {
-      type: input.discountKind,
-      value: input.parsedDiscountValue,
-    };
-  } else if (input.isEditMode) {
-    mutationInput.discount = null;
-  }
 
   if (input.isEditMode && input.productId) {
     mutationInput.id = input.productId;

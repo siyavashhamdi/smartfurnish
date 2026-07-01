@@ -200,6 +200,7 @@ export function ProductAiPreviewDialog({
         open={open}
         onClose={onClose}
         title={t("app.pageTitles.productAiPreview")}
+        subtitle={productTitle.trim() || undefined}
         maxWidth={result ? "lg" : "md"}
         footer={
           <ModalFooterActions

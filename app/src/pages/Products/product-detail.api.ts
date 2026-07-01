@@ -169,6 +169,8 @@ export function formatProductPrice(priceIrt?: number | null): string {
   return `${priceIrt.toLocaleString("fa-IR").replace(/\u066c/g, ",")} تومان`;
 }
 
+export const PRODUCT_PRICE_FROM_LABEL = "قیمت محصول از";
+
 export function formatSetPieceDimensionText(
   dimension: ProductSetPieceRow["dimensions"][number]
 ): string {

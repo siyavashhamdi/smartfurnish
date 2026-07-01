@@ -842,7 +842,7 @@ export type Mutation = {
   userLogout: Scalars["Boolean"]["output"];
   /** Bulk update current-user notifications by setting them read, unread, or archived */
   userNotificationUpdate: NotificationUpdateGqlResponse;
-  /** Update the authenticated user's user document: account info, profile, preferences, avatar file, or password */
+  /** Update the authenticated user's profile. Anonymous users may only update preferences. */
   userProfileUpdate: UserMutationGqlResponse;
   /** Send a verification email to the authenticated user's address */
   userRequestEmailVerification: UserPasswordResetGqlResponse;
@@ -1299,8 +1299,6 @@ export type ProductCouponSnapshotGqlResponse = {
 export type ProductCreateGqlInput = {
   /** Ordered stored file IDs used as product cover images */
   coverImageFileIds?: InputMaybe<Array<Scalars["ID"]["input"]>>;
-  /** Optional product discount */
-  discount?: InputMaybe<ProductDiscountGqlInput>;
   /** Admin-defined fabric pattern and color options */
   fabrics?: InputMaybe<Array<ProductFabricGqlInput>>;
   /** Full product description */
@@ -1315,8 +1313,6 @@ export type ProductCreateGqlInput = {
   materialProfile?: InputMaybe<ProductMaterialProfileGqlInput>;
   /** Internal notes visible to SUPER_ADMIN */
   notes?: InputMaybe<Scalars["String"]["input"]>;
-  /** Product price in IRT */
-  priceIrt?: InputMaybe<Scalars["Float"]["input"]>;
   /** Set pieces included in this product */
   setPieces?: InputMaybe<Array<ProductSetPieceGqlInput>>;
   /** Product display rank used for manual ordering */
@@ -1432,12 +1428,16 @@ export type ProductDiscountType = (typeof ProductDiscountType)[keyof typeof Prod
 export type ProductFabricColorGqlInput = {
   /** Stored file ID for the AI product preview image */
   aiProductImageFileId?: InputMaybe<Scalars["ID"]["input"]>;
+  /** Optional color discount */
+  discount?: InputMaybe<ProductDiscountGqlInput>;
   /** Hex color code */
   hexCode?: InputMaybe<Scalars["String"]["input"]>;
   /** Whether end users can select this color */
   isActive?: InputMaybe<Scalars["Boolean"]["input"]>;
   /** Fabric color name */
   name: Scalars["String"]["input"];
+  /** Color price in IRT */
+  priceIrt?: InputMaybe<Scalars["Float"]["input"]>;
   /** Sort order */
   sortOrder?: InputMaybe<Scalars["Int"]["input"]>;
 };
@@ -1446,6 +1446,8 @@ export type ProductFabricColorGqlResponse = {
   __typename?: "ProductFabricColorGqlResponse";
   /** Signed access descriptor for the AI product preview image */
   aiProductImageAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
+  /** Optional color discount */
+  discount?: Maybe<ProductDiscountGqlResponse>;
   /** Hex color code */
   hexCode?: Maybe<Scalars["String"]["output"]>;
   /** Whether end users can select this color */
@@ -1454,6 +1456,8 @@ export type ProductFabricColorGqlResponse = {
   key: Scalars["String"]["output"];
   /** Fabric color name */
   name: Scalars["String"]["output"];
+  /** Color price in IRT */
+  priceIrt?: Maybe<Scalars["Float"]["output"]>;
   /** Sort order */
   sortOrder?: Maybe<Scalars["Int"]["output"]>;
 };
@@ -1495,7 +1499,7 @@ export type ProductListCursorPageOptionsParamsInput = {
 export type ProductListFilterInput = {
   /** Filter products by full description */
   fullDescription?: InputMaybe<Scalars["String"]["input"]>;
-  /** Filter products by whether a paid price is set. true = priceIrt > 0, false = unset/null or priceIrt <= 0. */
+  /** Filter products by whether any active color has a paid price. true = min price > 0, false = no active priced colors. */
   hasPrice?: InputMaybe<Scalars["Boolean"]["input"]>;
   /** Scope the product list for a specific user by excluding products they have already paid for. */
   includeUserId?: InputMaybe<Scalars["ID"]["input"]>;
@@ -1532,7 +1536,7 @@ export type ProductListGqlResponse = {
   coverImageAccessUrls: Array<FileAccessUrlGqlResponse>;
   /** Date when the product was created */
   createdAt?: Maybe<Scalars["DateTime"]["output"]>;
-  /** Optional product discount */
+  /** Computed discount for the lowest color offer */
   discount?: Maybe<ProductDiscountGqlResponse>;
   /** Admin-defined fabric pattern and color options */
   fabrics: Array<ProductFabricGqlResponse>;
@@ -1550,7 +1554,7 @@ export type ProductListGqlResponse = {
   materialProfile?: Maybe<ProductMaterialProfileGqlResponse>;
   /** Internal notes visible to SUPER_ADMIN only */
   notes?: Maybe<Scalars["String"]["output"]>;
-  /** Product price in IRT */
+  /** Minimum active color price in IRT */
   priceIrt?: Maybe<Scalars["Float"]["output"]>;
   /** Set pieces included in this product */
   setPieces: Array<ProductSetPieceGqlResponse>;
@@ -1581,7 +1585,7 @@ export type ProductListSortOptionInput = {
   createdAt?: InputMaybe<SortingOrder>;
   /** Sort by active state */
   isActive?: InputMaybe<SortingOrder>;
-  /** Sort by price in IRT */
+  /** Sort by minimum active color price in IRT */
   priceIrt?: InputMaybe<SortingOrder>;
   /** Sort by manual display rank */
   sortOrder?: InputMaybe<SortingOrder>;
@@ -1595,13 +1599,13 @@ export type ProductListSummaryGqlResponse = {
   __typename?: "ProductListSummaryGqlResponse";
   /** Signed access descriptors for product cover images */
   coverImageAccessUrls: Array<FileAccessUrlGqlResponse>;
-  /** Optional product discount */
+  /** Computed discount for the lowest color offer */
   discount?: Maybe<ProductDiscountGqlResponse>;
   /** Product ID */
   id: Scalars["ID"]["output"];
   /** Whether the product is active */
   isActive: Scalars["Boolean"]["output"];
-  /** Product price in IRT */
+  /** Minimum active color price in IRT */
   priceIrt?: Maybe<Scalars["Float"]["output"]>;
   /** Product display rank used for manual ordering */
   sortOrder?: Maybe<Scalars["Float"]["output"]>;
@@ -2380,8 +2384,6 @@ export type ProductSetPieceGqlResponse = {
 export type ProductUpdateGqlInput = {
   /** Ordered stored file IDs used as product cover images */
   coverImageFileIds?: InputMaybe<Array<Scalars["ID"]["input"]>>;
-  /** Optional product discount */
-  discount?: InputMaybe<ProductDiscountGqlInput>;
   /** Admin-defined fabric pattern and color options */
   fabrics?: InputMaybe<Array<ProductFabricGqlInput>>;
   /** Full product description */
@@ -2398,8 +2400,6 @@ export type ProductUpdateGqlInput = {
   materialProfile?: InputMaybe<ProductMaterialProfileGqlInput>;
   /** Internal notes visible to SUPER_ADMIN */
   notes?: InputMaybe<Scalars["String"]["input"]>;
-  /** Product price in IRT */
-  priceIrt?: InputMaybe<Scalars["Float"]["input"]>;
   /** Set pieces included in this product */
   setPieces?: InputMaybe<Array<ProductSetPieceGqlInput>>;
   /** Product display rank used for manual ordering */
@@ -3378,7 +3378,7 @@ export type UserProductDetailGqlResponse = {
   __typename?: "UserProductDetailGqlResponse";
   /** Signed access descriptors for product cover images */
   coverImageAccessUrls: Array<FileAccessUrlGqlResponse>;
-  /** Optional public product discount */
+  /** Computed discount for the lowest active color offer */
   discount?: Maybe<UserProductListDiscountGqlResponse>;
   /** Active fabric pattern and color options selectable by users */
   fabrics: Array<ProductFabricGqlResponse>;
@@ -3396,7 +3396,7 @@ export type UserProductDetailGqlResponse = {
   isReviewsSectionVisible: Scalars["Boolean"]["output"];
   /** Material and texture profile */
   materialProfile?: Maybe<ProductMaterialProfileGqlResponse>;
-  /** Product price in IRT */
+  /** Minimum active color price in IRT */
   priceIrt?: Maybe<Scalars["Float"]["output"]>;
   /** Current END_USER purchase status for this product, if any */
   purchaseStatus?: Maybe<UserProductPurchaseStatus>;
@@ -3422,13 +3422,13 @@ export type UserProductListGqlResponse = {
   __typename?: "UserProductListGqlResponse";
   /** Signed access descriptors for product cover images */
   coverImageAccessUrls: Array<FileAccessUrlGqlResponse>;
-  /** Optional public product discount */
+  /** Computed discount for the lowest active color offer */
   discount?: Maybe<UserProductListDiscountGqlResponse>;
   /** Product ID */
   id: Scalars["ID"]["output"];
   /** Whether the current END_USER has a paid purchase for this product */
   isPurchased: Scalars["Boolean"]["output"];
-  /** Product price in IRT */
+  /** Minimum active color price in IRT */
   priceIrt?: Maybe<Scalars["Float"]["output"]>;
   /** Short product summary */
   summary?: Maybe<Scalars["String"]["output"]>;

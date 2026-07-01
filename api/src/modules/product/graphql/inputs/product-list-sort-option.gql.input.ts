@@ -39,7 +39,7 @@ export class ProductListSortOptionInput {
 
   @Field(() => SortingOrder, {
     nullable: true,
-    description: "Sort by price in IRT",
+    description: "Sort by minimum active color price in IRT",
   })
   @IsOptional()
   @IsEnum(SortingOrder, { message: "Sort order must be ASC or DESC" })

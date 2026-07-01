@@ -40,13 +40,13 @@ export class UserProductDetailGqlResponse {
 
   @Field(() => Float, {
     nullable: true,
-    description: "Product price in IRT",
+    description: "Minimum active color price in IRT",
   })
   priceIrt?: number;
 
   @Field(() => UserProductListDiscountGqlResponse, {
     nullable: true,
-    description: "Optional public product discount",
+    description: "Computed discount for the lowest active color offer",
   })
   discount?: {
     type: ProductDiscountType;

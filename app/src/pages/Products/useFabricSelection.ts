@@ -3,7 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getActiveColorsForFabric,
   getActiveFabrics,
-  getFirstActiveColorKey,
+  resolveLowestPricedColorKeyForFabric,
+  resolveLowestPricedColorSelection,
 } from "./fabric-selection.util";
 import type { ProductFabricColorRow, ProductFabricRow } from "./product-list.api";
 
@@ -33,7 +34,9 @@ export function useFabricSelection(fabrics: readonly ProductFabricRow[]): Fabric
     setSelectedFabricKey((current) =>
       current && activeFabrics.some((fabric) => fabric.key === current)
         ? current
-        : activeFabrics[0]?.key ?? null
+        : resolveLowestPricedColorSelection(activeFabrics)?.fabricKey ??
+            activeFabrics[0]?.key ??
+            null
     );
   }, [activeFabrics]);
 
@@ -62,7 +65,7 @@ export function useFabricSelection(fabrics: readonly ProductFabricRow[]): Fabric
     setSelectedColorKey((current) =>
       current && activeColors.some((color) => color.key === current)
         ? current
-        : (activeColors[0]?.key ?? null)
+        : resolveLowestPricedColorKeyForFabric(selectedFabric) ?? activeColors[0]?.key ?? null
     );
   }, [activeColors, selectedFabric]);
 
@@ -82,7 +85,7 @@ export function useFabricSelection(fabrics: readonly ProductFabricRow[]): Fabric
       }
 
       setSelectedFabricKey(fabricKey);
-      setSelectedColorKey(getFirstActiveColorKey(fabric));
+      setSelectedColorKey(resolveLowestPricedColorKeyForFabric(fabric));
     },
     [activeFabrics]
   );

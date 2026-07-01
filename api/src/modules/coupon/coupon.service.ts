@@ -25,6 +25,10 @@ import { EXCEPTION_CONSTANT } from "../../constants/exception.constant";
 import { SortingOrder } from "../../common/pagination/input";
 import { buildSortOptions } from "../../common/pagination/utils";
 import {
+  calculateProductDiscountAmount,
+  resolveProductMinPriceIrtOrZero,
+} from "../product/product-pricing.util";
+import {
   CouponCreateGqlInput,
   CouponDeleteGqlInput,
   CouponDetailGqlInput,
@@ -399,9 +403,10 @@ export class CouponService {
     productDiscountAmountIrt: number;
     payableAmountBeforeCouponIrt: number;
   } {
-    const amountIrt = Math.max(0, product.priceIrt ?? 0);
-    const productDiscountAmountIrt =
-      this.calculateProductDiscountAmount(product);
+    const amountIrt = resolveProductMinPriceIrtOrZero(product, { activeOnly: true });
+    const productDiscountAmountIrt = calculateProductDiscountAmount(product, {
+      activeOnly: true,
+    });
 
     return {
       amountIrt,
@@ -411,21 +416,6 @@ export class CouponService {
         amountIrt - productDiscountAmountIrt,
       ),
     };
-  }
-
-  private calculateProductDiscountAmount(product: Product): number {
-    const priceIrt = Math.max(0, product.priceIrt ?? 0);
-    const discount = product.discount;
-
-    if (!discount || discount.value <= 0 || priceIrt <= 0) {
-      return 0;
-    }
-
-    if (discount.type === ProductDiscountType.PERCENTAGE) {
-      return Math.round(priceIrt * (Math.min(discount.value, 100) / 100));
-    }
-
-    return Math.min(priceIrt, discount.value);
   }
 
   private calculateCouponDiscountAmount(

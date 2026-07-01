@@ -147,6 +147,25 @@ export class ProductFabricColorGqlInput {
   @IsBoolean({ message: "Color isActive must be a boolean" })
   isActive?: boolean;
 
+  @Field(() => Float, {
+    nullable: true,
+    description: "Color price in IRT",
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({}, { message: "Color price must be a number" })
+  @Min(0)
+  priceIrt?: number | null;
+
+  @Field(() => ProductDiscountGqlInput, {
+    nullable: true,
+    description: "Optional color discount",
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ProductDiscountGqlInput)
+  discount?: ProductDiscountGqlInput | null;
+
   @Field(() => ID, {
     nullable: true,
     description: "Stored file ID for the AI product preview image",
@@ -276,25 +295,6 @@ export class ProductWriteGqlInput {
   })
   @Transform(toObjectIdArray)
   coverImageFileIds?: Types.ObjectId[];
-
-  @Field(() => Float, {
-    nullable: true,
-    description: "Product price in IRT",
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber({}, { message: "Product price must be a number" })
-  @Min(0)
-  priceIrt?: number;
-
-  @Field(() => ProductDiscountGqlInput, {
-    nullable: true,
-    description: "Optional product discount",
-  })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => ProductDiscountGqlInput)
-  discount?: ProductDiscountGqlInput | null;
 
   @Field(() => Boolean, {
     nullable: true,

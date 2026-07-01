@@ -199,38 +199,6 @@
   font-weight: 900;
 }
 
-.currentPrice {
-  color: color-mix(in srgb, variables.$color-info-dark 82%, #0b100c);
-  font-size: clamp(1.5rem, 3vw, 2.15rem);
-  line-height: 1.2;
-}
-
-.discountLine {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-inline-size: 0;
-}
-
-.originalPrice {
-  color: var(--text-secondary);
-  font-weight: 800;
-  text-decoration: line-through;
-  text-decoration-thickness: 0.1rem;
-  white-space: nowrap;
-}
-
-.discountBadge {
-  padding: 0.14rem 0.48rem;
-  border-radius: 999rem;
-  background: color-mix(in srgb, #16a34a 16%, #ffffff);
-  color: #15803d;
-  font-size: 0.72rem;
-  font-weight: 950;
-  line-height: 1.4;
-  white-space: nowrap;
-}
-
 .purchaseActions {
   display: grid;
   gap: 0.55rem;
@@ -989,15 +957,6 @@ body[data-theme="dark"] {
       color-mix(in srgb, #141a15 86%, #0b100c),
       color-mix(in srgb, #0b100c 88%, #2a4530)
     );
-  }
-
-  .currentPrice {
-    color: #e8d3ae;
-  }
-
-  .discountBadge {
-    background: color-mix(in srgb, #22c55e 20%, #0b100c);
-    color: #bbf7d0;
   }
 
   @media (max-width: (variables.$breakpoint-sm - 0.0625rem)) {

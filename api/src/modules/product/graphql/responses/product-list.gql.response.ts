@@ -84,6 +84,18 @@ export class ProductFabricColorGqlResponse {
   @Field({ description: "Whether end users can select this color" })
   isActive: boolean;
 
+  @Field(() => Float, {
+    nullable: true,
+    description: "Color price in IRT",
+  })
+  priceIrt?: number;
+
+  @Field(() => ProductDiscountGqlResponse, {
+    nullable: true,
+    description: "Optional color discount",
+  })
+  discount?: ProductDiscountGqlResponse;
+
   @Field(() => FileAccessUrlGqlResponse, {
     nullable: true,
     description: "Signed access descriptor for the AI product preview image",
@@ -163,13 +175,13 @@ export class ProductListSummaryGqlResponse {
 
   @Field(() => Float, {
     nullable: true,
-    description: "Product price in IRT",
+    description: "Minimum active color price in IRT",
   })
   priceIrt?: number;
 
   @Field(() => ProductDiscountGqlResponse, {
     nullable: true,
-    description: "Optional product discount",
+    description: "Computed discount for the lowest color offer",
   })
   discount?: ProductDiscountGqlResponse;
 
@@ -207,13 +219,13 @@ export class ProductListGqlResponse {
 
   @Field(() => Float, {
     nullable: true,
-    description: "Product price in IRT",
+    description: "Minimum active color price in IRT",
   })
   priceIrt?: number;
 
   @Field(() => ProductDiscountGqlResponse, {
     nullable: true,
-    description: "Optional product discount",
+    description: "Computed discount for the lowest color offer",
   })
   discount?: ProductDiscountGqlResponse;
 

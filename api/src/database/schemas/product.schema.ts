@@ -50,6 +50,8 @@ export type ProductFabricColor = {
   name: string;
   hexCode?: string;
   aiProductImageFileId?: Types.ObjectId;
+  priceIrt?: number;
+  discount?: ProductDiscount;
   sortOrder?: number;
   isActive: boolean;
 };
@@ -128,6 +130,8 @@ export const ProductFabricColorSchema = new MongooseSchema(
     name: { required: true, trim: true, type: String },
     hexCode: { trim: true, type: String },
     aiProductImageFileId: { ref: "StoredFile", type: Types.ObjectId },
+    priceIrt: { min: 0, type: Number },
+    discount: { type: ProductDiscountSchema },
     sortOrder: { type: Number },
     isActive: { default: true, required: true, type: Boolean },
   },
@@ -183,12 +187,6 @@ export class Product extends BaseIdTimestampableBlameableSchema {
   @Prop({ default: [], ref: "StoredFile", type: [Types.ObjectId] })
   coverImageFileIds?: Types.ObjectId[];
 
-  @Prop({ min: 0, type: Number })
-  priceIrt?: number;
-
-  @Prop({ type: ProductDiscountSchema })
-  discount?: ProductDiscount;
-
   @Prop({ default: true, required: true, type: Boolean })
   isActive: boolean;
 
@@ -229,7 +227,6 @@ ProductSchema.plugin(softDeletePlugin);
 ProductSchema.index({ isActive: 1 });
 ProductSchema.index({ sortOrder: 1 });
 ProductSchema.index({ title: 1 });
-ProductSchema.index({ priceIrt: 1 });
 ProductSchema.index({ tags: 1 });
 ProductSchema.index({ coverImageFileIds: 1 });
 ProductSchema.index({ "setPieces.key": 1 }, { unique: true, sparse: true });
@@ -240,5 +237,6 @@ ProductSchema.index(
   { unique: true, sparse: true },
 );
 ProductSchema.index({ "fabrics.colors.aiProductImageFileId": 1 });
+ProductSchema.index({ "fabrics.colors.priceIrt": 1 });
 ProductSchema.index({ "audit.createdAt": -1 });
 ProductSchema.index({ "audit.updatedAt": -1 });

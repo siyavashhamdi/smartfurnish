@@ -31,6 +31,10 @@ export const PRODUCT_FABRIC_COLOR_FIELDS = `
   key
   name
   hexCode
+  priceIrt
+  discount {
+    ${PRODUCT_DISCOUNT_FIELDS}
+  }
   sortOrder
   isActive
   aiProductImageAccessUrl {
@@ -42,6 +46,10 @@ export const PRODUCT_FABRIC_COLOR_USER_FIELDS = `
   key
   name
   hexCode
+  priceIrt
+  discount {
+    ${PRODUCT_DISCOUNT_FIELDS}
+  }
   sortOrder
   isActive
   aiProductImageAccessUrl {

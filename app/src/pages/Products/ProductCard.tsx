@@ -6,7 +6,7 @@ import { OverflowTooltip } from "../../shared/OverflowTooltip";
 import { CachedFileImage } from "../../shared/display/CachedFileImage";
 import { resolveFileAccessUrl } from "../../utils/fileAccessUrl.util";
 import type { FileAccessUrl } from "../../utils/fileAccessUrl.util";
-import { formatProductPrice, getDiscountedPrice } from "./product-detail.api";
+import { formatProductPrice, getDiscountedPrice, PRODUCT_PRICE_FROM_LABEL } from "./product-detail.api";
 import { getPrimaryCoverImageAccessUrl, type ProductListRecord } from "./product-list.api";
 import { ProductCardCoverCarousel } from "./ProductCardCoverCarousel";
 import ProductCardWarrantyRibbon from "./ProductCardWarrantyRibbon";
@@ -279,7 +279,9 @@ const ProductCard = ({
               </>
             ) : (
               <>
-                <span className={styles.priceBarLabel}>قیمت محصول</span>
+                <span className={styles.priceBarLabel}>
+                  {isManagement ? "قیمت محصول" : PRODUCT_PRICE_FROM_LABEL}
+                </span>
                 <span className={styles.priceContent}>
                   {discountedPrice == null ? null : (
                     <span className={styles.originalPriceRow}>

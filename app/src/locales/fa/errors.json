@@ -194,7 +194,7 @@
             "PRODUCT_VALIDATION_PRICE_NEGATIVE": "قیمت محصول نمی‌تواند منفی باشد.",
             "PRODUCT_VALIDATION_DISCOUNT_POSITIVE": "مقدار تخفیف باید عددی مثبت باشد.",
             "PRODUCT_VALIDATION_DISCOUNT_PERCENTAGE_RANGE": "مقدار تخفیف درصدی باید بین ۰ تا ۱۰۰ باشد.",
-            "PRODUCT_VALIDATION_DISCOUNT_FIXED_TOO_HIGH": "مقدار تخفیف ثابت نمی‌تواند بیشتر از قیمت محصول باشد.",
+            "PRODUCT_VALIDATION_DISCOUNT_FIXED_TOO_HIGH": "مقدار تخفیف ثابت نمی‌تواند بیشتر از قیمت همان رنگ باشد.",
             "PRODUCT_VALIDATION_CHAPTER_TITLE_REQUIRED": "عنوان بخش الزامی است.",
             "PRODUCT_VALIDATION_VISIBLE_AFTER_NEGATIVE": "مقدار «نمایش بعد از» نمی‌تواند منفی باشد.",
             "PRODUCT_ITEM_FILE_AND_ARTICLE_BOTH": "آیتم نمی‌تواند هم‌زمان فایل و متن مقاله داشته باشد."

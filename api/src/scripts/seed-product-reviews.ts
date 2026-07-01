@@ -27,7 +27,7 @@ import { UserProductPurchaseCurrency } from "../enums/user-product-purchase-curr
 import { UserProductPurchaseStatus } from "../enums/user-product-purchase-status.enum";
 import { UserRole } from "../enums/user-role.enum";
 import { UserStatus } from "../enums/user-status.enum";
-import { isProductFree } from "../modules/product/product-pricing.util";
+import { isProductFree, calculateProductDiscountAmount, resolveProductListPricing } from "../modules/product/product-pricing.util";
 
 config({ path: resolve(process.cwd(), ".env") });
 
@@ -107,11 +107,17 @@ type SeedProduct = {
   title: string;
   summary?: string;
   fullDescription?: string;
-  priceIrt?: number;
-  discount?: {
-    type: ProductDiscountType;
-    value: number;
-  };
+  fabrics?: Array<{
+    isActive?: boolean;
+    colors?: Array<{
+      isActive?: boolean;
+      priceIrt?: number;
+      discount?: {
+        type: ProductDiscountType;
+        value: number;
+      };
+    }>;
+  }>;
   isActive: boolean;
   isReviewSubmissionEnabled?: boolean;
   isReviewsSectionVisible?: boolean;
@@ -133,6 +139,10 @@ type ProductPriceSummary = {
   discountPercentage?: number;
   discountAmountIrt?: number;
   finalAmountIrt: number;
+  discount?: {
+    type: ProductDiscountType;
+    value: number;
+  };
 };
 
 function getRequiredEnv(name: "MONGODB_URI" | "MONGODB_DATABASE"): string {
@@ -208,29 +218,21 @@ function buildReviewUserSnapshot(user: SeedUser): {
 function calculateProductPriceSummary(
   product: SeedProduct,
 ): ProductPriceSummary {
-  const amountIrt = Math.max(product.priceIrt ?? 0, 0);
-  const discount = product.discount;
-
-  if (!discount || discount.value <= 0 || amountIrt <= 0) {
-    return {
-      amountIrt,
-      finalAmountIrt: amountIrt,
-    };
-  }
-
-  const discountAmountIrt =
-    discount.type === ProductDiscountType.PERCENTAGE
-      ? Math.round((amountIrt * Math.min(discount.value, 100)) / 100)
-      : Math.min(discount.value, amountIrt);
+  const listPricing = resolveProductListPricing(product, { activeOnly: true });
+  const amountIrt = listPricing.priceIrt ?? 0;
+  const discountAmountIrt = calculateProductDiscountAmount(product, {
+    activeOnly: true,
+  });
   const finalAmountIrt = Math.max(amountIrt - discountAmountIrt, 0);
   const discountPercentage =
     amountIrt > 0 ? Math.round((discountAmountIrt / amountIrt) * 100) : 0;
 
   return {
     amountIrt,
-    discountPercentage,
-    discountAmountIrt,
+    discountPercentage: discountAmountIrt > 0 ? discountPercentage : undefined,
+    discountAmountIrt: discountAmountIrt > 0 ? discountAmountIrt : undefined,
     finalAmountIrt,
+    discount: listPricing.discount,
   };
 }
 
@@ -642,8 +644,7 @@ async function seedProductReviews(): Promise<void> {
           title: 1,
           summary: 1,
           fullDescription: 1,
-          priceIrt: 1,
-          discount: 1,
+          fabrics: 1,
           isActive: 1,
           isReviewSubmissionEnabled: 1,
           isReviewsSectionVisible: 1,
@@ -720,7 +721,7 @@ async function seedProductReviews(): Promise<void> {
           title: product.title,
           summary: product.summary ?? product.fullDescription,
           priceIrt: priceSummary.amountIrt,
-          ...(product.discount ? { discount: product.discount } : {}),
+          ...(priceSummary.discount ? { discount: priceSummary.discount } : {}),
         },
         purchase: {
           status: UserProductPurchaseStatus.PAID,

@@ -45,9 +45,11 @@ import {
 import {
   formatProductPrice,
   getDiscountedPrice,
+  PRODUCT_PRICE_FROM_LABEL,
   type UserProductDetailQuery,
   type UserProductDetailQueryVariables,
 } from "./product-detail.api";
+import { resolveColorPricing, resolveProductListPricing } from "./product-pricing.util";
 import {
   getPrimaryCoverImageAccessUrl,
   type ProductMaterialProfileRow,
@@ -64,6 +66,7 @@ import { useProductAiPreviewRoute } from "./useProductAiPreviewRoute";
 import { ProductSetPiecesGallery } from "./ProductSetPiecesGallery";
 import { useFabricSelection } from "./useFabricSelection";
 import styles from "./styles/ProductDetail.module.scss";
+import priceDisplayStyles from "./styles/product-price-display.module.scss";
 
 function ProductDetailSectionHeader({
   section,
@@ -184,13 +187,23 @@ const ProductDetail = (): ReactElement => {
     : null;
   const coverImageNetworkUrl = resolveFileAccessUrl(primaryCoverAccessUrl);
   const { url: coverImageUrl } = useCachedFileAccessUrl(primaryCoverAccessUrl);
-  const discountedPrice = product ? getDiscountedPrice(product.priceIrt, product.discount) : null;
-  const displayPrice = discountedPrice ?? product?.priceIrt ?? null;
+  const selectedColorPricing = resolveColorPricing(fabricSelection.selectedColor);
+  const fallbackListPricing = product
+    ? resolveProductListPricing(product, { activeOnly: true })
+    : { priceIrt: null, discount: null };
+  const activePricing =
+    selectedColorPricing.priceIrt != null ? selectedColorPricing : fallbackListPricing;
+  const productListPriceIrt = activePricing.priceIrt;
+  const discountedPrice = product
+    ? getDiscountedPrice(productListPriceIrt, activePricing.discount ?? product.discount)
+    : null;
+  const displayPrice = discountedPrice ?? productListPriceIrt;
+  const activeDiscount = activePricing.discount ?? product?.discount ?? null;
   const discountLabel =
-    product?.discount && discountedPrice != null
-      ? product.discount.type === "PERCENTAGE"
-        ? `${Math.min(product.discount.value, 100).toLocaleString("fa-IR")}٪ تخفیف`
-        : `${formatProductPrice(product.discount.value)} تخفیف`
+    activeDiscount && discountedPrice != null
+      ? activeDiscount.type === "PERCENTAGE"
+        ? `${Math.min(activeDiscount.value, 100).toLocaleString("fa-IR")}٪ تخفیف`
+        : `${formatProductPrice(activeDiscount.value)} تخفیف`
       : null;
   const hasDisplayPrice = displayPrice != null && displayPrice > 0;
   const sortedSetPieces = useMemo(() => {
@@ -266,7 +279,7 @@ const ProductDetail = (): ReactElement => {
           description: seoDescription,
           imageUrl: coverImageNetworkUrl ?? undefined,
           keywords: product.tags.join(", "),
-          isFree: true,
+          isFree: product.isFree,
           priceIrt: displayPrice,
         }),
         ...buildBreadcrumbStructuredData({
@@ -526,20 +539,28 @@ const ProductDetail = (): ReactElement => {
         <aside ref={purchaseCardRef} className={styles.purchaseCard}>
           {hasDisplayPrice ? (
             <>
-              <span className={styles.purchaseEyebrow}>قیمت محصول</span>
-              <strong className={styles.currentPrice}>{formatProductPrice(displayPrice)}</strong>
+              <span className={styles.purchaseEyebrow}>{PRODUCT_PRICE_FROM_LABEL}</span>
+              {discountedPrice != null ? (
+                <div className={priceDisplayStyles.discountLine}>
+                  <span className={priceDisplayStyles.originalPrice}>
+                    {formatProductPrice(productListPriceIrt)}
+                  </span>
+                  {discountLabel ? (
+                    <span className={priceDisplayStyles.discountBadge}>{discountLabel}</span>
+                  ) : null}
+                </div>
+              ) : null}
+              <strong
+                className={`${priceDisplayStyles.value} ${priceDisplayStyles.valueLarge} ${priceDisplayStyles.valueCentered}`}
+              >
+                {formatProductPrice(displayPrice)}
+              </strong>
             </>
           ) : (
             <Typography variant="body2" color="text.secondary" fontWeight={700}>
               قیمت محصول ثبت نشده است.
             </Typography>
           )}
-          {hasDisplayPrice && discountedPrice != null ? (
-            <div className={styles.discountLine}>
-              <span className={styles.originalPrice}>{formatProductPrice(product.priceIrt)}</span>
-              {discountLabel ? <span className={styles.discountBadge}>{discountLabel}</span> : null}
-            </div>
-          ) : null}
           <div className={styles.purchaseActions}>
             <ProductAiPreviewButton fullWidth onClick={openAiPreviewDialog} />
             <ProductInPersonVisitButton fullWidth onClick={handleInPersonVisitRequest} />
@@ -662,7 +683,7 @@ const ProductDetail = (): ReactElement => {
           onPurchaseSuccess={handlePurchaseSuccess}
           product={product}
           displayPrice={displayPrice}
-          originalPrice={product.priceIrt}
+          originalPrice={productListPriceIrt}
           discountLabel={discountLabel}
           coverImageUrl={coverImageUrl}
         />

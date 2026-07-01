@@ -1020,6 +1020,8 @@ async function buildSeedProduct(
         hexCode: color.hexCode,
         sortOrder: color.sortOrder,
         isActive: true,
+        priceIrt: definition.priceIrt,
+        discount: definition.discount,
         aiProductImageFileId,
       });
     }
@@ -1046,8 +1048,6 @@ async function buildSeedProduct(
       `نگهداری: ${definition.materialProfile.careInstructions}`,
     ].join("\n"),
     coverImageFileIds,
-    priceIrt: definition.priceIrt,
-    discount: definition.discount,
     isActive: true,
     isReviewSubmissionEnabled: true,
     isReviewsSectionVisible: true,

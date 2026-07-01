@@ -1,13 +1,9 @@
 import type { ReactElement } from "react";
 import {
-  FormControl,
   FormControlLabel,
   Grid,
   IconButton,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
   Switch,
   TextField,
   Typography,
@@ -23,7 +19,7 @@ import {
 import { FILE_UPLOAD_POLICY_MAX_SIZE_BYTES } from "../../../constants/fileUploadPolicies";
 import { buildExistingFilePreview } from "../../../utils/fileAccessUrl.util";
 import ProductTagInput from "../ProductTagInput";
-import type { DiscountKind, DraftCoverImage } from "./types";
+import type { DraftCoverImage } from "./types";
 import { createDraftCoverImage } from "./product-form.state.util";
 import styles from "./styles/MainInfoSection.module.scss";
 
@@ -39,8 +35,6 @@ type MainInfoSectionProps = {
   readonly showAdminNotes: boolean;
   readonly coverImages: DraftCoverImage[];
   readonly onCoverImagesChange: (images: DraftCoverImage[]) => void;
-  readonly priceIrt: string;
-  readonly onPriceIrtChange: (value: string) => void;
   readonly tags: string[];
   readonly onTagsChange: (value: string[]) => void;
   readonly isActive: boolean;
@@ -49,15 +43,7 @@ type MainInfoSectionProps = {
   readonly onIsReviewSubmissionEnabledChange: (value: boolean) => void;
   readonly isReviewsSectionVisible: boolean;
   readonly onIsReviewsSectionVisibleChange: (value: boolean) => void;
-  readonly hasPositivePrice: boolean;
-  readonly discountEnabled: boolean;
-  readonly onDiscountEnabledChange: (value: boolean) => void;
-  readonly discountKind: DiscountKind;
-  readonly onDiscountKindChange: (value: DiscountKind) => void;
-  readonly discountValue: string;
-  readonly onDiscountValueChange: (value: string) => void;
   readonly formatIntegerWithThousands: (value: string) => string;
-  readonly sanitizePercentageValue: (value: string) => string;
   readonly getCoverUploadFieldId: (coverId: string) => string;
   readonly uploadingFieldIds: ReadonlySet<string>;
   readonly getFieldUploadPercent: (fieldId: string) => number | null;
@@ -75,8 +61,6 @@ const MainInfoSection = ({
   showAdminNotes,
   coverImages,
   onCoverImagesChange,
-  priceIrt,
-  onPriceIrtChange,
   tags,
   onTagsChange,
   isActive,
@@ -85,15 +69,7 @@ const MainInfoSection = ({
   onIsReviewSubmissionEnabledChange,
   isReviewsSectionVisible,
   onIsReviewsSectionVisibleChange,
-  hasPositivePrice,
-  discountEnabled,
-  onDiscountEnabledChange,
-  discountKind,
-  onDiscountKindChange,
-  discountValue,
-  onDiscountValueChange,
   formatIntegerWithThousands,
-  sanitizePercentageValue,
   getCoverUploadFieldId,
   uploadingFieldIds,
   getFieldUploadPercent,
@@ -144,16 +120,7 @@ const MainInfoSection = ({
           />
         </Grid>
       ) : null}
-      <Grid item xs={12} md={3}>
-        <TextField
-          fullWidth
-          label="قیمت (تومان)"
-          value={priceIrt}
-          onChange={(event) => onPriceIrtChange(formatIntegerWithThousands(event.target.value))}
-          inputProps={{ inputMode: "numeric" }}
-        />
-      </Grid>
-      <Grid item xs={12} md={9}>
+      <Grid item xs={12}>
         <ProductTagInput
           label="برچسب‌ها"
           value={tags}
@@ -276,56 +243,6 @@ const MainInfoSection = ({
                   }
                   label="ثبت نظر فعال باشد."
                 />
-              </Grid>
-            ) : null}
-            {hasPositivePrice ? (
-              <Grid item xs={12} md={2}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={discountEnabled}
-                      onChange={(event) => onDiscountEnabledChange(event.target.checked)}
-                    />
-                  }
-                  label="تخفیف"
-                />
-              </Grid>
-            ) : null}
-            {hasPositivePrice && discountEnabled ? (
-              <Grid item xs={12}>
-                <Grid container spacing={1.25}>
-                  <Grid item xs={12} md={3}>
-                    <FormControl fullWidth required>
-                      <InputLabel required>نوع تخفیف</InputLabel>
-                      <Select
-                        value={discountKind}
-                        label="نوع تخفیف"
-                        onChange={(event) =>
-                          onDiscountKindChange(event.target.value as DiscountKind)
-                        }
-                      >
-                        <MenuItem value="PERCENTAGE">درصدی</MenuItem>
-                        <MenuItem value="FIXED_AMOUNT_IRT">مبلغ ثابت (تومان)</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} md={3}>
-                    <TextField
-                      fullWidth
-                      required
-                      label={discountKind === "PERCENTAGE" ? "مقدار درصد" : "مقدار (تومان)"}
-                      value={discountValue}
-                      onChange={(event) =>
-                        onDiscountValueChange(
-                          discountKind === "PERCENTAGE"
-                            ? sanitizePercentageValue(event.target.value)
-                            : formatIntegerWithThousands(event.target.value)
-                        )
-                      }
-                      inputProps={{ inputMode: "decimal" }}
-                    />
-                  </Grid>
-                </Grid>
               </Grid>
             ) : null}
           </Grid>

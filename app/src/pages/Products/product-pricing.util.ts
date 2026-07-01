@@ -1,4 +1,4 @@
-import { ProductDiscountType } from "../../enums";
+import type { ProductDiscountType, ProductFabricRow } from "./product-list.api";
 
 export type ProductDiscountSource = {
   readonly type: ProductDiscountType;
@@ -21,8 +21,8 @@ export type ProductColorPriceSource = {
 };
 
 export type ProductListPricing = {
-  readonly priceIrt?: number;
-  readonly discount?: ProductDiscountSource;
+  readonly priceIrt: number | null;
+  readonly discount?: ProductDiscountSource | null;
 };
 
 type ColorPricingEntry = {
@@ -39,7 +39,7 @@ export function calculateColorDiscountAmount(
     return 0;
   }
 
-  if (discount.type === ProductDiscountType.PERCENTAGE) {
+  if (discount.type === "PERCENTAGE") {
     return Math.min(
       priceIrt,
       Math.round(priceIrt * (Math.min(discount.value, 100) / 100)),
@@ -56,10 +56,7 @@ export function getDiscountedColorPriceIrt(
     return null;
   }
 
-  const discountAmount = calculateColorDiscountAmount(
-    color.priceIrt,
-    color.discount,
-  );
+  const discountAmount = calculateColorDiscountAmount(color.priceIrt, color.discount);
   const discountedPrice = Math.max(0, Math.round(color.priceIrt - discountAmount));
 
   return discountedPrice < color.priceIrt ? discountedPrice : color.priceIrt;
@@ -109,28 +106,19 @@ export function collectProductColorPrices(
   product: ProductColorPriceSource,
   options?: { readonly activeOnly?: boolean },
 ): number[] {
-  return collectColorPricingEntries(product, options).map(
-    (entry) => entry.priceIrt,
-  );
+  return collectColorPricingEntries(product, options).map((entry) => entry.priceIrt);
 }
 
 export function resolveProductMinPriceIrt(
   product: ProductColorPriceSource,
   options?: { readonly activeOnly?: boolean },
-): number | undefined {
+): number | null {
   const prices = collectProductColorPrices(product, options);
   if (prices.length === 0) {
-    return undefined;
+    return null;
   }
 
   return Math.min(...prices);
-}
-
-export function resolveProductMinPriceIrtOrZero(
-  product: ProductColorPriceSource,
-  options?: { readonly activeOnly?: boolean },
-): number {
-  return resolveProductMinPriceIrt(product, options) ?? 0;
 }
 
 export function resolveProductListPricing(
@@ -139,7 +127,7 @@ export function resolveProductListPricing(
 ): ProductListPricing {
   const entries = collectColorPricingEntries(product, options);
   if (entries.length === 0) {
-    return {};
+    return { priceIrt: null };
   }
 
   const bestOffer = entries.reduce((currentBest, entry) => {
@@ -159,23 +147,42 @@ export function resolveProductListPricing(
 
   return {
     priceIrt: bestOffer.priceIrt,
-    discount: bestOffer.discount,
+    discount: bestOffer.discount ?? null,
   };
 }
 
-export function calculateProductDiscountAmount(
-  product: ProductColorPriceSource,
-  options?: { readonly activeOnly?: boolean },
-): number {
-  const pricing = resolveProductListPricing(product, options);
-  if (!pricing.priceIrt) {
-    return 0;
+export function resolveColorPricing(
+  color: ColorPricingSource | null | undefined,
+): ProductListPricing {
+  if (!color || typeof color.priceIrt !== "number" || color.priceIrt <= 0) {
+    return { priceIrt: null };
   }
 
-  return calculateColorDiscountAmount(pricing.priceIrt, pricing.discount);
+  return {
+    priceIrt: color.priceIrt,
+    discount: color.discount && color.discount.value > 0 ? color.discount : null,
+  };
 }
 
-export function isProductFree(
+export function resolveProductDisplayPriceIrt(
+  product: ProductColorPriceSource & { readonly priceIrt?: number | null },
+  options?: { readonly activeOnly?: boolean },
+): number | null {
+  if (typeof product.priceIrt === "number" && product.priceIrt > 0) {
+    return product.priceIrt;
+  }
+
+  return resolveProductMinPriceIrt(product, options);
+}
+
+export function resolveFabricsMinPriceIrt(
+  fabrics: readonly ProductFabricRow[],
+  options?: { readonly activeOnly?: boolean },
+): number | null {
+  return resolveProductMinPriceIrt({ fabrics }, options);
+}
+
+export function isProductFreeForColors(
   product: ProductColorPriceSource,
   options?: { readonly activeOnly?: boolean },
 ): boolean {
@@ -185,104 +192,4 @@ export function isProductFree(
   }
 
   return Math.min(...entries.map((entry) => entry.discountedPriceIrt)) <= 0;
-}
-
-const ACTIVE_COLOR_PRICE_MATCH = {
-  isActive: { $ne: false },
-  priceIrt: { $gt: 0 },
-} as const;
-
-const ACTIVE_FABRIC_WITH_PRICED_COLOR_MATCH = {
-  isActive: { $ne: false },
-  colors: {
-    $elemMatch: ACTIVE_COLOR_PRICE_MATCH,
-  },
-} as const;
-
-export function buildProductHasPriceFilter(hasPrice: boolean): Record<string, unknown> {
-  if (hasPrice) {
-    return {
-      fabrics: {
-        $elemMatch: ACTIVE_FABRIC_WITH_PRICED_COLOR_MATCH,
-      },
-    };
-  }
-
-  return {
-    $nor: [
-      {
-        fabrics: {
-          $elemMatch: ACTIVE_FABRIC_WITH_PRICED_COLOR_MATCH,
-        },
-      },
-    ],
-  };
-}
-
-function buildActiveColorPricesExpression(): Record<string, unknown> {
-  return {
-    $reduce: {
-      input: { $ifNull: ["$fabrics", []] },
-      initialValue: [],
-      in: {
-        $cond: [
-          { $eq: ["$$this.isActive", false] },
-          "$$value",
-          {
-            $concatArrays: [
-              "$$value",
-              {
-                $map: {
-                  input: {
-                    $filter: {
-                      input: { $ifNull: ["$$this.colors", []] },
-                      as: "color",
-                      cond: {
-                        $and: [
-                          { $ne: ["$$color.isActive", false] },
-                          { $gt: [{ $ifNull: ["$$color.priceIrt", 0] }, 0] },
-                        ],
-                      },
-                    },
-                  },
-                  as: "color",
-                  in: "$$color.priceIrt",
-                },
-              },
-            ],
-          },
-        ],
-      },
-    },
-  };
-}
-
-export function buildProductMinPriceIrtAtLeastFilter(
-  minPriceIrt: number,
-): Record<string, unknown> {
-  const activeColorPrices = buildActiveColorPricesExpression();
-
-  return {
-    $expr: {
-      $and: [
-        { $gt: [{ $size: activeColorPrices }, 0] },
-        { $gte: [{ $min: activeColorPrices }, minPriceIrt] },
-      ],
-    },
-  };
-}
-
-export function buildProductMinPriceIrtAtMostFilter(
-  maxPriceIrt: number,
-): Record<string, unknown> {
-  const activeColorPrices = buildActiveColorPricesExpression();
-
-  return {
-    $expr: {
-      $and: [
-        { $gt: [{ $size: activeColorPrices }, 0] },
-        { $lte: [{ $min: activeColorPrices }, maxPriceIrt] },
-      ],
-    },
-  };
 }

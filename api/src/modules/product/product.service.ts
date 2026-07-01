@@ -77,6 +77,16 @@ import { ProductUpdateGqlInput } from "./graphql/inputs/product-update.gql.input
 import { UserProductDetailGqlInput } from "./graphql/inputs/user-product-detail.gql.input";
 import { FileService, FileAccessUrlDescriptor } from "../file/file.service";
 import {
+  buildProductHasPriceFilter,
+  buildProductMinPriceIrtAtLeastFilter,
+  buildProductMinPriceIrtAtMostFilter,
+  calculateProductDiscountAmount,
+  isProductFree,
+  resolveProductListPricing,
+  resolveProductMinPriceIrt,
+  resolveProductMinPriceIrtOrZero,
+} from "./product-pricing.util";
+import {
   ProductFabricColorGqlResponse,
   ProductFabricGqlResponse,
   ProductListGqlResponse,
@@ -291,10 +301,20 @@ export class ProductService {
     await this.ensureReferencedFilesExist(normalizedInput);
 
     const updatedProduct = await this.productModel
-      .findByIdAndUpdate(input.id, normalizedInput, {
-        new: true,
-        runValidators: true,
-      })
+      .findByIdAndUpdate(
+        input.id,
+        {
+          $set: normalizedInput,
+          $unset: {
+            discount: "",
+            priceIrt: "",
+          },
+        },
+        {
+          new: true,
+          runValidators: true,
+        },
+      )
       .exec();
 
     if (!updatedProduct) {
@@ -452,6 +472,7 @@ export class ProductService {
         : input.paymentMethod === UserProductPaymentMethod.GATEWAY
           ? UserProductPurchaseStatus.PENDING_GATEWAY
           : UserProductPurchaseStatus.PENDING;
+    const listPricing = resolveProductListPricing(product, { activeOnly: true });
     const userProductPayload = {
       userId,
       productId: product._id,
@@ -460,12 +481,7 @@ export class ProductService {
         title: product.title,
         summary: product.summary,
         priceIrt: priceSummary.amountIrt,
-        discount: product.discount
-          ? {
-              type: product.discount.type,
-              value: product.discount.value,
-            }
-          : undefined,
+        discount: listPricing.discount,
       },
       purchase: {
         status,
@@ -816,7 +832,7 @@ export class ProductService {
       );
     }
 
-    if (this.isProductFree(product)) {
+    if (isProductFree(product, { activeOnly: true })) {
       throw new BadRequestException(
         EXCEPTION_CONSTANT.MANUAL_PAYMENT_PAID_PRODUCT_ONLY,
       );
@@ -861,6 +877,7 @@ export class ProductService {
     );
 
     const now = new Date();
+    const listPricing = resolveProductListPricing(product, { activeOnly: true });
     const userProduct = new this.userProductModel({
       userId: input.userId,
       productId: product._id,
@@ -869,12 +886,7 @@ export class ProductService {
         title: product.title,
         summary: product.summary,
         priceIrt: manualPriceSummary.amountIrt,
-        discount: product.discount
-          ? {
-              type: product.discount.type,
-              value: product.discount.value,
-            }
-          : undefined,
+        discount: listPricing.discount,
       },
       purchase: {
         status: input.status,
@@ -942,7 +954,7 @@ export class ProductService {
       createdAt: "audit.createdAt",
       updatedAt: "audit.updatedAt",
       title: "title",
-      priceIrt: "priceIrt",
+      priceIrt: "fabrics.colors.priceIrt",
       isActive: "isActive",
       sortOrder: "sortOrder",
     };
@@ -1012,7 +1024,7 @@ export class ProductService {
       createdAt: "audit.createdAt",
       updatedAt: "audit.updatedAt",
       title: "title",
-      priceIrt: "priceIrt",
+      priceIrt: "fabrics.colors.priceIrt",
       isActive: "isActive",
       sortOrder: "sortOrder",
     };
@@ -1041,8 +1053,6 @@ export class ProductService {
           title: 1,
           summary: 1,
           coverImageFileIds: 1,
-          priceIrt: 1,
-          discount: 1,
           tags: 1,
           setPieces: 1,
           fabrics: 1,
@@ -1090,8 +1100,6 @@ export class ProductService {
         summary: 1,
         fullDescription: 1,
         coverImageFileIds: 1,
-        priceIrt: 1,
-        discount: 1,
         tags: 1,
         materialProfile: 1,
         setPieces: 1,
@@ -1142,7 +1150,7 @@ export class ProductService {
       createdAt: "audit.createdAt",
       updatedAt: "audit.updatedAt",
       title: "title",
-      priceIrt: "priceIrt",
+      priceIrt: "fabrics.colors.priceIrt",
       isActive: "isActive",
       sortOrder: "sortOrder",
     };
@@ -1392,35 +1400,48 @@ export class ProductService {
       );
     }
 
-    if (input.priceIrt != null && input.priceIrt < 0) {
-      this.failProductValidation(
-        EXCEPTION_CONSTANT.PRODUCT_VALIDATION_PRICE_NEGATIVE,
-      );
-    }
+    for (const fabric of input.fabrics ?? []) {
+      if (!fabric.patternName?.trim()) {
+        this.failProductValidation(
+          EXCEPTION_CONSTANT.PRODUCT_VALIDATION_TITLE_REQUIRED,
+        );
+      }
 
-    if (input.discount) {
-      const priceIrt = input.priceIrt ?? 0;
-      if (priceIrt > 0) {
-        if (input.discount.value <= 0) {
+      for (const color of fabric.colors ?? []) {
+        if (!color.name?.trim()) {
           this.failProductValidation(
-            EXCEPTION_CONSTANT.PRODUCT_VALIDATION_DISCOUNT_POSITIVE,
+            EXCEPTION_CONSTANT.PRODUCT_VALIDATION_TITLE_REQUIRED,
           );
         }
-        if (
-          input.discount.type === ProductDiscountType.PERCENTAGE &&
-          input.discount.value > 100
-        ) {
+
+        if (color.priceIrt != null && color.priceIrt < 0) {
           this.failProductValidation(
-            EXCEPTION_CONSTANT.PRODUCT_VALIDATION_DISCOUNT_PERCENTAGE_RANGE,
+            EXCEPTION_CONSTANT.PRODUCT_VALIDATION_PRICE_NEGATIVE,
           );
         }
-        if (
-          input.discount.type === ProductDiscountType.FIXED_AMOUNT_IRT &&
-          input.discount.value > priceIrt
-        ) {
-          this.failProductValidation(
-            EXCEPTION_CONSTANT.PRODUCT_VALIDATION_DISCOUNT_FIXED_TOO_HIGH,
-          );
+
+        if (color.discount && (color.priceIrt ?? 0) > 0) {
+          if (color.discount.value <= 0) {
+            this.failProductValidation(
+              EXCEPTION_CONSTANT.PRODUCT_VALIDATION_DISCOUNT_POSITIVE,
+            );
+          }
+          if (
+            color.discount.type === ProductDiscountType.PERCENTAGE &&
+            color.discount.value > 100
+          ) {
+            this.failProductValidation(
+              EXCEPTION_CONSTANT.PRODUCT_VALIDATION_DISCOUNT_PERCENTAGE_RANGE,
+            );
+          }
+          if (
+            color.discount.type === ProductDiscountType.FIXED_AMOUNT_IRT &&
+            color.discount.value > (color.priceIrt ?? 0)
+          ) {
+            this.failProductValidation(
+              EXCEPTION_CONSTANT.PRODUCT_VALIDATION_DISCOUNT_FIXED_TOO_HIGH,
+            );
+          }
         }
       }
     }
@@ -1438,22 +1459,6 @@ export class ProductService {
         );
       }
     }
-
-    for (const fabric of input.fabrics ?? []) {
-      if (!fabric.patternName?.trim()) {
-        this.failProductValidation(
-          EXCEPTION_CONSTANT.PRODUCT_VALIDATION_TITLE_REQUIRED,
-        );
-      }
-
-      for (const color of fabric.colors ?? []) {
-        if (!color.name?.trim()) {
-          this.failProductValidation(
-            EXCEPTION_CONSTANT.PRODUCT_VALIDATION_TITLE_REQUIRED,
-          );
-        }
-      }
-    }
   }
 
   private normalizeCreateInput(
@@ -1464,8 +1469,6 @@ export class ProductService {
       summary: this.normalizeNullableText(input.summary),
       fullDescription: this.normalizeNullableText(input.fullDescription),
       coverImageFileIds: input.coverImageFileIds ?? [],
-      priceIrt: input.priceIrt,
-      discount: this.normalizeDiscountInput(input.discount),
       isActive: typeof input.isActive === "boolean" ? input.isActive : true,
       isReviewSubmissionEnabled:
         typeof input.isReviewSubmissionEnabled === "boolean"
@@ -1570,6 +1573,8 @@ export class ProductService {
       hexCode: this.normalizeNullableText(color.hexCode),
       sortOrder: color.sortOrder,
       isActive: color.isActive !== false,
+      priceIrt: color.priceIrt ?? undefined,
+      discount: this.normalizeDiscountInput(color.discount),
       aiProductImageFileId: color.aiProductImageFileId ?? undefined,
     };
   }
@@ -2016,28 +2021,23 @@ export class ProductService {
       typeof filters.minPriceIrt === "number" ||
       typeof filters.maxPriceIrt === "number"
     ) {
-      query.priceIrt = {
-        ...(typeof filters.minPriceIrt === "number" && {
-          $gte: filters.minPriceIrt,
-        }),
-        ...(typeof filters.maxPriceIrt === "number" && {
-          $lte: filters.maxPriceIrt,
-        }),
-      };
+      if (typeof filters.minPriceIrt === "number") {
+        this.addAndCondition(
+          query,
+          buildProductMinPriceIrtAtLeastFilter(filters.minPriceIrt),
+        );
+      }
+
+      if (typeof filters.maxPriceIrt === "number") {
+        this.addAndCondition(
+          query,
+          buildProductMinPriceIrtAtMostFilter(filters.maxPriceIrt),
+        );
+      }
     }
 
     if (typeof filters.hasPrice === "boolean") {
-      if (filters.hasPrice) {
-        query.priceIrt = { ...(query.priceIrt as object), $gt: 0 };
-      } else {
-        this.addAndCondition(query, {
-          $or: [
-            { priceIrt: { $exists: false } },
-            { priceIrt: null },
-            { priceIrt: { $lte: 0 } },
-          ],
-        });
-      }
+      this.addAndCondition(query, buildProductHasPriceFilter(filters.hasPrice));
     }
 
     return query;
@@ -2115,6 +2115,8 @@ export class ProductService {
       hexCode: color.hexCode,
       sortOrder: color.sortOrder,
       isActive: color.isActive,
+      priceIrt: color.priceIrt,
+      discount: color.discount,
       aiProductImageAccessUrl:
         includeFabricImages && color.aiProductImageFileId
           ? fileAccessUrlMap?.get(color.aiProductImageFileId.toString())
@@ -2206,6 +2208,9 @@ export class ProductService {
     fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
   ): ProductListSummaryGqlResponse {
     const productObj = (product.toObject?.() || product) as PlainProduct;
+    const listPricing = resolveProductListPricing(productObj, {
+      activeOnly: false,
+    });
 
     return {
       id: product._id,
@@ -2215,8 +2220,8 @@ export class ProductService {
         productObj.coverImageFileIds,
         fileAccessUrlMap,
       ),
-      priceIrt: productObj.priceIrt,
-      discount: productObj.discount,
+      priceIrt: listPricing.priceIrt,
+      discount: listPricing.discount,
       isActive: productObj.isActive,
       sortOrder: productObj.sortOrder,
       tags: productObj.tags || [],
@@ -2228,6 +2233,9 @@ export class ProductService {
     fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
   ): ProductListGqlResponse {
     const productObj = (product.toObject?.() || product) as PlainProduct;
+    const listPricing = resolveProductListPricing(productObj, {
+      activeOnly: false,
+    });
 
     return {
       id: product._id,
@@ -2238,8 +2246,8 @@ export class ProductService {
         productObj.coverImageFileIds,
         fileAccessUrlMap,
       ),
-      priceIrt: productObj.priceIrt,
-      discount: productObj.discount,
+      priceIrt: listPricing.priceIrt,
+      discount: listPricing.discount,
       isActive: productObj.isActive,
       isReviewSubmissionEnabled: productObj.isReviewSubmissionEnabled !== false,
       isReviewsSectionVisible: productObj.isReviewsSectionVisible !== false,
@@ -2367,6 +2375,9 @@ export class ProductService {
     fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
   ): UserProductListGqlResponse {
     const productObj = (product.toObject?.() || product) as PlainProduct;
+    const listPricing = resolveProductListPricing(productObj, {
+      activeOnly: true,
+    });
 
     return {
       id: product._id,
@@ -2376,8 +2387,8 @@ export class ProductService {
         productObj.coverImageFileIds,
         fileAccessUrlMap,
       ),
-      priceIrt: productObj.priceIrt,
-      discount: productObj.discount,
+      priceIrt: listPricing.priceIrt,
+      discount: listPricing.discount,
       tags: productObj.tags || [],
       isPurchased:
         userProduct?.purchase?.status === UserProductPurchaseStatus.PAID,
@@ -2392,6 +2403,9 @@ export class ProductService {
   ): UserProductDetailGqlResponse {
     const productObj = (product.toObject?.() || product) as PlainProduct;
     const purchaseStatus = userProduct?.purchase?.status;
+    const listPricing = resolveProductListPricing(productObj, {
+      activeOnly: true,
+    });
 
     return {
       id: product._id,
@@ -2402,10 +2416,10 @@ export class ProductService {
         productObj.coverImageFileIds,
         fileAccessUrlMap,
       ),
-      priceIrt: productObj.priceIrt,
-      discount: productObj.discount,
+      priceIrt: listPricing.priceIrt,
+      discount: listPricing.discount,
       tags: productObj.tags || [],
-      isFree: this.isProductFree(productObj),
+      isFree: isProductFree(productObj, { activeOnly: true }),
       isPurchased: purchaseStatus === UserProductPurchaseStatus.PAID,
       purchaseStatus,
       materialProfile: this.toMaterialProfileResponse(
@@ -2424,24 +2438,6 @@ export class ProductService {
       isReviewSubmissionEnabled: productObj.isReviewSubmissionEnabled !== false,
       isReviewsSectionVisible: productObj.isReviewsSectionVisible !== false,
     };
-  }
-
-  private isProductFree(product: Product): boolean {
-    const price = product.priceIrt ?? 0;
-    if (price <= 0) {
-      return true;
-    }
-
-    const discount = product.discount;
-    if (!discount || discount.value <= 0) {
-      return false;
-    }
-
-    if (discount.type === ProductDiscountType.PERCENTAGE) {
-      return discount.value >= 100;
-    }
-
-    return discount.value >= price;
   }
 
   private validatePurchaseInputShape(
@@ -2837,36 +2833,21 @@ export class ProductService {
       };
     }
 
-    const amountIrt = Math.max(0, product.priceIrt ?? 0);
-    const discountAmountIrt = this.calculateProductDiscountAmount(product);
+    const listPricing = resolveProductListPricing(product, { activeOnly: true });
+    const amountIrt = listPricing.priceIrt ?? 0;
+    const discountAmountIrt = calculateProductDiscountAmount(product, {
+      activeOnly: true,
+    });
 
     return {
       amountIrt,
       discountPercentage:
-        product.discount?.type === ProductDiscountType.PERCENTAGE
-          ? Math.min(product.discount.value, 100)
+        listPricing.discount?.type === ProductDiscountType.PERCENTAGE
+          ? Math.min(listPricing.discount.value, 100)
           : undefined,
       discountAmountIrt: discountAmountIrt > 0 ? discountAmountIrt : undefined,
       finalAmountIrt: Math.max(0, amountIrt - discountAmountIrt),
     };
-  }
-
-  private calculateProductDiscountAmount(product: Product): number {
-    const priceIrt = Math.max(0, product.priceIrt ?? 0);
-    const discount = product.discount;
-
-    if (!discount || discount.value <= 0 || priceIrt <= 0) {
-      return 0;
-    }
-
-    if (discount.type === ProductDiscountType.PERCENTAGE) {
-      return Math.min(
-        priceIrt,
-        Math.round(priceIrt * (Math.min(discount.value, 100) / 100)),
-      );
-    }
-
-    return Math.min(priceIrt, discount.value);
   }
 
   private toManualFreePriceSummary(

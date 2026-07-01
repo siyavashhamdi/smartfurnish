@@ -49,6 +49,10 @@ export type DraftFabricColor = {
   readonly id: string;
   readonly name: string;
   readonly hexCode: string;
+  readonly priceIrt: string;
+  readonly discountEnabled: boolean;
+  readonly discountKind: DiscountKind;
+  readonly discountValue: string;
   readonly sortOrder: string;
   readonly isActive: boolean;
   readonly aiImage: DraftSetPieceImage;

@@ -4,10 +4,14 @@ import {
   AccordionDetails,
   AccordionSummary,
   Button,
+  FormControl,
   FormControlLabel,
   Grid,
   IconButton,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Switch,
   TextField,
   Typography,
@@ -24,6 +28,7 @@ import { FILE_UPLOAD_POLICY_MAX_SIZE_BYTES } from "../../../constants/fileUpload
 import { buildExistingFilePreview } from "../../../utils/fileAccessUrl.util";
 import type { UploadProgressEntry } from "../../../utils/uploadProgress.util";
 import type {
+  DiscountKind,
   DraftFabric,
   DraftFabricColor,
   DraftMaterialProfile,
@@ -40,6 +45,14 @@ import {
   createDraftSetPieceImage,
 } from "./product-form.state.util";
 import styles from "./styles/CatalogSection.module.scss";
+import { formatIntegerWithThousands, parseOptionalNumber } from "./product-form.state.util";
+
+function sanitizePercentageValue(value: string): string {
+  const normalized = value.replace(/[^\d.]/g, "");
+  const [whole, ...fractionParts] = normalized.split(".");
+  const fraction = fractionParts.join("");
+  return fraction ? `${whole}.${fraction}` : whole;
+}
 
 type CatalogSectionProps = {
   readonly vendor: DraftVendor;
@@ -378,6 +391,81 @@ const CatalogSection = ({
                                 placeholder="#8B4513"
                               />
                             </Grid>
+                            <Grid item xs={12} md={2}>
+                              <TextField
+                                fullWidth
+                                label="قیمت (تومان)"
+                                value={color.priceIrt}
+                                onChange={(event) =>
+                                  updateFabricColor(fabric.id, color.id, {
+                                    priceIrt: formatIntegerWithThousands(event.target.value),
+                                  })
+                                }
+                                inputProps={{ inputMode: "numeric" }}
+                              />
+                            </Grid>
+                            {(parseOptionalNumber(color.priceIrt) ?? 0) > 0 ? (
+                              <Grid item xs={12} md={2}>
+                                <FormControlLabel
+                                  control={
+                                    <Switch
+                                      checked={color.discountEnabled}
+                                      onChange={(event) =>
+                                        updateFabricColor(fabric.id, color.id, {
+                                          discountEnabled: event.target.checked,
+                                        })
+                                      }
+                                    />
+                                  }
+                                  label="تخفیف"
+                                />
+                              </Grid>
+                            ) : null}
+                            {color.discountEnabled &&
+                            (parseOptionalNumber(color.priceIrt) ?? 0) > 0 ? (
+                              <>
+                                <Grid item xs={12} md={2}>
+                                  <FormControl fullWidth required>
+                                    <InputLabel required>نوع تخفیف</InputLabel>
+                                    <Select
+                                      value={color.discountKind}
+                                      label="نوع تخفیف"
+                                      onChange={(event) =>
+                                        updateFabricColor(fabric.id, color.id, {
+                                          discountKind: event.target.value as DiscountKind,
+                                        })
+                                      }
+                                    >
+                                      <MenuItem value="PERCENTAGE">درصدی</MenuItem>
+                                      <MenuItem value="FIXED_AMOUNT_IRT">
+                                        مبلغ ثابت (تومان)
+                                      </MenuItem>
+                                    </Select>
+                                  </FormControl>
+                                </Grid>
+                                <Grid item xs={12} md={2}>
+                                  <TextField
+                                    fullWidth
+                                    required
+                                    label={
+                                      color.discountKind === "PERCENTAGE"
+                                        ? "مقدار درصد"
+                                        : "مقدار (تومان)"
+                                    }
+                                    value={color.discountValue}
+                                    onChange={(event) =>
+                                      updateFabricColor(fabric.id, color.id, {
+                                        discountValue:
+                                          color.discountKind === "PERCENTAGE"
+                                            ? sanitizePercentageValue(event.target.value)
+                                            : formatIntegerWithThousands(event.target.value),
+                                      })
+                                    }
+                                    inputProps={{ inputMode: "decimal" }}
+                                  />
+                                </Grid>
+                              </>
+                            ) : null}
                             <Grid item xs={12} md={4}>
                               <FileUploadField
                                 previewId={`fabric-color-${color.aiImage.id}`}

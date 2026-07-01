@@ -29,6 +29,11 @@ export type ProductFabricColorRow = {
   readonly key: string;
   readonly name: string;
   readonly hexCode?: string | null;
+  readonly priceIrt?: number | null;
+  readonly discount?: {
+    readonly type: ProductDiscountType;
+    readonly value: number;
+  } | null;
   readonly sortOrder?: number | null;
   readonly isActive: boolean;
   readonly aiProductImageAccessUrl?: FileAccessUrl | null;

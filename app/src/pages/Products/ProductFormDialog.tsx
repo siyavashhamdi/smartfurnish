@@ -33,7 +33,7 @@ import type {
   ProductEditRecord,
 } from "./product-list.api";
 import { mapProductDetailRowToRecord } from "./product-list.api";
-import type { DiscountKind, DraftCoverImage, DraftFabric, DraftMaterialProfile, DraftSetPiece, DraftVendor } from "./product-form-dialog/types";
+import type { DraftCoverImage, DraftFabric, DraftMaterialProfile, DraftSetPiece, DraftVendor } from "./product-form-dialog/types";
 import { getFileIdFromAccessUrl } from "../../utils/fileAccessUrl.util";
 import {
   FILE_UPLOAD_POLICY,
@@ -44,6 +44,8 @@ import { hasFormChanges } from "../../utils/formChange.util";
 import {
   buildProductWriteMutationInput,
   createDraftsFromProduct,
+  formatIntegerWithThousands,
+  isDraftProductFreeCandidate,
   parseOptionalNumber,
   type UploadedProductFileMap,
 } from "./product-form-dialog/product-form.state.util";
@@ -94,36 +96,6 @@ function getFabricColorImageUploadFieldId(imageId: string): string {
   return `product-fabric-color-image-${imageId}`;
 }
 
-function normalizeDigits(value: string): string {
-  return value
-    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
-    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)));
-}
-
-function stripNumberSeparators(value: string): string {
-  return normalizeDigits(value).replace(/[,٬\s]/g, "");
-}
-
-function formatIntegerWithThousands(value: string): string {
-  const digits = stripNumberSeparators(value).replace(/\D/g, "");
-  if (!digits) {
-    return "";
-  }
-  return Number(digits).toLocaleString("en-US");
-}
-
-function sanitizePercentageValue(value: string): string {
-  const cleanValue = stripNumberSeparators(value).replace(/[^\d.]/g, "");
-  if (!cleanValue) {
-    return "";
-  }
-  const parsedValue = Number(cleanValue);
-  if (!Number.isFinite(parsedValue)) {
-    return "";
-  }
-  return parsedValue > 100 ? "100" : cleanValue.replace(/^0(?=\d)/, "");
-}
-
 function hasPendingLocalFileSelections(
   coverImages: DraftCoverImage[],
   setPieces: DraftSetPiece[],
@@ -145,14 +117,10 @@ type ProductFormSnapshot = {
   readonly summary: string;
   readonly fullDescription: string;
   readonly notes: string;
-  readonly priceIrt: string;
   readonly tags: string[];
   readonly isActive: boolean;
   readonly isReviewSubmissionEnabled: boolean;
   readonly isReviewsSectionVisible: boolean;
-  readonly discountEnabled: boolean;
-  readonly discountKind: DiscountKind;
-  readonly discountValue: string;
   readonly coverImageCount: number;
   readonly setPieceCount: number;
   readonly fabricCount: number;
@@ -163,14 +131,10 @@ function buildProductFormSnapshot(input: {
   summary: string;
   fullDescription: string;
   notes: string;
-  priceIrt: string;
   tags: string[];
   isActive: boolean;
   isReviewSubmissionEnabled: boolean;
   isReviewsSectionVisible: boolean;
-  discountEnabled: boolean;
-  discountKind: DiscountKind;
-  discountValue: string;
   coverImages: DraftCoverImage[];
   setPieces: DraftSetPiece[];
   fabrics: DraftFabric[];
@@ -180,14 +144,10 @@ function buildProductFormSnapshot(input: {
     summary: input.summary,
     fullDescription: input.fullDescription,
     notes: input.notes,
-    priceIrt: input.priceIrt,
     tags: input.tags,
     isActive: input.isActive,
     isReviewSubmissionEnabled: input.isReviewSubmissionEnabled,
     isReviewsSectionVisible: input.isReviewsSectionVisible,
-    discountEnabled: input.discountEnabled,
-    discountKind: input.discountKind,
-    discountValue: input.discountValue,
     coverImageCount: input.coverImages.length,
     setPieceCount: input.setPieces.length,
     fabricCount: input.fabrics.length,
@@ -236,14 +196,10 @@ const ProductFormDialog = ({
   const [fullDescription, setFullDescription] = useState("");
   const [notes, setNotes] = useState("");
   const [coverImages, setCoverImages] = useState<DraftCoverImage[]>([]);
-  const [priceIrt, setPriceIrt] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [isActive, setIsActive] = useState(false);
   const [isReviewSubmissionEnabled, setIsReviewSubmissionEnabled] = useState(true);
   const [isReviewsSectionVisible, setIsReviewsSectionVisible] = useState(true);
-  const [discountEnabled, setDiscountEnabled] = useState(false);
-  const [discountKind, setDiscountKind] = useState<DiscountKind>("PERCENTAGE");
-  const [discountValue, setDiscountValue] = useState("");
   const [vendor, setVendor] = useState<DraftVendor>({ name: "", phone: "", address: "", notes: "" });
   const [materialProfile, setMaterialProfile] = useState<DraftMaterialProfile>({
     texture: "",
@@ -256,9 +212,6 @@ const ProductFormDialog = ({
   const [initialSnapshot, setInitialSnapshot] = useState<ProductFormSnapshot | null>(null);
   const appliedFormKeyRef = useRef<string | null>(null);
 
-  const parsedPriceIrt = parseOptionalNumber(priceIrt);
-  const hasPositivePrice = parsedPriceIrt != null && parsedPriceIrt > 0;
-
   const currentSnapshot = useMemo(
     () =>
       buildProductFormSnapshot({
@@ -266,30 +219,22 @@ const ProductFormDialog = ({
         summary,
         fullDescription,
         notes,
-        priceIrt,
         tags,
         isActive,
         isReviewSubmissionEnabled,
         isReviewsSectionVisible,
-        discountEnabled,
-        discountKind,
-        discountValue,
         coverImages,
         setPieces,
         fabrics,
       }),
     [
       coverImages,
-      discountEnabled,
-      discountKind,
-      discountValue,
       fabrics,
       fullDescription,
       isActive,
       isReviewSubmissionEnabled,
       isReviewsSectionVisible,
       notes,
-      priceIrt,
       setPieces,
       summary,
       tags,
@@ -299,31 +244,16 @@ const ProductFormDialog = ({
 
   const applyFormState = (nextProduct?: ProductEditRecord | null): void => {
     const drafts = createDraftsFromProduct(nextProduct ?? null);
-    const nextPriceIrt =
-      typeof nextProduct?.priceIrt === "number"
-        ? formatIntegerWithThousands(String(nextProduct.priceIrt))
-        : "";
-    const nextDiscountEnabled = nextProduct?.discount != null;
-    const nextDiscountKind = nextProduct?.discount?.type ?? "PERCENTAGE";
-    const nextDiscountValue = nextProduct?.discount
-      ? nextProduct.discount.type === "PERCENTAGE"
-        ? sanitizePercentageValue(String(nextProduct.discount.value))
-        : formatIntegerWithThousands(String(nextProduct.discount.value))
-      : "";
 
     setTitle(nextProduct?.title ?? "");
     setSummary(nextProduct?.summary ?? "");
     setFullDescription(nextProduct?.fullDescription ?? "");
     setNotes(nextProduct?.notes ?? "");
     setCoverImages(drafts.coverImages);
-    setPriceIrt(nextPriceIrt);
     setTags(nextProduct?.tags ?? []);
     setIsActive(nextProduct?.isActive ?? false);
     setIsReviewSubmissionEnabled(nextProduct?.isReviewSubmissionEnabled ?? true);
     setIsReviewsSectionVisible(nextProduct?.isReviewsSectionVisible ?? true);
-    setDiscountEnabled(nextDiscountEnabled);
-    setDiscountKind(nextDiscountKind);
-    setDiscountValue(nextDiscountValue);
     setVendor(drafts.vendor);
     setMaterialProfile(drafts.materialProfile);
     setSetPieces(drafts.setPieces);
@@ -334,14 +264,10 @@ const ProductFormDialog = ({
         summary: nextProduct?.summary ?? "",
         fullDescription: nextProduct?.fullDescription ?? "",
         notes: nextProduct?.notes ?? "",
-        priceIrt: nextPriceIrt,
         tags: nextProduct?.tags ?? [],
         isActive: nextProduct?.isActive ?? false,
         isReviewSubmissionEnabled: nextProduct?.isReviewSubmissionEnabled ?? true,
         isReviewsSectionVisible: nextProduct?.isReviewsSectionVisible ?? true,
-        discountEnabled: nextDiscountEnabled,
-        discountKind: nextDiscountKind,
-        discountValue: nextDiscountValue,
         coverImages: drafts.coverImages,
         setPieces: drafts.setPieces,
         fabrics: drafts.fabrics,
@@ -597,29 +523,14 @@ const ProductFormDialog = ({
     );
   };
 
-  const isFreeProductCandidate = (): boolean => {
-    const parsedDiscountValue = parseOptionalNumber(discountValue);
-    return (
-      parsedPriceIrt == null ||
-      parsedPriceIrt === 0 ||
-      (discountEnabled &&
-        hasPositivePrice &&
-        discountKind === "PERCENTAGE" &&
-        parsedDiscountValue === 100)
-    );
-  };
+  const isFreeProductCandidate = (): boolean => isDraftProductFreeCandidate(fabrics);
 
   const handleSubmit = async (skipFreeConfirmation = false): Promise<void> => {
     const validationResult = validateProductForm({
       title,
-      parsedPriceIrt,
-      discountEnabled,
-      hasPositivePrice,
-      discountKind,
-      discountValue,
+      fabrics,
       vendor,
       setPieces,
-      fabrics,
       parseOptionalNumber,
     });
 
@@ -637,7 +548,6 @@ const ProductFormDialog = ({
     }
 
     setFreeProductConfirmOpen(false);
-    const parsedDiscountValue = parseOptionalNumber(discountValue);
     setIsUploadingFiles(true);
     setUploadProgressByFieldId({});
     let uploadedFiles: UploadedProductFileMap | null = null;
@@ -658,15 +568,10 @@ const ProductFormDialog = ({
       summary,
       fullDescription,
       notes,
-      priceIrt: parsedPriceIrt ?? 0,
       isActive,
       isReviewSubmissionEnabled,
       isReviewsSectionVisible,
       tags,
-      discountEnabled,
-      hasPositivePrice,
-      discountKind,
-      parsedDiscountValue,
       coverImages,
       vendor,
       materialProfile,
@@ -780,8 +685,6 @@ const ProductFormDialog = ({
                         showAdminNotes={isSuperAdmin}
                         coverImages={coverImages}
                         onCoverImagesChange={setCoverImages}
-                        priceIrt={priceIrt}
-                        onPriceIrtChange={setPriceIrt}
                         tags={tags}
                         onTagsChange={setTags}
                         isActive={isActive}
@@ -790,18 +693,7 @@ const ProductFormDialog = ({
                         onIsReviewSubmissionEnabledChange={setIsReviewSubmissionEnabled}
                         isReviewsSectionVisible={isReviewsSectionVisible}
                         onIsReviewsSectionVisibleChange={setIsReviewsSectionVisible}
-                        hasPositivePrice={hasPositivePrice}
-                        discountEnabled={discountEnabled}
-                        onDiscountEnabledChange={setDiscountEnabled}
-                        discountKind={discountKind}
-                        onDiscountKindChange={(kind) => {
-                          setDiscountKind(kind);
-                          setDiscountValue("");
-                        }}
-                        discountValue={discountValue}
-                        onDiscountValueChange={setDiscountValue}
                         formatIntegerWithThousands={formatIntegerWithThousands}
-                        sanitizePercentageValue={sanitizePercentageValue}
                         getCoverUploadFieldId={getCoverUploadFieldId}
                         uploadingFieldIds={uploadingFieldIds}
                         getFieldUploadPercent={(fieldId) =>

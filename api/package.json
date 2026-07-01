@@ -26,7 +26,9 @@
     "seed:products": "tsx -r tsconfig-paths/register src/scripts/seed-real-products.ts",
     "seed:coupons": "tsx -r tsconfig-paths/register src/scripts/seed-real-coupons.ts",
     "seed:notifications": "tsx -r tsconfig-paths/register src/scripts/seed-notifications.ts",
-    "seed:product-reviews": "tsx -r tsconfig-paths/register src/scripts/seed-product-reviews.ts"
+    "seed:product-reviews": "tsx -r tsconfig-paths/register src/scripts/seed-product-reviews.ts",
+    "migrate:product-prices": "tsx -r tsconfig-paths/register src/scripts/migrate-product-price-to-colors.ts",
+    "migrate:product-discounts": "tsx -r tsconfig-paths/register src/scripts/migrate-product-discount-to-colors.ts"
   },
   "dependencies": {
     "@apollo/server": "^4.9.5",

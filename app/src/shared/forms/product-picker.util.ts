@@ -1,5 +1,9 @@
 import type { ProductListItemRow } from "../../pages/Products/product-list.api";
 import { getPrimaryCoverImageAccessUrl } from "../../pages/Products/product-list.api";
+import {
+  getDiscountedColorPriceIrt,
+  resolveProductListPricing,
+} from "../../pages/Products/product-pricing.util";
 import type { EntityAutocompleteOption } from "./EntityAutocompleteField";
 
 export type ProductPickerOption = EntityAutocompleteOption & {
@@ -7,11 +11,30 @@ export type ProductPickerOption = EntityAutocompleteOption & {
 };
 
 export function calculateDiscountedProductPrice(
-  product: Pick<ProductListItemRow, "priceIrt" | "discount">
+  product: Pick<ProductListItemRow, "priceIrt" | "discount" | "fabrics">
 ): number {
-  const price = Math.max(0, product.priceIrt ?? 0);
+  if (product.fabrics?.length) {
+    const listPricing = resolveProductListPricing(product, { activeOnly: true });
+    const priceIrt = listPricing.priceIrt ?? 0;
+    if (priceIrt <= 0) {
+      return 0;
+    }
+
+    const discountedPrice = getDiscountedColorPriceIrt({
+      priceIrt,
+      discount: listPricing.discount,
+    });
+
+    return discountedPrice ?? priceIrt;
+  }
+
+  const price = product.priceIrt ?? 0;
+  if (price <= 0) {
+    return 0;
+  }
+
   const discount = product.discount;
-  if (!discount || discount.value <= 0 || price <= 0) {
+  if (!discount || discount.value <= 0) {
     return price;
   }
 

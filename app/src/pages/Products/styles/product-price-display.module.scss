@@ -1,0 +1,57 @@
+@use "../../../styles/variables" as variables;
+
+.value {
+  color: color-mix(in srgb, variables.$color-info-dark 82%, #0b100c);
+  line-height: 1.2;
+}
+
+.valueLarge {
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
+}
+
+.valueMedium {
+  font-size: clamp(1.05rem, 2.2vw, 1.35rem);
+  font-weight: 900;
+}
+
+.valueCentered {
+  display: block;
+  text-align: center;
+}
+
+.discountLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-inline-size: 0;
+}
+
+.originalPrice {
+  color: var(--text-secondary);
+  font-weight: 800;
+  text-decoration: line-through;
+  text-decoration-thickness: 0.1rem;
+  white-space: nowrap;
+}
+
+.discountBadge {
+  padding: 0.14rem 0.48rem;
+  border-radius: 999rem;
+  background: color-mix(in srgb, #16a34a 16%, #ffffff);
+  color: #15803d;
+  font-size: 0.72rem;
+  font-weight: 950;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+body[data-theme="dark"] {
+  .value {
+    color: #e8d3ae;
+  }
+
+  .discountBadge {
+    background: color-mix(in srgb, #22c55e 20%, #0b100c);
+    color: #bbf7d0;
+  }
+}

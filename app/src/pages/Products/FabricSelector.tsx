@@ -34,6 +34,7 @@ export function FabricSelector({
         activeColors={fabricSelection.activeColors}
         selectedFabricKey={fabricSelection.selectedFabricKey}
         selectedColorKey={fabricSelection.selectedColorKey}
+        selectedColor={fabricSelection.selectedColor}
         onFabricSelect={fabricSelection.selectFabric}
         onColorSelect={fabricSelection.selectColor}
       />
