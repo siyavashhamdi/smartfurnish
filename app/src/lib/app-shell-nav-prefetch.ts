@@ -1,13 +1,8 @@
 import type { DocumentNode } from "@apollo/client";
 import { print } from "graphql";
-import { PRODUCT_LIST_QUERY } from "../graphql/queries/productList.query";
-import { PRODUCT_PAYMENT_LIST_QUERY } from "../graphql/queries/productPaymentList.query";
 import { APP_PRIVACY_POLICY_PAGE_QUERY } from "../graphql/queries/appPrivacyPolicyPageConfig.query";
 import { APP_TERMS_OF_USE_PAGE_QUERY } from "../graphql/queries/appTermsOfUsePageConfig.query";
 import { SUPPORT_CONTACT_QUERY } from "../graphql/queries/supportContactConfig.query";
-import { TICKET_LIST_QUERY } from "../graphql/queries/ticketList.query";
-import { USER_PRODUCT_LIST_QUERY } from "../graphql/queries/userProductList.query";
-import { USER_NOTIFICATION_LIST_QUERY } from "../graphql/queries/userNotificationList.query";
 import {
   filterAppShellNavItems,
   resolveAppShellNavPath,
@@ -16,29 +11,11 @@ import {
   APP_SHELL_NAV_ITEMS,
 } from "../layouts/app-shell-nav-items";
 import { UserRole } from "./graphql/generated";
-import {
-  buildProductListQueryVariables,
-  DEFAULT_PRODUCT_LIST_FILTERS,
-  DEFAULT_PRODUCT_LIST_SORT,
-} from "../pages/Products/product-list.api";
-import {
-  buildNotificationListQueryVariables,
-  NOTIFICATION_LIST_PAGE_SIZE,
-} from "../pages/Notifications/notifications-list.api";
-import {
-  buildProductPaymentListQueryVariables,
-  EMPTY_PRODUCT_PAYMENT_LIST_FILTERS,
-} from "../pages/Payments/payments-list.api";
 import { APP_SHELL_ROUTES } from "../routing/app-shell-routes";
-import { buildTicketListQueryVariables } from "../pages/Support/support-list.api";
-import { EMPTY_SUPPORT_TICKET_LIST_FILTERS } from "../pages/Support/support.types";
 import { apolloClient } from "./apollo-client";
 import { getIsOfflineMode } from "./offline-state";
 import { resolveGraphqlHttpUrl } from "../utils/apiBaseUrl.util";
 import { isNativeAndroidShell } from "../utils/nativePlatform.util";
-
-const PRODUCT_LIST_PAGE_SIZE = 6;
-const SERVER_PAGINATED_PAGE_SIZE = 10;
 
 type PrefetchOperation = {
   readonly query: DocumentNode;
@@ -168,59 +145,18 @@ function buildPrefetchOperationsForItem(
   context: AppShellNavPrefetchContext
 ): readonly PrefetchOperation[] {
   const isSuperAdmin = context.roles.includes(UserRole.SUPER_ADMIN);
-  const isPublicProductView = !context.isAuthenticated || context.isEndUser;
 
   switch (item.id) {
     case "products":
-      return [
-        {
-          query: isPublicProductView ? USER_PRODUCT_LIST_QUERY : PRODUCT_LIST_QUERY,
-          variables: buildProductListQueryVariables(
-            DEFAULT_PRODUCT_LIST_FILTERS,
-            DEFAULT_PRODUCT_LIST_SORT,
-            PRODUCT_LIST_PAGE_SIZE,
-            null
-          ),
-        },
-      ];
     case "payments":
-      return [
-        {
-          query: PRODUCT_PAYMENT_LIST_QUERY,
-          variables: buildProductPaymentListQueryVariables(
-            "",
-            EMPTY_PRODUCT_PAYMENT_LIST_FILTERS,
-            1,
-            SERVER_PAGINATED_PAGE_SIZE
-          ),
-        },
-      ];
     case "notifications":
-      return [
-        {
-          query: USER_NOTIFICATION_LIST_QUERY,
-          variables: buildNotificationListQueryVariables(
-            "unread",
-            NOTIFICATION_LIST_PAGE_SIZE,
-            null
-          ),
-        },
-      ];
+    case "inquiries":
+      return [];
     case "support": {
       const path = resolveAppShellNavPath(item, context);
 
       if (path === APP_SHELL_ROUTES.supportTickets) {
-        return [
-          {
-            query: TICKET_LIST_QUERY,
-            variables: buildTicketListQueryVariables(
-              "",
-              EMPTY_SUPPORT_TICKET_LIST_FILTERS,
-              1,
-              SERVER_PAGINATED_PAGE_SIZE
-            ),
-          },
-        ];
+        return [];
       }
 
       return [{ query: SUPPORT_CONTACT_QUERY }];

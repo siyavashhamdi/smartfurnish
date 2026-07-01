@@ -19,7 +19,10 @@ import type { InputImage } from "../types/input-image.types";
 import { prepareEnvironmentImage } from "../utils/environment-image.util";
 import { buildPlacementPrompt } from "../utils/placement-prompt.util";
 import { combineReferenceImages } from "../utils/reference-image.util";
-import { cropGeneratedImageToEnvironmentPanel } from "../utils/result-image.util";
+import {
+  cropGeneratedImageToEnvironmentPanel,
+  readPreviewImageContent,
+} from "../utils/result-image.util";
 import { OpenRouterImageGenerationService } from "./openrouter-image-generation.service";
 
 export type ProductAiPreviewProgressCallback = (
@@ -38,6 +41,12 @@ export interface ProductAiPreviewResult {
   readonly image: string;
   readonly durationSeconds: number;
   readonly description: string | null;
+  readonly environmentFileId: string;
+  readonly resultFileId: string;
+  readonly sourceProductImageFileId: string;
+  readonly generatedAt: string;
+  readonly aspectRatio?: string;
+  readonly imageSize: string;
   readonly product: {
     readonly id: string;
     readonly title: string;
@@ -176,6 +185,24 @@ export class ProductAiPreviewService {
       reference.layout,
     );
 
+    const { buffer: resultBuffer, mimeType: resultMimeType } =
+      await readPreviewImageContent(croppedImageUrl);
+    const uploadedResult = await this.fileService.uploadFromBuffer({
+      name: `ai-preview-result-${productId}.jpg`,
+      mimeType: resultMimeType.startsWith("image/")
+        ? resultMimeType
+        : "image/jpeg",
+      buffer: resultBuffer,
+    });
+    const resultFileId = uploadedResult.accessUrl?.fileId?.toString();
+
+    if (!resultFileId) {
+      throw new BadRequestException(
+        "AI preview result file could not be stored.",
+      );
+    }
+
+    const generatedAt = new Date();
     const durationSeconds = (Date.now() - startedAt) / 1000;
     await this.appSettingsService.updateProductAiPreviewStagingDurationSeconds(
       durationSeconds,
@@ -188,7 +215,15 @@ export class ProductAiPreviewService {
     return {
       description: generationResult.description ?? null,
       durationSeconds,
+      environmentFileId,
+      generatedAt: generatedAt.toISOString(),
       image: croppedImageUrl,
+      imageSize: "0.5K",
+      resultFileId,
+      sourceProductImageFileId: color.aiProductImageFileId.toString(),
+      ...(reference.environmentAspectRatio
+        ? { aspectRatio: reference.environmentAspectRatio }
+        : {}),
       product: {
         id: product._id.toString(),
         title: product.title,

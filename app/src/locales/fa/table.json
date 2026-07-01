@@ -140,6 +140,34 @@
                     "cancelledAt": "تاریخ لغو"
                 }
             },
+            "inquiries": {
+                "columns": {
+                    "userFullName": "نام کاربر",
+                    "username": "نام کاربری",
+                    "userPhone": "شماره تماس",
+                    "productTitle": "محصول",
+                    "fabricLabel": "پارچه/رنگ",
+                    "status": "وضعیت",
+                    "contactFullName": "نام تماس‌گیرنده",
+                    "contactPhone": "شماره تماس",
+                    "contactRequestedAt": "تاریخ درخواست تماس",
+                    "previewGeneratedAt": "تاریخ پیش‌نمایش",
+                    "createdAt": "تاریخ ثبت",
+                    "updatedAt": "آخرین بروزرسانی"
+                },
+                "filters": {
+                    "contactFirstName": "نام",
+                    "contactLastName": "نام خانوادگی",
+                    "createdAtFrom": "ثبت از تاریخ",
+                    "createdAtTo": "ثبت تا تاریخ",
+                    "updatedAtFrom": "بروزرسانی از تاریخ",
+                    "updatedAtTo": "بروزرسانی تا تاریخ",
+                    "previewGeneratedAtFrom": "پیش‌نمایش از تاریخ",
+                    "previewGeneratedAtTo": "پیش‌نمایش تا تاریخ",
+                    "contactRequestedAtFrom": "درخواست تماس از تاریخ",
+                    "contactRequestedAtTo": "درخواست تماس تا تاریخ"
+                }
+            },
             "support": {
                 "columns": {
                     "id": "شناسه",

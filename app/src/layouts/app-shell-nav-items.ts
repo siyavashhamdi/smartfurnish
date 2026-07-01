@@ -1,6 +1,7 @@
 import AccountBalanceWalletRoundedIcon from "@mui/icons-material/AccountBalanceWalletRounded";
 import AutoStoriesRoundedIcon from "@mui/icons-material/AutoStoriesRounded";
 import ConfirmationNumberRoundedIcon from "@mui/icons-material/ConfirmationNumberRounded";
+import ContactPhoneRoundedIcon from "@mui/icons-material/ContactPhoneRounded";
 import MenuBookRoundedIcon from "@mui/icons-material/MenuBookRounded";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneRounded";
@@ -18,6 +19,7 @@ export type AppShellNavItemId =
   | "ourStory"
   | "products"
   | "payments"
+  | "inquiries"
   | "notifications"
   | "support"
   | "profile"
@@ -61,6 +63,13 @@ export const APP_SHELL_NAV_ITEMS: readonly AppShellNavItemDefinition[] = [
     Icon: AccountBalanceWalletRoundedIcon,
     requiredRoles: [UserRole.SUPER_ADMIN],
     badge: "payments",
+  },
+  {
+    id: "inquiries",
+    title: "استعلام‌ها",
+    path: APP_SHELL_ROUTES.inquiries,
+    Icon: ContactPhoneRoundedIcon,
+    requiredRoles: [UserRole.SUPER_ADMIN],
   },
   {
     id: "notifications",

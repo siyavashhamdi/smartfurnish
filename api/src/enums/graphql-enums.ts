@@ -27,6 +27,7 @@ import { UserStatus } from "./user-status.enum";
 import { UserProductPaymentMethod } from "./user-product-payment-method.enum";
 import { UserProductPurchaseCurrency } from "./user-product-purchase-currency.enum";
 import { UserProductPurchaseStatus } from "./user-product-purchase-status.enum";
+import { UserProductInquiryStatus } from "./user-product-inquiry-status.enum";
 import { PurchaseStatusChangedBy } from "./purchase-status-changed-by.enum";
 import { SortingOrder } from "../common/pagination/input/sorting-order.enum";
 import { MediaCompressionQuality } from "./media-compression-quality.enum";
@@ -152,6 +153,11 @@ registerEnumType(UserProductPurchaseCurrency, {
 registerEnumType(UserProductPurchaseStatus, {
   name: "UserProductPurchaseStatus",
   description: "Product purchase lifecycle status",
+});
+
+registerEnumType(UserProductInquiryStatus, {
+  name: "UserProductInquiryStatus",
+  description: "Lifecycle status for a user product inquiry",
 });
 
 registerEnumType(PurchaseStatusChangedBy, {

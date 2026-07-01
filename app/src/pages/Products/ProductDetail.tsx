@@ -130,7 +130,9 @@ const ProductDetail = (): ReactElement => {
   const location = useLocation();
   const {
     isOpen: isAiPreviewDialogOpen,
+    initialStepId: aiPreviewInitialStepId,
     open: openAiPreviewDialog,
+    openToStep: openAiPreviewToStep,
     close: closeAiPreviewDialog,
   } = useProductAiPreviewRoute(productId);
   const { isAuthenticated, isRegisteredUser, user } = useAuth();
@@ -318,7 +320,9 @@ const ProductDetail = (): ReactElement => {
     }
   }, []);
 
-  const handleInPersonVisitRequest = useCallback((): void => {}, []);
+  const handleInPersonVisitRequest = useCallback((): void => {
+    openAiPreviewToStep("contact");
+  }, [openAiPreviewToStep]);
 
   useEffect(() => {
     if (!product) {
@@ -692,11 +696,11 @@ const ProductDetail = (): ReactElement => {
       <ProductAiPreviewDialog
         open={isAiPreviewDialogOpen}
         onClose={closeAiPreviewDialog}
-        productId={product?.id ?? ""}
-        productTitle={product?.title ?? ""}
-        coverImageAccessUrls={product?.coverImageAccessUrls ?? []}
+        initialStepId={aiPreviewInitialStepId}
+        productId={product.id}
+        productTitle={product.title}
+        coverImageAccessUrls={product.coverImageAccessUrls}
         fabricSelection={fabricSelection}
-        onInPersonVisitClick={handleInPersonVisitRequest}
       />
     </section>
   );

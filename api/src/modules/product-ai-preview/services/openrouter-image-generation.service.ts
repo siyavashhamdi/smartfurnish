@@ -5,6 +5,8 @@ import {
   PayloadTooLargeException,
   ServiceUnavailableException,
 } from "@nestjs/common";
+import { existsSync, readFileSync } from "fs";
+import { join } from "path";
 
 import { EXCEPTION_CONSTANT } from "../../../constants/exception.constant";
 import { AppSettingsService } from "../../app-settings";
@@ -62,6 +64,11 @@ const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MAX_REQUEST_BYTES = 4.5 * 1024 * 1024;
 const AI_PREVIEW_GENERATION_FAILED =
   EXCEPTION_CONSTANT.PRODUCT_AI_PREVIEW_GENERATION_FAILED;
+const TEMP_SAMPLE_IMAGE_CANDIDATE_PATHS = [
+  join(process.cwd(), "../app/public/logo.png"),
+  join(process.cwd(), "app/public/logo.png"),
+  join(__dirname, "../../../../../app/public/logo.png"),
+] as const;
 
 @Injectable()
 export class OpenRouterImageGenerationService {
@@ -121,6 +128,24 @@ export class OpenRouterImageGenerationService {
   async generateImage(
     options: GenerateImageOptions,
   ): Promise<GenerateImageResult> {
+    const tempSampleImagePath = TEMP_SAMPLE_IMAGE_CANDIDATE_PATHS.find((path) =>
+      existsSync(path),
+    );
+
+    if (!tempSampleImagePath) {
+      this.failGeneration(
+        "Temporary sample image not found. Expected app/public/logo.png.",
+      );
+    }
+
+    const tempSampleImageBuffer = readFileSync(tempSampleImagePath);
+
+    return {
+      description:
+        "Temporary sample image (AI generation bypassed for testing).",
+      imageUrl: `data:image/png;base64,${tempSampleImageBuffer.toString("base64")}`,
+    };
+
     const openRouterConfig = await this.appSettingsService.getOpenRouterConfig();
 
     if (!openRouterConfig) {

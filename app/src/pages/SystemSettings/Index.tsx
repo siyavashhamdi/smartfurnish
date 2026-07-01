@@ -155,7 +155,7 @@ const SystemSettingsIndex = (): ReactElement => {
   const hasShownLoadErrorRef = useRef(false);
   const isSuperAdmin = user?.roles?.includes(UserRole.SUPER_ADMIN) === true;
 
-  const [sorting, setSorting] = useState<SortingState>([{ id: "createdAt", desc: true }]);
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     id: false,
     key: false,

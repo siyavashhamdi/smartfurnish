@@ -785,6 +785,7 @@ export class UserService {
     const [createdUser] = await this.userModel.create([
       {
         username,
+        profile: { firstName: "[بدون نام]" },
         authentication: {
           passwordHash,
           passwordSalt,
@@ -926,6 +927,12 @@ export class UserService {
 
     if (!user || user.status !== UserStatus.ACTIVE) {
       throw new BadRequestException(EXCEPTION_CONSTANT.INVALID_CREDENTIALS);
+    }
+
+    if (user.roles?.includes(UserRole.ANONYMOUS)) {
+      throw new BadRequestException(
+        EXCEPTION_CONSTANT.ANONYMOUS_USER_CANNOT_LOGIN,
+      );
     }
 
     return user;

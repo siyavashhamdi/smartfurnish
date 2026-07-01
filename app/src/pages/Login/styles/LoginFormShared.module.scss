@@ -295,6 +295,24 @@
   text-align: right;
 }
 
+.persianAdornedTextField {
+  :global {
+    .MuiOutlinedInput-root:has(.MuiInputAdornment-positionStart) .MuiInputBase-input {
+      direction: rtl;
+      text-align: right;
+      font-family: variables.$font-family !important;
+      padding-left: 2.65rem !important;
+      padding-right: 0.5rem !important;
+
+      &::placeholder {
+        font-family: variables.$font-family !important;
+        direction: rtl;
+        text-align: right;
+      }
+    }
+  }
+}
+
 .inputIcon {
   color: variables.$color-primary-dark;
   font-size: 1.25rem !important;

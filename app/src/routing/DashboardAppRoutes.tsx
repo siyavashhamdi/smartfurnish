@@ -23,6 +23,7 @@ import {
   importMoreIndex,
   importNotificationsIndex,
   importPaymentsIndex,
+  importInquiriesIndex,
   importPrivacyPolicyPage,
   importProfileIndex,
   importResetPassword,
@@ -49,6 +50,7 @@ const TermsOfUsePage = lazy(importTermsOfUsePage);
 const SystemSettingsIndex = lazy(importSystemSettingsIndex);
 const Notifications = lazy(importNotificationsIndex);
 const PaymentsIndex = lazy(importPaymentsIndex);
+const InquiriesIndex = lazy(importInquiriesIndex);
 const ZarinPalCallback = lazy(importZarinPalCallback);
 const Profile = lazy(importProfileIndex);
 const ResetPassword = lazy(importResetPassword);
@@ -142,6 +144,10 @@ const DashboardAppRoutesContent = (): ReactElement => {
           element={
             PAYMENTS_ENABLED ? wrapProtected(<PaymentsIndex />) : <PaymentsDisabledRedirect />
           }
+        />
+        <Route
+          path={APP_SHELL_ROUTES.inquiries}
+          element={wrapProtected(<InquiriesIndex />)}
         />
         <Route
           path={APP_SHELL_ROUTES.paymentZarinPalCallback}

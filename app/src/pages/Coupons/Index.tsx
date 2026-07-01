@@ -246,7 +246,7 @@ const CouponsIndex = (): ReactElement => {
   const { record: editCouponRecord, isInitialLoading: couponDetailLoading } =
     useCouponEditRecord(editCouponId);
 
-  const [sorting, setSorting] = useState<SortingState>([{ id: "createdAt", desc: true }]);
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     code: true,
     title: true,

@@ -190,6 +190,7 @@
             "ANONYMOUS_ROLE_NOT_ASSIGNABLE": "نقش میهمان قابل انتساب دستی نیست.",
             "ANONYMOUS_USER_ROLE_IMMUTABLE": "نقش کاربر میهمان قابل تغییر نیست.",
             "ANONYMOUS_USER_NOT_EDITABLE": "کاربران میهمان از طریق مدیریت کاربران قابل ویرایش نیستند.",
+            "ANONYMOUS_USER_CANNOT_LOGIN": "حساب میهمان نمی‌تواند از طریق ورود وارد شود.",
             "PRODUCT_VALIDATION_TITLE_REQUIRED": "عنوان محصول الزامی است.",
             "PRODUCT_VALIDATION_PRICE_NEGATIVE": "قیمت محصول نمی‌تواند منفی باشد.",
             "PRODUCT_VALIDATION_DISCOUNT_POSITIVE": "مقدار تخفیف باید عددی مثبت باشد.",
@@ -197,7 +198,15 @@
             "PRODUCT_VALIDATION_DISCOUNT_FIXED_TOO_HIGH": "مقدار تخفیف ثابت نمی‌تواند بیشتر از قیمت همان رنگ باشد.",
             "PRODUCT_VALIDATION_CHAPTER_TITLE_REQUIRED": "عنوان بخش الزامی است.",
             "PRODUCT_VALIDATION_VISIBLE_AFTER_NEGATIVE": "مقدار «نمایش بعد از» نمی‌تواند منفی باشد.",
-            "PRODUCT_ITEM_FILE_AND_ARTICLE_BOTH": "آیتم نمی‌تواند هم‌زمان فایل و متن مقاله داشته باشد."
+            "PRODUCT_ITEM_FILE_AND_ARTICLE_BOTH": "آیتم نمی‌تواند هم‌زمان فایل و متن مقاله داشته باشد.",
+            "USER_PRODUCT_INQUIRY_NOT_FOUND": "درخواست پیش‌نمایش یافت نشد.",
+            "USER_PRODUCT_INQUIRY_OWNERSHIP_REQUIRED": "این درخواست به حساب شما تعلق ندارد.",
+            "USER_PRODUCT_INQUIRY_CONTACT_ALREADY_SUBMITTED": "اطلاعات تماس برای این درخواست قبلاً ثبت شده است.",
+            "USER_PRODUCT_INQUIRY_PRODUCT_MISMATCH": "این درخواست به محصول انتخاب‌شده تعلق ندارد.",
+            "USER_PRODUCT_INQUIRY_FABRIC_SELECTION_INCOMPLETE": "برای ثبت پارچه، هم کلید پارچه و هم کلید رنگ باید ارسال شوند.",
+            "USER_PRODUCT_INQUIRY_FABRIC_NOT_AVAILABLE": "پارچه انتخاب‌شده برای این محصول در دسترس نیست.",
+            "USER_PRODUCT_INQUIRY_FABRIC_COLOR_NOT_AVAILABLE": "رنگ انتخاب‌شده برای این پارچه در دسترس نیست.",
+            "USER_PRODUCT_INQUIRY_CONTACT_REQUIRED": "اطلاعات تماس برای این درخواست ثبت نشده است."
         }
     }
 }

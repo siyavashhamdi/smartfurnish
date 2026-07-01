@@ -21,6 +21,7 @@ import { FileModule } from "./file";
 import { ProductModule } from "./product";
 import { ProductAiPreviewModule } from "./product-ai-preview";
 import { ProductReviewModule } from "./product-review";
+import { UserProductInquiryModule } from "./user-product-inquiry";
 import { HealthModule } from "./health";
 import { DatabaseModule } from "./database";
 import { AppSettingsModule } from "./app-settings";
@@ -236,6 +237,7 @@ const graphQLErrorLogger = new Logger("GraphQLError");
     ProductModule,
     ProductAiPreviewModule,
     ProductReviewModule,
+    UserProductInquiryModule,
     UserModule,
   ],
   providers: [

@@ -1,15 +1,9 @@
 import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { Alert, Chip, Dialog, IconButton, Paper, Typography } from "@mui/material";
-import { useState, type ReactElement } from "react";
+import { memo, useCallback, useState, type ReactElement } from "react";
 
-import { ProductInPersonVisitButton } from "./ProductAiPreviewButtons";
-import {
-  PRODUCT_AI_PREVIEW_IN_PERSON_VISIT_DESCRIPTION,
-  PRODUCT_AI_PREVIEW_IN_PERSON_VISIT_EYEBROW,
-  PRODUCT_AI_PREVIEW_IN_PERSON_VISIT_TITLE,
-  PRODUCT_AI_PREVIEW_RESULT_DISCLAIMER,
-} from "./product-ai-preview.constants";
+import { PRODUCT_AI_PREVIEW_RESULT_DISCLAIMER } from "./product-ai-preview.constants";
 import detailStyles from "./styles/ProductDetail.module.scss";
 import styles from "./styles/ProductAiPreviewResult.module.scss";
 
@@ -17,17 +11,23 @@ type ProductAiPreviewResultProps = {
   readonly imageUrl: string;
   readonly productTitle: string;
   readonly fabricLabel: string;
-  readonly onInPersonVisitClick: () => void;
 };
 
-export function ProductAiPreviewResult({
+function ProductAiPreviewResultInner({
   imageUrl,
   productTitle,
   fabricLabel,
-  onInPersonVisitClick,
 }: ProductAiPreviewResultProps): ReactElement {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const viewerTitle = `${productTitle} — ${fabricLabel}`;
+
+  const handleOpenViewer = useCallback((): void => {
+    setIsViewerOpen(true);
+  }, []);
+
+  const handleCloseViewer = useCallback((): void => {
+    setIsViewerOpen(false);
+  }, []);
 
   return (
     <>
@@ -50,7 +50,7 @@ export function ProductAiPreviewResult({
               type="button"
               className={styles.imageButton}
               aria-label="بزرگ‌نمایی پیش‌نمایش"
-              onClick={() => setIsViewerOpen(true)}
+              onClick={handleOpenViewer}
             >
               <img
                 alt="پیش‌نمایش هوشمند مبل در فضای خانه"
@@ -68,41 +68,12 @@ export function ProductAiPreviewResult({
             {PRODUCT_AI_PREVIEW_RESULT_DISCLAIMER}
           </Alert>
         </Paper>
-
-        <section
-          className={styles.inPersonVisitSection}
-          aria-labelledby="ai-preview-in-person-visit-title"
-        >
-          <div className={styles.inPersonVisitCopy}>
-            <Typography className={styles.inPersonVisitEyebrow} component="p" variant="overline">
-              {PRODUCT_AI_PREVIEW_IN_PERSON_VISIT_EYEBROW}
-            </Typography>
-            <Typography
-              className={styles.inPersonVisitTitle}
-              component="h4"
-              id="ai-preview-in-person-visit-title"
-              variant="h6"
-            >
-              {PRODUCT_AI_PREVIEW_IN_PERSON_VISIT_TITLE}
-            </Typography>
-            <Typography className={styles.inPersonVisitDescription} variant="body2">
-              {PRODUCT_AI_PREVIEW_IN_PERSON_VISIT_DESCRIPTION}
-            </Typography>
-          </div>
-          <div className={styles.inPersonVisitButtonWrap}>
-            <ProductInPersonVisitButton
-              fullWidth
-              onClick={onInPersonVisitClick}
-              variant="contained"
-            />
-          </div>
-        </section>
       </div>
 
       <Dialog
         fullScreen
         open={isViewerOpen}
-        onClose={() => setIsViewerOpen(false)}
+        onClose={handleCloseViewer}
         aria-labelledby="product-ai-preview-viewer-title"
         PaperProps={{ className: detailStyles.mediaDialogPaper }}
       >
@@ -114,7 +85,7 @@ export function ProductAiPreviewResult({
               size="small"
               className={detailStyles.mediaDialogCloseButton}
               aria-label="بستن نمایش تصویر"
-              onClick={() => setIsViewerOpen(false)}
+              onClick={handleCloseViewer}
             >
               <CloseRoundedIcon fontSize="small" />
             </IconButton>
@@ -134,3 +105,5 @@ export function ProductAiPreviewResult({
     </>
   );
 }
+
+export const ProductAiPreviewResult = memo(ProductAiPreviewResultInner);

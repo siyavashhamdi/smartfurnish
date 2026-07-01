@@ -1,0 +1,20 @@
+.root {
+  padding-block: 0.25rem 0.5rem;
+}
+
+.successAlert {
+  align-items: flex-start;
+
+  :global(.MuiAlert-message) {
+    line-height: 1.75;
+  }
+}
+
+.signupLead {
+  line-height: 1.8;
+}
+
+.successOnly {
+  justify-content: center;
+  min-block-size: 8rem;
+}

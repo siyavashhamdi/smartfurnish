@@ -1,0 +1,287 @@
+@use "../../../styles/variables" as variables;
+
+.track {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-block: 0.15rem 0;
+  padding-block: 0.15rem 0;
+  isolation: isolate;
+  inline-size: 100%;
+}
+
+.stepColumn {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  min-inline-size: 0;
+}
+
+.stepColumnActive {
+  .stepLabel {
+    color: var(--app-text-primary);
+    font-weight: 850;
+  }
+}
+
+.stepColumn:not(:first-child)::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset-block-start: 1.18rem;
+  inset-inline-end: calc(50% + 1.15rem);
+  inline-size: calc(100% - 2.3rem);
+  block-size: 0.2rem;
+  border-radius: 999rem;
+  background:
+    linear-gradient(
+      270deg,
+      variables.$color-primary-light,
+      variables.$color-secondary-light 44%,
+      variables.$color-secondary-light 82%,
+      color-mix(in srgb, variables.$color-secondary-light 0%, transparent)
+    ),
+    repeating-linear-gradient(
+      270deg,
+      rgba(255, 255, 255, 0.92) 0 0.32rem,
+      transparent 0.32rem 0.74rem
+    );
+  background-size:
+    100% 100%,
+    1.48rem 100%;
+  background-blend-mode: screen;
+  box-shadow: 0 0 0.8rem color-mix(in srgb, variables.$color-primary-light 26%, transparent);
+  animation: ai-preview-step-path-flow 3.6s linear infinite;
+  opacity: 0.72;
+  transition:
+    opacity 0.24s ease,
+    box-shadow 0.24s ease;
+}
+
+.stepColumnConnectorReached::before {
+  opacity: 1;
+}
+
+.stepColumnConnectorActive::before {
+  opacity: 1;
+  block-size: 0.26rem;
+  box-shadow:
+    0 0 1rem color-mix(in srgb, variables.$color-primary-main 34%, transparent),
+    0 0 1.6rem color-mix(in srgb, variables.$color-secondary-light 24%, transparent);
+}
+
+.stepButton {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  inline-size: 2.35rem;
+  block-size: 2.35rem;
+  padding: 0;
+  border: 0.12rem solid transparent;
+  border-radius: 999rem;
+  background:
+    linear-gradient(var(--app-surface-bg), var(--app-surface-bg)) padding-box,
+    conic-gradient(from 120deg, #f9a8d4, #c4b5fd, #7dd3fc, #f9a8d4) border-box;
+  box-shadow:
+    0 0 0 0.28rem color-mix(in srgb, #fbcfe8 30%, var(--app-surface-bg)),
+    0 0.7rem 1.2rem color-mix(in srgb, variables.$color-secondary-light 18%, transparent);
+  cursor: default;
+  appearance: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    box-shadow 0.24s ease,
+    transform 0.24s ease;
+
+  &:focus {
+    outline: none;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &:not(:disabled) {
+    cursor: pointer;
+  }
+
+  &:not(:disabled):focus-visible {
+    box-shadow:
+      inset 0 0 0 0.12rem color-mix(in srgb, variables.$color-primary-main 72%, #ffffff),
+      0 0 0 0.28rem color-mix(in srgb, #fbcfe8 30%, var(--app-surface-bg)),
+      0 0.7rem 1.2rem color-mix(in srgb, variables.$color-secondary-light 18%, transparent);
+  }
+}
+
+.stepButtonReached {
+  background:
+    linear-gradient(var(--app-surface-bg), var(--app-surface-bg)) padding-box,
+    conic-gradient(from 120deg, #f9a8d4, #c4b5fd, #7dd3fc, #f472b6) border-box;
+}
+
+.stepButtonActive {
+  transform: scale(1.08);
+  background:
+    linear-gradient(var(--app-surface-bg), var(--app-surface-bg)) padding-box,
+    conic-gradient(from 120deg, #e8d3ae, #c9a66b, #8fae95, #e8d3ae) border-box;
+  box-shadow:
+    0 0 0 0.38rem color-mix(in srgb, #c9a66b 42%, var(--app-surface-bg)),
+    0 0 1.15rem 0.28rem color-mix(in srgb, variables.$color-primary-main 42%, transparent),
+    0 0.95rem 1.75rem color-mix(in srgb, variables.$color-primary-main 30%, transparent),
+    0 0.35rem 0.85rem color-mix(in srgb, #c9a66b 34%, transparent);
+
+  .stepNumber {
+    animation: ai-preview-step-bloom 2.6s ease-in-out infinite;
+    box-shadow:
+      inset 0 0.0625rem 0 rgba(255, 255, 255, 0.72),
+      0 0.55rem 1.15rem color-mix(in srgb, variables.$color-primary-main 36%, transparent);
+  }
+}
+
+.stepButtonCompleted {
+  background:
+    linear-gradient(var(--app-surface-bg), var(--app-surface-bg)) padding-box,
+    conic-gradient(from 120deg, #86efac, #4ade80, #22c55e, #86efac) border-box;
+  box-shadow:
+    0 0 0 0.28rem color-mix(in srgb, #22c55e 18%, var(--app-surface-bg)),
+    0 0.7rem 1.2rem color-mix(in srgb, #16a34a 16%, transparent);
+}
+
+.stepNumber {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1.68rem;
+  block-size: 1.68rem;
+  border-radius: 999rem;
+  background: linear-gradient(
+    135deg,
+    variables.$color-primary-main,
+    variables.$color-secondary-main 52%,
+    variables.$color-secondary-light
+  );
+  color: #ffffff;
+  font-family: variables.$font-family;
+  font-size: 0.78rem;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+  box-shadow:
+    inset 0 0.0625rem 0 rgba(255, 255, 255, 0.62),
+    0 0.45rem 1rem color-mix(in srgb, variables.$color-primary-main 24%, transparent);
+}
+
+.stepTick {
+  position: absolute;
+  inset-block-end: -0.06rem;
+  inset-inline-end: -0.06rem;
+  display: inline-grid;
+  place-items: center;
+  inline-size: 0.92rem;
+  block-size: 0.92rem;
+  border-radius: 999rem;
+  color: #ffffff;
+  background: linear-gradient(135deg, #22c55e, #15803d);
+  border: 0.11rem solid var(--app-surface-bg);
+  box-shadow: 0 0.18rem 0.45rem color-mix(in srgb, #16a34a 34%, transparent);
+  pointer-events: none;
+
+  :global(.MuiSvgIcon-root) {
+    font-size: 0.58rem !important;
+  }
+}
+
+.stepLabel {
+  color: var(--app-text-secondary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+  max-inline-size: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stepLabelActive {
+  color: var(--app-text-primary);
+  font-weight: 850;
+  text-shadow: 0 0 0.75rem color-mix(in srgb, variables.$color-primary-main 22%, transparent);
+}
+
+.stepLabelCompleted {
+  color: color-mix(in srgb, #16a34a 72%, var(--app-text-primary));
+}
+
+.stepContent {
+  animation: ai-preview-step-rise 0.58s variables.$transition-easing-ease-out both;
+}
+
+.stepEmptyState {
+  display: grid;
+  gap: 0.35rem;
+  border: 0.0625rem dashed color-mix(in srgb, var(--app-surface-border) 70%, transparent);
+  border-radius: 1rem;
+  padding: 2rem 1.2rem;
+  text-align: center;
+}
+
+@keyframes ai-preview-step-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.8rem) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes ai-preview-step-path-flow {
+  from {
+    background-position:
+      0 0,
+      0 0;
+  }
+
+  to {
+    background-position:
+      0 0,
+      -1.48rem 0;
+  }
+}
+
+@keyframes ai-preview-step-bloom {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.045);
+  }
+}
+
+@media (max-width: 36rem) {
+  .stepLabel {
+    font-size: 0.62rem;
+  }
+
+  .stepButton {
+    inline-size: 2.1rem;
+    block-size: 2.1rem;
+  }
+
+  .stepNumber {
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+    font-size: 0.72rem;
+  }
+
+  .stepColumn:not(:first-child)::before {
+    inset-block-start: 1.05rem;
+    inset-inline-end: calc(50% + 1rem);
+    inline-size: calc(100% - 2rem);
+  }
+}

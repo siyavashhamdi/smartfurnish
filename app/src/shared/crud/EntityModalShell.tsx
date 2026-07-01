@@ -53,6 +53,12 @@ export interface EntityModalShellProps {
   hasUnsavedChanges?: boolean;
   /** Extra space between the title block and form content (e.g. create dialogs). */
   relaxedHeaderSpacing?: boolean;
+  /** Keep a floating dialog on compact viewports instead of edge-to-edge maximized layout. */
+  disableMobileMaximize?: boolean;
+  /** Hide the dialog title block (e.g. compact contact forms). */
+  hideTitle?: boolean;
+  /** Optional content rendered below the title/subtitle in the header. */
+  headerAccessory?: ReactNode;
   titleClassName?: string;
   contentClassName?: string;
 }
@@ -76,13 +82,17 @@ const EntityModalShell = ({
   disableClose = false,
   hasUnsavedChanges = false,
   relaxedHeaderSpacing = false,
+  disableMobileMaximize = false,
+  hideTitle = false,
+  headerAccessory,
   titleClassName,
   contentClassName,
 }: EntityModalShellProps): ReactElement => {
   const theme = useTheme();
   const contentRef = useRef<HTMLDivElement>(null);
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
-  const { isCompact, dialogProps, getPaperProps, getContentProps } = useMobileDialogProps();
+  const { isCompact, useMaximizedMobileLayout, dialogProps, getPaperProps, getContentProps } =
+    useMobileDialogProps({ disableMobileMaximize });
   const { onEntered } = useScrollContainerToTopOnOpen(open, contentRef, resetKey);
 
   const handleDialogEnter = useCallback((): void => {
@@ -154,7 +164,7 @@ const EntityModalShell = ({
         .join(" ")}
       sx={crudModalTitleSx(theme)}
     >
-      <Stack spacing={subtitle ? 0.5 : 0} sx={{ flex: 1, minWidth: 0 }}>
+      <Stack spacing={subtitle || headerAccessory ? 0.75 : 0} sx={{ flex: 1, minWidth: 0, width: "100%" }}>
         <Typography variant="h6" component="div" className={styles.modalTitleTypography}>
           {title}
         </Typography>
@@ -168,6 +178,7 @@ const EntityModalShell = ({
             {subtitle}
           </Typography>
         ) : null}
+        {headerAccessory}
       </Stack>
     </DialogTitle>
   );
@@ -187,7 +198,7 @@ const EntityModalShell = ({
 
   const renderedBody = (
     <>
-      {renderHeader()}
+      {hideTitle ? null : renderHeader()}
       {renderContent()}
       {renderFooter()}
     </>
@@ -206,14 +217,14 @@ const EntityModalShell = ({
           fullWidth={fullWidth}
           TransitionProps={{ onEnter: handleDialogEnter, onEntered }}
           PaperProps={getPaperProps({
-            className: isCompact ? styles.modalPaperMobileFlex : undefined,
+            className: useMaximizedMobileLayout ? styles.modalPaperMobileFlex : undefined,
           })}
         >
           {useFormWrapper ? (
             <Box
               component="form"
               onSubmit={onSubmit}
-              className={isCompact ? styles.modalFormRootMobile : undefined}
+              className={useMaximizedMobileLayout ? styles.modalFormRootMobile : undefined}
             >
               {renderedBody}
             </Box>

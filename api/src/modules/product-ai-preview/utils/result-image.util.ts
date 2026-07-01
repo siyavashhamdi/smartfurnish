@@ -38,6 +38,18 @@ function parseDataUrl(dataUrl: string): { buffer: Buffer; mimeType: string } {
   };
 }
 
+export function parseImageDataUrl(
+  dataUrl: string,
+): { buffer: Buffer; mimeType: string } {
+  return parseDataUrl(dataUrl);
+}
+
+export async function readPreviewImageContent(
+  imageUrl: string,
+): Promise<{ buffer: Buffer; mimeType: string }> {
+  return readImageBuffer(imageUrl);
+}
+
 async function downloadRemoteImage(
   imageUrl: string,
 ): Promise<{ buffer: Buffer; mimeType: string }> {

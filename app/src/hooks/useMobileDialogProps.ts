@@ -4,6 +4,8 @@ import { appSurfacePaperSx } from "../shared/crud/modalThemeSx";
 
 type UseMobileDialogPropsOptions = {
   readonly breakpoint?: Breakpoint;
+  /** Keep a floating dialog on compact viewports instead of edge-to-edge maximized layout. */
+  readonly disableMobileMaximize?: boolean;
 };
 
 type PaperPropsOptions = {
@@ -27,8 +29,10 @@ export function useCompactViewport(breakpoint: Breakpoint = "md"): boolean {
 
 export function useMobileDialogProps(options?: UseMobileDialogPropsOptions) {
   const breakpoint = options?.breakpoint ?? "md";
+  const disableMobileMaximize = options?.disableMobileMaximize === true;
   const theme = useTheme();
   const isCompact = useCompactViewport(breakpoint);
+  const useMaximizedMobileLayout = isCompact && !disableMobileMaximize;
 
   const dialogProps = {
     fullScreen: false as const,
@@ -46,7 +50,7 @@ export function useMobileDialogProps(options?: UseMobileDialogPropsOptions) {
       display: "flex",
       flexDirection: "column",
       overflow: "hidden",
-      ...(isCompact
+      ...(useMaximizedMobileLayout
         ? {
             m: 0,
             width: "100%",
@@ -59,6 +63,12 @@ export function useMobileDialogProps(options?: UseMobileDialogPropsOptions) {
             m: 2,
             maxHeight: "min(90dvh, 45rem)",
             borderRadius: 2,
+            ...(isCompact
+              ? {
+                  width: `calc(100% - ${theme.spacing(4)})`,
+                  maxWidth: `min(100%, ${theme.breakpoints.values.sm}px)`,
+                }
+              : {}),
           }),
       ...sx,
     } satisfies SxProps<Theme>,
@@ -78,6 +88,7 @@ export function useMobileDialogProps(options?: UseMobileDialogPropsOptions) {
 
   return {
     isCompact,
+    useMaximizedMobileLayout,
     dialogProps,
     getPaperProps,
     getContentProps,

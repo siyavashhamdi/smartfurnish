@@ -597,6 +597,8 @@ function EntityTableShell<TData extends object>({
                         return null;
                       }
                       const headerRowZIndex = 40 - headerGroup.depth;
+                      const columnSortDirection = header.column.getIsSorted();
+                      const isColumnSorted = columnSortDirection !== false;
                       const isActionsColumn = column.id === pinnedActionColumnId;
                       return (
                         <TableCell
@@ -621,8 +623,9 @@ function EntityTableShell<TData extends object>({
                         >
                           {header.column.getCanSort() ? (
                             <TableSortLabel
-                              active={header.column.getIsSorted() !== false}
-                              direction={header.column.getIsSorted() === "asc" ? "asc" : "desc"}
+                              active={isColumnSorted}
+                              direction={columnSortDirection === "asc" ? "asc" : "desc"}
+                              hideSortIcon={!isColumnSorted}
                               onClick={header.column.getToggleSortingHandler()}
                               sx={{
                                 whiteSpace: "normal",

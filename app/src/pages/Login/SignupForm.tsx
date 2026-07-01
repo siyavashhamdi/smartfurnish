@@ -73,12 +73,20 @@ interface SignupFormProps {
   readonly embedded?: boolean;
   readonly identity: LoginNavState;
   readonly onEditIdentity: (identity: LoginNavState) => void;
+  readonly initialFirstName?: string;
+  readonly initialLastName?: string;
+  readonly hideCredentialHeader?: boolean;
+  readonly hideFormLead?: boolean;
 }
 
 export const SignupForm = ({
   embedded = false,
   identity,
   onEditIdentity,
+  initialFirstName = "",
+  initialLastName = "",
+  hideCredentialHeader = false,
+  hideFormLead = false,
 }: SignupFormProps): ReactElement => {
   const { t } = useTranslation();
   const { showError } = useSnackbar();
@@ -86,8 +94,8 @@ export const SignupForm = ({
 
   const supportsOtp = SIGNUP_OTP_ENABLED && identity.identityKind === "mobile";
   const [mode, setMode] = useState<SignupCredentialMode>("password");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [firstName, setFirstName] = useState(initialFirstName);
+  const [lastName, setLastName] = useState(initialLastName);
   const [username, setUsername] = useState(
     identity.identityKind === "username" ? identity.identity : ""
   );
@@ -369,7 +377,9 @@ export const SignupForm = ({
 
   return (
     <LoginShell embedded={embedded} subtitle={t("auth.login.signupSubtitle")}>
-      <LoginCredentialHeader identity={identity} onEditIdentity={onEditIdentity} />
+      {hideCredentialHeader ? null : (
+        <LoginCredentialHeader identity={identity} onEditIdentity={onEditIdentity} />
+      )}
 
       {supportsOtp ? (
         <ToggleButtonGroup
@@ -397,9 +407,11 @@ export const SignupForm = ({
       ) : null}
 
       <form onSubmit={handleSubmit} className={formStyles.loginForm}>
-        <Typography component="p" className={formStyles.formLead}>
-          {t("auth.login.signupLead")}
-        </Typography>
+        {hideFormLead ? null : (
+          <Typography component="p" className={formStyles.formLead}>
+            {t("auth.login.signupLead")}
+          </Typography>
+        )}
 
         <TextField
           fullWidth

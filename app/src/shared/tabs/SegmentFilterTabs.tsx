@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState, type ReactElement } from "react";
+import { useCallback, useLayoutEffect, useRef, useState, type CSSProperties, type ReactElement } from "react";
 
 import { scrollToTopOnMobile } from "../../utils/scrollToTopOnMobile.util";
 import styles from "./SegmentFilterTabs.module.scss";
@@ -20,6 +20,7 @@ type SegmentFilterTabsProps<T extends string> = {
   readonly tabs: ReadonlyArray<SegmentFilterTabOption<T>>;
   readonly onChange: (tab: T) => void;
   readonly ariaLabel: string;
+  readonly columnsPerRow?: number;
   readonly pinned?: boolean;
   /** Where pinned tabs stick: page scroll (mobile) or dialog/modal scroll container. */
   readonly pinnedSurface?: "page" | "dialog";
@@ -33,6 +34,7 @@ function SegmentFilterTabs<T extends string>({
   tabs,
   onChange,
   ariaLabel,
+  columnsPerRow,
   pinned = false,
   pinnedSurface = "page",
   disableScrollToTopOnChange = false,
@@ -88,7 +90,13 @@ function SegmentFilterTabs<T extends string>({
 
   const pinnedClassName =
     pinnedSurface === "dialog" ? styles.filterTabsPinnedDialog : styles.filterTabsPinned;
-  const tabListClassName = pinned ? `${styles.filterTabs} ${pinnedClassName}` : styles.filterTabs;
+  const tabListClassName = [
+    styles.filterTabs,
+    columnsPerRow ? styles.filterTabsMultiRow : "",
+    pinned ? pinnedClassName : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div
@@ -96,6 +104,11 @@ function SegmentFilterTabs<T extends string>({
       className={tabListClassName}
       role="tablist"
       aria-label={ariaLabel}
+      style={
+        columnsPerRow
+          ? ({ "--segment-tabs-columns": String(columnsPerRow) } as CSSProperties)
+          : undefined
+      }
       {...(pinned ? { "data-opaque-shell": true } : {})}
       {...(pinned && pinnedAnchorId ? { [`data-${pinnedAnchorId}`]: "" } : {})}
     >
@@ -128,7 +141,9 @@ function SegmentFilterTabs<T extends string>({
             type="button"
             role="tab"
             aria-selected={isActive}
-            className={`${styles.filterTab}${isActive ? ` ${styles.filterTabActive}` : ""}`}
+            className={`${styles.filterTab}${
+              columnsPerRow ? ` ${styles.filterTabGridCell}` : ""
+            }${isActive ? ` ${styles.filterTabActive}` : ""}`}
             onClick={() => {
               onChange(tab.value);
               if (!disableScrollToTopOnChange) {

@@ -13,6 +13,7 @@ export const importTermsOfUsePage = () => import("../pages/More/TermsOfUse");
 export const importSystemSettingsIndex = () => import("../pages/SystemSettings/Index");
 export const importNotificationsIndex = () => import("../pages/Notifications/Index");
 export const importPaymentsIndex = () => import("../pages/Payments/Index");
+export const importInquiriesIndex = () => import("../pages/Inquiries/Index");
 export const importZarinPalCallback = () => import("../pages/Payments/ZarinPalCallback");
 export const importProfileIndex = () => import("../pages/Profile/Index");
 export const importResetPassword = () => import("../pages/Login/ResetPassword");

@@ -17,6 +17,7 @@ const STATIC_ROUTE_TITLE_KEYS: Readonly<Record<string, string>> = {
   "/more/coupons": "app.pageTitles.moreCoupons",
   "/notifications": "app.pageTitles.notifications",
   "/payments": "app.pageTitles.payments",
+  "/inquiries": "app.pageTitles.inquiries",
   "/profile": "app.pageTitles.profile",
   "/profile/login": "app.pageTitles.login",
   "/profile/signup": "app.pageTitles.signup",

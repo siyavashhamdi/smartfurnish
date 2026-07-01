@@ -21,6 +21,7 @@ export const APP_SHELL_ROUTES = {
   moreCoupons: "/more/coupons",
   notifications: "/notifications",
   payments: "/payments",
+  inquiries: "/inquiries",
   paymentZarinPalCallback: "/payment/zarinpal/callback",
   profile: "/profile",
   profileLogin: "/profile/login",

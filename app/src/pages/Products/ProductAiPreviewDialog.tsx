@@ -1,74 +1,119 @@
 import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
-import { Alert, Typography } from "@mui/material";
+import StorefrontRoundedIcon from "@mui/icons-material/StorefrontRounded";
+import { Alert, Stack, Typography } from "@mui/material";
 import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactElement,
 } from "react";
 
 import { FabricSelector } from "./FabricSelector";
+import { ProductAiPreviewBetterExperienceStep } from "./ProductAiPreviewBetterExperienceStep";
+import {
+  ProductAiPreviewContactStep,
+  type ProductAiPreviewContactStepHandle,
+} from "./ProductAiPreviewContactStep";
 import { ProductAiPreviewGenerationProgress } from "./ProductAiPreviewGenerationProgress";
 import { ProductAiPreviewResult } from "./ProductAiPreviewResult";
 import { ProductAiPreviewRoomUploader } from "./ProductAiPreviewRoomUploader";
+import { ProductAiPreviewStepIndicator } from "./ProductAiPreviewStepIndicator";
 import { ProductDetailCoverGallery } from "./ProductDetailCoverGallery";
 import {
-  fetchProductAiPreviewStagingDurationSeconds,
   getProductAiPreviewErrorMessage,
-  stageProductAiPreview,
+  submitUserProductInquiryPreview,
   uploadProductAiPreviewRoomPhoto,
   type ProductAiPreviewProgress,
   type ProductAiPreviewStageResult,
 } from "./product-ai-preview.api";
 import {
+  IN_PERSON_VISIT_BUTTON_LABEL,
+  PRODUCT_AI_PREVIEW_CONTACT_ME_PREFILL_SLOW_MESSAGE,
   PRODUCT_AI_PREVIEW_GENERATE_LABEL,
+  PRODUCT_AI_PREVIEW_REGISTERED_FINAL_STEP_LABEL,
+  PRODUCT_AI_PREVIEW_REGISTERED_FINAL_STEP_SHORT_LABEL,
+  PRODUCT_AI_PREVIEW_RESULT_EMPTY_HINT,
+  PRODUCT_AI_PREVIEW_RESULT_EMPTY_MESSAGE,
 } from "./product-ai-preview.constants";
+import {
+  splitContactFullName,
+  type ProductAiPreviewSubmittedContact,
+} from "./product-ai-preview-contact.util";
+import {
+  getProductAiPreviewStepIndex,
+  type ProductAiPreviewStepId,
+} from "./product-ai-preview.steps";
 import type { FabricSelectionController } from "./useFabricSelection";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTranslation } from "../../hooks/useTranslation";
+import { normalizeOptionalMobilePhoneToLocal } from "../../utilities/mobile-phone.util";
 import { resolveFileAccessUrl, type FileAccessUrl } from "../../utils/fileAccessUrl.util";
 import EntityModalShell from "../../shared/crud/EntityModalShell";
 import ModalFooterActions from "../../shared/crud/ModalFooterActions";
 import styles from "./styles/ProductAiPreviewDialog.module.scss";
+import stepStyles from "./styles/ProductAiPreviewSteps.module.scss";
 
 type ProductAiPreviewDialogProps = {
   readonly open: boolean;
   readonly onClose: () => void;
+  readonly initialStepId?: ProductAiPreviewStepId;
   readonly productId: string;
   readonly productTitle: string;
   readonly coverImageAccessUrls: readonly FileAccessUrl[];
   readonly fabricSelection: FabricSelectionController;
-  readonly onInPersonVisitClick: () => void;
 };
+
+const GENERATE_ICON = <AutoAwesomeRoundedIcon />;
+const REFRESH_ICON = <RefreshRoundedIcon />;
+const VISIT_ICON = <StorefrontRoundedIcon />;
+
+const REGISTERED_FINAL_STEP_LABEL_OVERRIDES = {
+  "coming-soon": {
+    label: PRODUCT_AI_PREVIEW_REGISTERED_FINAL_STEP_LABEL,
+    shortLabel: PRODUCT_AI_PREVIEW_REGISTERED_FINAL_STEP_SHORT_LABEL,
+  },
+} as const;
 
 export function ProductAiPreviewDialog({
   open,
   onClose,
+  initialStepId,
   productId,
   productTitle,
   coverImageAccessUrls,
   fabricSelection,
-  onInPersonVisitClick,
 }: ProductAiPreviewDialogProps): ReactElement {
+  const entryStepId = initialStepId ?? "setup";
   const { t } = useTranslation();
-  const { isAuthenticated, accessToken } = useAuth();
+  const { isAuthenticated, isAnonymousUser, accessToken } = useAuth();
+  const contactStepRef = useRef<ProductAiPreviewContactStepHandle>(null);
   const [roomFile, setRoomFile] = useState<File | null>(null);
   const [roomPreviewUrl, setRoomPreviewUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [contactSubmitting, setContactSubmitting] = useState(false);
+  const [contactCanSubmit, setContactCanSubmit] = useState(false);
+  const [contactMePrefillSlowBanner, setContactMePrefillSlowBanner] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [progress, setProgress] = useState<ProductAiPreviewProgress | null>(null);
   const [estimatedDurationSeconds, setEstimatedDurationSeconds] = useState<number | null>(
     null,
   );
   const [result, setResult] = useState<ProductAiPreviewStageResult | null>(null);
+  const [inquiryId, setInquiryId] = useState<string | null>(null);
+  const [activeStepId, setActiveStepId] = useState<ProductAiPreviewStepId>(entryStepId);
+  const [maxReachedStepIndex, setMaxReachedStepIndex] = useState(() =>
+    getProductAiPreviewStepIndex(entryStepId),
+  );
+  const [submittedContact, setSubmittedContact] =
+    useState<ProductAiPreviewSubmittedContact | null>(null);
 
-  const selectedProductImageUrl = useMemo(() => {
-    return resolveFileAccessUrl(
-      fabricSelection.selectedColor?.aiProductImageAccessUrl ?? null,
-    );
-  }, [fabricSelection.selectedColor?.aiProductImageAccessUrl]);
+  const selectedProductImageUrl = useMemo(
+    () => resolveFileAccessUrl(fabricSelection.selectedColor?.aiProductImageAccessUrl ?? null),
+    [fabricSelection.selectedColor?.aiProductImageAccessUrl],
+  );
 
   const canGenerate = Boolean(
     isAuthenticated &&
@@ -90,14 +135,23 @@ export function ProductAiPreviewDialog({
   const resetDialogState = useCallback((): void => {
     setRoomFile(null);
     setRoomPreviewUrl(null);
+    setInquiryId(null);
+    setSubmittedContact(null);
+    setContactSubmitting(false);
+    setContactCanSubmit(false);
+    setContactMePrefillSlowBanner(false);
     resetGenerationState();
   }, [resetGenerationState]);
 
   useEffect(() => {
     if (!open) {
       resetDialogState();
+      return;
     }
-  }, [open, resetDialogState]);
+
+    setActiveStepId(entryStepId);
+    setMaxReachedStepIndex(getProductAiPreviewStepIndex(entryStepId));
+  }, [entryStepId, open, resetDialogState]);
 
   useEffect(() => {
     if (!roomFile) {
@@ -113,30 +167,6 @@ export function ProductAiPreviewDialog({
     };
   }, [roomFile]);
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    let cancelled = false;
-
-    fetchProductAiPreviewStagingDurationSeconds()
-      .then((durationSeconds) => {
-        if (!cancelled) {
-          setEstimatedDurationSeconds(durationSeconds);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setEstimatedDurationSeconds(null);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open]);
-
   const handleGenerate = useCallback(async (): Promise<void> => {
     if (
       !roomFile ||
@@ -149,22 +179,31 @@ export function ProductAiPreviewDialog({
     setSubmitting(true);
     setGenerationError(null);
     setProgress(null);
-    setResult(null);
 
     try {
       const environmentFileId = await uploadProductAiPreviewRoomPhoto(
         roomFile,
         accessToken,
       );
-      const nextResult = await stageProductAiPreview({
-        accessToken,
+      const nextResult = await submitUserProductInquiryPreview({
         colorKey: fabricSelection.selectedColorKey,
         environmentFileId,
         fabricKey: fabricSelection.selectedFabricKey,
-        onProgress: setProgress,
         productId,
       });
+
+      setEstimatedDurationSeconds(nextResult.stagingDurationSeconds);
+      setProgress({
+        step: "complete",
+        label: "پیش‌نمایش هوشمند آماده است.",
+        percent: 100,
+      });
       setResult(nextResult);
+      setInquiryId(nextResult.id);
+      setActiveStepId("result");
+      setMaxReachedStepIndex((current) =>
+        Math.max(current, getProductAiPreviewStepIndex("contact")),
+      );
     } catch (error) {
       setGenerationError(
         getProductAiPreviewErrorMessage(
@@ -188,103 +227,273 @@ export function ProductAiPreviewDialog({
     setSubmitting(false);
   }, []);
 
-  const handleTryAgain = useCallback((): void => {
-    resetGenerationState();
-  }, [resetGenerationState]);
+  const handleNewPreview = useCallback((): void => {
+    setActiveStepId("setup");
+  }, []);
+
+  const handleGoToContactStep = useCallback((): void => {
+    setActiveStepId("contact");
+    setMaxReachedStepIndex((current) =>
+      Math.max(current, getProductAiPreviewStepIndex("contact")),
+    );
+  }, []);
+
+  const handleContactSubmitted = useCallback((contact: ProductAiPreviewSubmittedContact): void => {
+    setInquiryId(contact.inquiryId);
+    setSubmittedContact(contact);
+    setActiveStepId("coming-soon");
+    setMaxReachedStepIndex(getProductAiPreviewStepIndex("coming-soon"));
+  }, []);
+
+  const contactPrefill = useMemo(() => {
+    if (!submittedContact) {
+      return null;
+    }
+
+    const { firstName, lastName } = splitContactFullName(submittedContact.fullName);
+
+    return {
+      firstName,
+      lastName,
+      phone: normalizeOptionalMobilePhoneToLocal(submittedContact.phone) ?? submittedContact.phone,
+    };
+  }, [submittedContact]);
+
+  const isStepCompleted = useCallback(
+    (stepId: ProductAiPreviewStepId): boolean => {
+      const activeStepIndex = getProductAiPreviewStepIndex(activeStepId);
+
+      switch (stepId) {
+        case "setup":
+          return Boolean(result);
+        case "result":
+          return Boolean(result) && activeStepIndex > getProductAiPreviewStepIndex("result");
+        case "contact":
+          return maxReachedStepIndex >= getProductAiPreviewStepIndex("coming-soon");
+        case "coming-soon":
+        default:
+          return false;
+      }
+    },
+    [activeStepId, maxReachedStepIndex, result],
+  );
+
+  const handleStepSelect = useCallback((stepId: ProductAiPreviewStepId): void => {
+    if (stepId === "coming-soon") {
+      return;
+    }
+
+    setActiveStepId(stepId);
+  }, []);
+
+  const handleContactSubmitClick = useCallback((): void => {
+    contactStepRef.current?.submit();
+  }, []);
 
   const missingProductImage = !selectedProductImageUrl;
+
+  const modalMaxWidth =
+    activeStepId === "result"
+      ? "lg"
+      : activeStepId === "contact" || activeStepId === "coming-soon"
+        ? "sm"
+        : "md";
+
+  const footerActions = useMemo(() => {
+    const closeAction = { key: "close", isCloseButton: true, onClick: onClose };
+
+    switch (activeStepId) {
+      case "setup":
+        return [
+          closeAction,
+          {
+            key: "generate",
+            label: PRODUCT_AI_PREVIEW_GENERATE_LABEL,
+            variant: "contained" as const,
+            color: "primary" as const,
+            icon: GENERATE_ICON,
+            onClick: handleGenerate,
+            disabled: !canGenerate,
+          },
+        ];
+      case "result":
+        if (!result) {
+          return [closeAction];
+        }
+
+        return [
+          closeAction,
+          {
+            key: "try-again",
+            label: "پیش‌نمایش جدید",
+            variant: "outlined" as const,
+            color: "primary" as const,
+            icon: REFRESH_ICON,
+            onClick: handleNewPreview,
+          },
+          {
+            key: "visit",
+            label: IN_PERSON_VISIT_BUTTON_LABEL,
+            variant: "contained" as const,
+            color: "primary" as const,
+            icon: VISIT_ICON,
+            onClick: handleGoToContactStep,
+          },
+        ];
+      case "contact":
+        return [
+          {
+            ...closeAction,
+            disabled: contactSubmitting,
+          },
+          {
+            key: "submit-contact",
+            label: IN_PERSON_VISIT_BUTTON_LABEL,
+            type: "submit" as const,
+            icon: VISIT_ICON,
+            disabled: contactSubmitting || !contactCanSubmit,
+            onClick: handleContactSubmitClick,
+          },
+        ];
+      case "coming-soon":
+      default:
+        return [closeAction];
+    }
+  }, [
+    activeStepId,
+    canGenerate,
+    contactCanSubmit,
+    contactSubmitting,
+    handleContactSubmitClick,
+    handleGenerate,
+    handleGoToContactStep,
+    handleNewPreview,
+    onClose,
+    result,
+  ]);
+
+  const stepContentKey = `${activeStepId}-${result?.id ?? "none"}`;
+
+  const stepLabelOverrides = isAnonymousUser ? undefined : REGISTERED_FINAL_STEP_LABEL_OVERRIDES;
 
   return (
     <>
       <EntityModalShell
         open={open}
         onClose={onClose}
-        title={t("app.pageTitles.productAiPreview")}
-        subtitle={productTitle.trim() || undefined}
-        maxWidth={result ? "lg" : "md"}
-        footer={
-          <ModalFooterActions
-            actions={[
-              { key: "close", isCloseButton: true, onClick: onClose },
-              ...(result
-                ? [
-                    {
-                      key: "try-again",
-                      label: "پیش‌نمایش جدید",
-                      variant: "outlined" as const,
-                      color: "primary" as const,
-                      icon: <RefreshRoundedIcon />,
-                      onClick: handleTryAgain,
-                    },
-                  ]
-                : [
-                    {
-                      key: "generate",
-                      label: PRODUCT_AI_PREVIEW_GENERATE_LABEL,
-                      variant: "contained" as const,
-                      color: "primary" as const,
-                      icon: <AutoAwesomeRoundedIcon />,
-                      onClick: () => {
-                        void handleGenerate();
-                      },
-                      disabled: !canGenerate,
-                    },
-                  ]),
-            ]}
+        title={productTitle.trim() || t("app.pageTitles.productAiPreview")}
+        maxWidth={modalMaxWidth}
+        disableClose={submitting || contactSubmitting}
+        headerAccessory={
+          <ProductAiPreviewStepIndicator
+            activeStepId={activeStepId}
+            maxReachedStepIndex={maxReachedStepIndex}
+            isStepCompleted={isStepCompleted}
+            stepLabelOverrides={stepLabelOverrides}
+            onStepSelect={handleStepSelect}
           />
+        }
+        footer={
+          <Stack className={styles.footerStack} spacing={1}>
+            {activeStepId === "contact" && contactMePrefillSlowBanner ? (
+              <Alert
+                className={styles.mePrefillSlowBanner}
+                severity="info"
+                variant="outlined"
+              >
+                {PRODUCT_AI_PREVIEW_CONTACT_ME_PREFILL_SLOW_MESSAGE}
+              </Alert>
+            ) : null}
+            <ModalFooterActions actions={footerActions} />
+          </Stack>
         }
       >
         <div className={styles.body}>
-          {result ? (
-            <ProductAiPreviewResult
-              fabricLabel={result.fabric.label}
-              imageUrl={result.image}
-              onInPersonVisitClick={onInPersonVisitClick}
-              productTitle={result.product.title}
-            />
-          ) : (
-            <>
-              <section className={styles.section}>
-                <ProductDetailCoverGallery
-                  title={productTitle}
-                  coverImageAccessUrls={coverImageAccessUrls}
+          <div key={stepContentKey} className={stepStyles.stepContent}>
+            {activeStepId === "setup" ? (
+              <>
+                <section className={styles.section}>
+                  <ProductDetailCoverGallery
+                    title={productTitle}
+                    coverImageAccessUrls={coverImageAccessUrls}
+                  />
+                </section>
+
+                <section className={styles.section}>
+                  <Typography className={styles.sectionTitle} component="h3" variant="subtitle1">
+                    انتخاب پارچه و رنگ
+                  </Typography>
+                  <FabricSelector fabricSelection={fabricSelection} showSectionTitle={false} />
+                </section>
+
+                {missingProductImage ? (
+                  <Alert severity="warning">
+                    برای رنگ انتخاب‌شده تصویر AI محصول تنظیم نشده است. لطفاً رنگ دیگری
+                    انتخاب کنید.
+                  </Alert>
+                ) : null}
+
+                {!isAuthenticated ? (
+                  <Alert severity="info">
+                    برای بارگذاری عکس فضای خانه و تولید پیش‌نمایش هوشمند، ابتدا وارد حساب
+                    کاربری خود شوید.
+                  </Alert>
+                ) : null}
+
+                <section className={styles.section}>
+                  <Typography className={styles.sectionTitle} component="h3" variant="subtitle1">
+                    عکس فضای خانه شما
+                  </Typography>
+                  <ProductAiPreviewRoomUploader
+                    disabled={submitting || missingProductImage || !isAuthenticated}
+                    file={roomFile}
+                    onChange={setRoomFile}
+                    previewUrl={roomPreviewUrl}
+                  />
+                </section>
+              </>
+            ) : null}
+
+            {activeStepId === "result" ? (
+              result ? (
+                <ProductAiPreviewResult
+                  fabricLabel={result.fabric.label}
+                  imageUrl={result.image}
+                  productTitle={result.product.title}
                 />
-              </section>
+              ) : (
+                <div className={stepStyles.stepEmptyState}>
+                  <Typography color="text.primary" fontWeight={700} variant="body2">
+                    {PRODUCT_AI_PREVIEW_RESULT_EMPTY_MESSAGE}
+                  </Typography>
+                  <Typography color="text.secondary" sx={{ mt: 1 }} variant="body2">
+                    {PRODUCT_AI_PREVIEW_RESULT_EMPTY_HINT}
+                  </Typography>
+                </div>
+              )
+            ) : null}
 
-              <section className={styles.section}>
-                <Typography className={styles.sectionTitle} component="h3" variant="subtitle1">
-                  انتخاب پارچه و رنگ
-                </Typography>
-                <FabricSelector fabricSelection={fabricSelection} showSectionTitle={false} />
-              </section>
+            {activeStepId === "contact" ? (
+              <ProductAiPreviewContactStep
+                ref={contactStepRef}
+                productId={productId}
+                inquiryId={inquiryId}
+                fabricKey={fabricSelection.selectedFabricKey}
+                colorKey={fabricSelection.selectedColorKey}
+                onCanSubmitChange={setContactCanSubmit}
+                onMePrefillSlowBannerChange={setContactMePrefillSlowBanner}
+                onSubmittingChange={setContactSubmitting}
+                onSubmitted={handleContactSubmitted}
+              />
+            ) : null}
 
-              {missingProductImage ? (
-                <Alert severity="warning">
-                  برای رنگ انتخاب‌شده تصویر AI محصول تنظیم نشده است. لطفاً رنگ دیگری
-                  انتخاب کنید.
-                </Alert>
-              ) : null}
-
-              {!isAuthenticated ? (
-                <Alert severity="info">
-                  برای بارگذاری عکس فضای خانه و تولید پیش‌نمایش هوشمند، ابتدا وارد حساب
-                  کاربری خود شوید.
-                </Alert>
-              ) : null}
-
-              <section className={styles.section}>
-                <Typography className={styles.sectionTitle} component="h3" variant="subtitle1">
-                  عکس فضای خانه شما
-                </Typography>
-                <ProductAiPreviewRoomUploader
-                  disabled={submitting || missingProductImage || !isAuthenticated}
-                  file={roomFile}
-                  onChange={setRoomFile}
-                  previewUrl={roomPreviewUrl}
-                />
-              </section>
-            </>
-          )}
+            {activeStepId === "coming-soon" ? (
+              <ProductAiPreviewBetterExperienceStep
+                contactPrefill={contactPrefill}
+                showSignupForm={isAnonymousUser}
+              />
+            ) : null}
+          </div>
         </div>
       </EntityModalShell>
 

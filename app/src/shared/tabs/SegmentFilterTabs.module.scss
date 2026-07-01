@@ -15,6 +15,12 @@
   border: 0.0625rem solid color-mix(in srgb, var(--app-surface-border) 72%, transparent);
 }
 
+.filterTabsMultiRow {
+  display: grid;
+  grid-template-columns: repeat(var(--segment-tabs-columns, 4), minmax(0, 1fr));
+  border-radius: 1rem;
+}
+
 .filterTabIndicator {
   position: absolute;
   top: 0;
@@ -70,6 +76,11 @@
     color: inherit;
     opacity: 1;
   }
+}
+
+.filterTabGridCell {
+  flex: none;
+  width: 100%;
 }
 
 @media (prefers-reduced-motion: reduce) {
