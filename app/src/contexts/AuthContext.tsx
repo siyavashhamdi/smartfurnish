@@ -63,6 +63,7 @@ interface AuthContextValue {
   isLoading: boolean;
   isPostLoginRedirectPending: boolean;
   login: (token: string, user: User) => void;
+  setAuthSession: (token: string, user: User) => void;
   syncUser: (userData: User) => void;
   logout: () => void;
 }
@@ -349,6 +350,7 @@ export const AuthProvider = ({ children }: AuthProviderProps): ReactElement => {
     isLoading,
     isPostLoginRedirectPending: postLoginRedirectTarget !== null,
     login,
+    setAuthSession: applyAuthSession,
     syncUser,
     logout,
   };

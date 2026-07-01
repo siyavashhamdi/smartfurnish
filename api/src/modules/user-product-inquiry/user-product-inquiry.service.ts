@@ -46,12 +46,14 @@ import {
   UserProductInquiryUpdateUserSnapshotGqlInput,
   UserProductInquiryPreviewSubmitGqlInput,
   UserProductInquiryContactSubmitGqlInput,
+  UserProductInquiryClaimGqlInput,
 } from "./graphql/inputs";
 import {
   UserProductInquiryPreviewSubmitGqlResponse,
   UserProductInquiryListPaginatedOffsetGqlResponse,
   UserProductInquiryListSummaryGqlResponse,
   UserProductInquiryContactSubmitGqlResponse,
+  UserProductInquiryClaimGqlResponse,
   UserProductInquiryDetailGqlResponse,
   UserProductInquiryDetailPreviewGqlResponse,
 } from "./graphql/responses";
@@ -314,6 +316,69 @@ export class UserProductInquiryService {
     });
 
     return this.toContactSubmitResponse(createdInquiry);
+  }
+
+  async claimInquiryForRegisteredUser(
+    input: UserProductInquiryClaimGqlInput,
+    anonymousUserId: Types.ObjectId,
+    anonymousSessionId: string,
+  ): Promise<UserProductInquiryClaimGqlResponse> {
+    const registeredUser = await this.userService.resolveActiveUserFromAccessToken(
+      input.accessToken,
+    );
+
+    if (
+      !registeredUser ||
+      registeredUser.roles?.includes(UserRole.ANONYMOUS) ||
+      registeredUser.roles?.includes(UserRole.SUPER_ADMIN)
+    ) {
+      throw new BadRequestException(
+        EXCEPTION_CONSTANT.USER_PRODUCT_INQUIRY_CLAIM_INVALID_ACCESS_TOKEN,
+      );
+    }
+
+    const inquiry = await this.userProductInquiryModel
+      .findOne({
+        _id: input.inquiryId,
+        $or: [
+          { "audit.deletedAt": null },
+          { "audit.deletedAt": { $exists: false } },
+        ],
+      })
+      .exec();
+
+    if (!inquiry) {
+      throw new NotFoundException(
+        EXCEPTION_CONSTANT.USER_PRODUCT_INQUIRY_NOT_FOUND,
+      );
+    }
+
+    if (inquiry.userId.equals(registeredUser._id)) {
+      await this.userService.completeAnonymousSessionHandoff({
+        anonymousSessionId,
+        anonymousUserId,
+        successorAccessToken: input.accessToken,
+      });
+      return { id: inquiry._id };
+    }
+
+    if (!inquiry.userId.equals(anonymousUserId)) {
+      throw new ForbiddenException(
+        EXCEPTION_CONSTANT.USER_PRODUCT_INQUIRY_OWNERSHIP_REQUIRED,
+      );
+    }
+
+    inquiry.userId = registeredUser._id;
+    inquiry.userSnapshot = this.toUserProductInquiryUserSnapshot(registeredUser);
+    await inquiry.save();
+
+    await this.userService.completeAnonymousSessionHandoff({
+      anonymousSessionId,
+      anonymousUserId,
+      successorAccessToken: input.accessToken,
+    });
+
+    return { id: inquiry._id };
   }
 
   private async resolveContactSubmitInquiry(

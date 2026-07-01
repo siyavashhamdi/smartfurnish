@@ -115,6 +115,16 @@ export class UserSignupGqlInput {
   @IsBoolean({ message: "rememberMe must be a boolean" })
   rememberMe?: boolean;
 
+  @Field({
+    nullable: true,
+    description:
+      "When true, keeps the replaced anonymous session active until an inquiry claim handoff completes",
+    defaultValue: false,
+  })
+  @IsOptional()
+  @IsBoolean({ message: "preserveReplacedAnonymousSession must be a boolean" })
+  preserveReplacedAnonymousSession?: boolean;
+
   @Field(() => SessionClientContextGqlInput, {
     nullable: true,
     description: "Client device and browser context captured at signup time",

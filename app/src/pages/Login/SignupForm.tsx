@@ -26,6 +26,8 @@ import { useTranslation } from "../../hooks/useTranslation";
 import { useSnackbar } from "../../hooks/useSnackbar";
 import { toWesternDigits } from "../../utilities/persian-digits.util";
 import { useLogin } from "../../hooks/useLogin";
+import { useAuth } from "../../contexts/AuthContext";
+import { claimUserProductInquiryAfterSignup } from "../Products/product-ai-preview.api";
 import { API_CONFIG } from "../../config/env";
 import { SIGNUP_OTP_ENABLED } from "../../constants/authCredential.constants";
 import LoginShell from "./LoginShell";
@@ -69,6 +71,11 @@ const EMPTY_DIGITS: readonly string[] = Array.from({ length: VERIFICATION_CODE_L
 
 type SignupCredentialMode = "password" | "otp";
 
+type SignupFormEmbeddedInquiryFlow = {
+  readonly inquiryId: string;
+  readonly onSignupComplete?: () => void;
+};
+
 interface SignupFormProps {
   readonly embedded?: boolean;
   readonly identity: LoginNavState;
@@ -77,6 +84,7 @@ interface SignupFormProps {
   readonly initialLastName?: string;
   readonly hideCredentialHeader?: boolean;
   readonly hideFormLead?: boolean;
+  readonly embeddedInquiryFlow?: SignupFormEmbeddedInquiryFlow;
 }
 
 export const SignupForm = ({
@@ -87,9 +95,11 @@ export const SignupForm = ({
   initialLastName = "",
   hideCredentialHeader = false,
   hideFormLead = false,
+  embeddedInquiryFlow,
 }: SignupFormProps): ReactElement => {
   const { t } = useTranslation();
   const { showError } = useSnackbar();
+  const { accessToken: anonymousAccessToken } = useAuth();
   const { signup, requestSignupCode, loading } = useLogin();
 
   const supportsOtp = SIGNUP_OTP_ENABLED && identity.identityKind === "mobile";
@@ -335,20 +345,43 @@ export const SignupForm = ({
       return;
     }
 
-    const success = await signup({
-      username: username.trim() || undefined,
-      email: email.trim() || undefined,
-      mobile: normalizedMobile,
-      profile: {
-        firstName: firstName.trim(),
-        ...(lastName.trim() ? { lastName: lastName.trim() } : {}),
+    const success = await signup(
+      {
+        username: username.trim() || undefined,
+        email: email.trim() || undefined,
+        mobile: normalizedMobile,
+        profile: {
+          firstName: firstName.trim(),
+          ...(lastName.trim() ? { lastName: lastName.trim() } : {}),
+        },
+        password: mode === "password" ? password : undefined,
+        signupCode: mode === "otp" ? verificationCode.trim() : undefined,
+        captchaId: captchaEnabled ? captchaId : undefined,
+        captchaValue: captchaEnabled ? captchaValue : undefined,
+        rememberMe,
       },
-      password: mode === "password" ? password : undefined,
-      signupCode: mode === "otp" ? verificationCode.trim() : undefined,
-      captchaId: captchaEnabled ? captchaId : undefined,
-      captchaValue: captchaEnabled ? captchaValue : undefined,
-      rememberMe,
-    });
+      embeddedInquiryFlow
+        ? {
+            preserveReplacedAnonymousSession: true,
+            skipRedirect: true,
+            onAccessTokenReceived: async (accessToken) => {
+              if (!anonymousAccessToken?.trim()) {
+                throw new Error("USER_PRODUCT_INQUIRY_CLAIM_INVALID_ACCESS_TOKEN");
+              }
+
+              await claimUserProductInquiryAfterSignup({
+                inquiryId: embeddedInquiryFlow.inquiryId,
+                accessToken,
+                anonymousAccessToken,
+              });
+            },
+          }
+        : undefined,
+    );
+
+    if (success && embeddedInquiryFlow) {
+      embeddedInquiryFlow.onSignupComplete?.();
+    }
 
     if (!success && captchaEnabled) {
       setCaptchaId("");

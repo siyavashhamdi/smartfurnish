@@ -139,13 +139,21 @@ function extractGraphQLErrorCode(error: unknown): string | undefined {
   return firstGraphQLError?.code || firstGraphQLError?.extensions?.code;
 }
 
+export type SignupOptions = {
+  readonly preserveReplacedAnonymousSession?: boolean;
+  readonly onAccessTokenReceived?: (accessToken: string) => Promise<void>;
+  readonly skipRedirect?: boolean;
+};
+
 async function establishSession(
   accessToken: string,
   login: (token: string, user: User) => void,
+  setAuthSession: (token: string, user: User) => void,
   showSuccess: (message: string) => void,
   showError: (message: string) => void,
   successMessage: string,
-  failureMessage: string
+  failureMessage: string,
+  options?: { readonly skipRedirect?: boolean },
 ): Promise<boolean> {
   localStorage.setItem(LOCAL_STORAGE_KEYS.ACCESS_TOKEN, accessToken);
 
@@ -165,7 +173,11 @@ async function establishSession(
   }
 
   applyUserPreferences(meResult.data.me.preferences);
-  login(accessToken, mapMeToUser(meResult.data.me));
+  if (options?.skipRedirect) {
+    setAuthSession(accessToken, mapMeToUser(meResult.data.me));
+  } else {
+    login(accessToken, mapMeToUser(meResult.data.me));
+  }
   showSuccess(successMessage);
   return true;
 }
@@ -204,7 +216,7 @@ export const useLogin = () => {
     { input: SignupInput }
   >(USER_SIGNUP_MUTATION);
 
-  const { login } = useAuth();
+  const { login, setAuthSession } = useAuth();
   const { showSuccess, showError } = useSnackbar();
   const { t } = useTranslation();
 
@@ -284,10 +296,11 @@ export const useLogin = () => {
       return establishSession(
         accessToken,
         login,
+        setAuthSession,
         showSuccess,
         showError,
         t("auth.login.success.loginSuccessful"),
-        t("auth.login.errors.failed")
+        t("auth.login.errors.failed"),
       );
     } catch (err) {
       localStorage.removeItem(LOCAL_STORAGE_KEYS.ACCESS_TOKEN);
@@ -358,10 +371,11 @@ export const useLogin = () => {
       const success = await establishSession(
         accessToken,
         login,
+        setAuthSession,
         showSuccess,
         showError,
         t("auth.login.success.loginSuccessful"),
-        t("auth.login.errors.failed")
+        t("auth.login.errors.failed"),
       );
       return { success };
     } catch (err) {
@@ -374,7 +388,10 @@ export const useLogin = () => {
     }
   };
 
-  const signup = async (input: SignupInput): Promise<boolean> => {
+  const signup = async (
+    input: SignupInput,
+    options?: SignupOptions,
+  ): Promise<boolean> => {
     try {
       const result = await signupMutation({
         variables: {
@@ -399,6 +416,8 @@ export const useLogin = () => {
             captchaId: input.captchaId,
             captchaValue: input.captchaValue,
             rememberMe: input.rememberMe === true,
+            preserveReplacedAnonymousSession:
+              options?.preserveReplacedAnonymousSession === true,
             clientContext: await buildClientContext(),
           },
         },
@@ -415,13 +434,24 @@ export const useLogin = () => {
         return false;
       }
 
+      if (options?.onAccessTokenReceived) {
+        try {
+          await options.onAccessTokenReceived(accessToken);
+        } catch (error) {
+          showErrorIfNotQueued(showError, error);
+          return false;
+        }
+      }
+
       return establishSession(
         accessToken,
         login,
+        setAuthSession,
         showSuccess,
         showError,
         t("auth.login.success.signupSuccessful"),
-        t("auth.login.errors.failed")
+        t("auth.login.errors.failed"),
+        { skipRedirect: options?.skipRedirect === true },
       );
     } catch (err) {
       localStorage.removeItem(LOCAL_STORAGE_KEYS.ACCESS_TOKEN);

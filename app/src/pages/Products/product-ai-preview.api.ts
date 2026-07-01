@@ -4,6 +4,7 @@ import {
 } from "../../constants/fileUploadPolicies";
 import { USER_PRODUCT_INQUIRY_PREVIEW_SUBMIT_MUTATION } from "../../graphql/mutations/userProductInquiryPreviewSubmit.mutation";
 import { USER_PRODUCT_INQUIRY_CONTACT_SUBMIT_MUTATION } from "../../graphql/mutations/userProductInquiryContactSubmit.mutation";
+import { USER_PRODUCT_INQUIRY_CLAIM_MUTATION } from "../../graphql/mutations/userProductInquiryClaim.mutation";
 import { apolloClient } from "../../lib/apollo-client";
 import { getFileIdFromAccessUrl, type FileAccessUrl } from "../../utils/fileAccessUrl.util";
 import { uploadFile } from "../../utils/fileUpload.util";
@@ -177,4 +178,39 @@ export async function submitUserProductInquiryContact(params: {
   }
 
   return inquiry;
+}
+
+type UserProductInquiryClaimMutationResult = {
+  readonly userProductInquiryClaim?: {
+    readonly id: string;
+  };
+};
+
+export async function claimUserProductInquiryAfterSignup(params: {
+  readonly inquiryId: string;
+  readonly accessToken: string;
+  readonly anonymousAccessToken: string;
+}): Promise<string> {
+  const result = await apolloClient.mutate<UserProductInquiryClaimMutationResult>({
+    mutation: USER_PRODUCT_INQUIRY_CLAIM_MUTATION,
+    variables: {
+      input: {
+        inquiryId: params.inquiryId,
+        accessToken: params.accessToken,
+      },
+    },
+    context: {
+      headers: {
+        authorization: `Bearer ${params.anonymousAccessToken}`,
+      },
+    },
+  });
+
+  const inquiryId = result.data?.userProductInquiryClaim?.id;
+
+  if (!inquiryId) {
+    throw new Error("USER_PRODUCT_INQUIRY_CLAIM_INVALID_ACCESS_TOKEN");
+  }
+
+  return inquiryId;
 }

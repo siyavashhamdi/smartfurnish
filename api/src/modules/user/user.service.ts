@@ -767,6 +767,7 @@ export class UserService {
       input.rememberMe === true,
       clientContext,
       previousSessionId,
+      input.preserveReplacedAnonymousSession === true,
     );
   }
 
@@ -847,6 +848,7 @@ export class UserService {
     rememberMe: boolean = false,
     clientContext?: SessionClientContext,
     previousSessionId?: string,
+    preservePreviousSession: boolean = false,
   ): Promise<UserLoginGqlResponse> {
     // Update last login
     await this.userModel.updateOne(
@@ -875,7 +877,7 @@ export class UserService {
     // Use session._id as jti in JWT
     const sessionId = session._id.toString();
 
-    if (previousSessionId) {
+    if (previousSessionId && !preservePreviousSession) {
       const previousSession =
         await this.sessionService.findSessionById(previousSessionId);
 
@@ -1448,6 +1450,53 @@ export class UserService {
     await this.sessionService.updateLastActivity(payload.jti);
 
     return user;
+  }
+
+  async resolveActiveUserFromAccessToken(
+    accessToken: string,
+  ): Promise<UserDocument | null> {
+    const sessionId = this.resolveSessionIdFromAccessToken(accessToken);
+    if (!sessionId) {
+      return null;
+    }
+
+    return this.validateUser({ jti: sessionId });
+  }
+
+  resolveSessionIdFromAccessToken(accessToken: string): string | null {
+    const trimmed = accessToken.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    try {
+      const payload = this.jwtService.verify<JwtPayload>(trimmed);
+      return payload.jti?.trim() || null;
+    } catch {
+      return null;
+    }
+  }
+
+  async completeAnonymousSessionHandoff(params: {
+    anonymousSessionId: string;
+    anonymousUserId: Types.ObjectId;
+    successorAccessToken: string;
+  }): Promise<void> {
+    const successorSessionId = this.resolveSessionIdFromAccessToken(
+      params.successorAccessToken,
+    );
+
+    if (!successorSessionId) {
+      throw new BadRequestException(
+        EXCEPTION_CONSTANT.USER_PRODUCT_INQUIRY_CLAIM_INVALID_ACCESS_TOKEN,
+      );
+    }
+
+    await this.sessionService.expireSessionReplacedBy(
+      params.anonymousSessionId,
+      successorSessionId,
+    );
+    await this.deactivateReplacedAnonymousUser(params.anonymousUserId);
   }
 
   async findById(id: Types.ObjectId): Promise<UserDocument> {

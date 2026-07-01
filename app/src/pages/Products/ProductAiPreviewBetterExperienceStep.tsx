@@ -20,14 +20,18 @@ type ProductAiPreviewContactPrefill = {
 type ProductAiPreviewBetterExperienceStepProps = {
   readonly showSignupForm: boolean;
   readonly contactPrefill: ProductAiPreviewContactPrefill | null;
+  readonly inquiryId: string | null;
+  readonly onSignupComplete?: () => void;
 };
 
 function ProductAiPreviewBetterExperienceStepInner({
   showSignupForm,
   contactPrefill,
+  inquiryId,
+  onSignupComplete,
 }: ProductAiPreviewBetterExperienceStepProps): ReactElement {
   const trimmedPhone = contactPrefill?.phone.trim() ?? "";
-  const showSignup = showSignupForm && trimmedPhone.length > 0;
+  const showSignup = showSignupForm && Boolean(inquiryId) && trimmedPhone.length > 0;
 
   return (
     <Stack
@@ -49,7 +53,7 @@ function ProductAiPreviewBetterExperienceStepInner({
         </Typography>
       </div>
 
-      {showSignup && contactPrefill ? (
+      {showSignup && contactPrefill && inquiryId ? (
         <>
           <Typography className={styles.signupLead} color="text.secondary" variant="body2">
             {PRODUCT_AI_PREVIEW_BETTER_EXPERIENCE_SIGNUP_LEAD}
@@ -62,6 +66,10 @@ function ProductAiPreviewBetterExperienceStepInner({
             initialFirstName={contactPrefill.firstName}
             initialLastName={contactPrefill.lastName}
             onEditIdentity={() => undefined}
+            embeddedInquiryFlow={{
+              inquiryId,
+              onSignupComplete,
+            }}
           />
         </>
       ) : null}

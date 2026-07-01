@@ -110,6 +110,7 @@ export function ProductAiPreviewDialog({
   );
   const [submittedContact, setSubmittedContact] =
     useState<ProductAiPreviewSubmittedContact | null>(null);
+  const [signupCompleted, setSignupCompleted] = useState(false);
   const [isResultViewerOpen, setIsResultViewerOpen] = useState(false);
 
   const hasSelectedProductImage = Boolean(
@@ -138,6 +139,7 @@ export function ProductAiPreviewDialog({
     setRoomPreviewUrl(null);
     setInquiryId(null);
     setSubmittedContact(null);
+    setSignupCompleted(false);
     setIsResultViewerOpen(false);
     setContactSubmitting(false);
     setContactCanSubmit(false);
@@ -255,6 +257,10 @@ export function ProductAiPreviewDialog({
     setSubmittedContact(contact);
     setActiveStepId("coming-soon");
     setMaxReachedStepIndex(getProductAiPreviewStepIndex("coming-soon"));
+  }, []);
+
+  const handleSignupComplete = useCallback((): void => {
+    setSignupCompleted(true);
   }, []);
 
   const contactPrefill = useMemo(() => {
@@ -537,7 +543,9 @@ export function ProductAiPreviewDialog({
             {activeStepId === "coming-soon" ? (
               <ProductAiPreviewBetterExperienceStep
                 contactPrefill={contactPrefill}
-                showSignupForm={isAnonymousUser}
+                inquiryId={inquiryId}
+                showSignupForm={isAnonymousUser && !signupCompleted}
+                onSignupComplete={handleSignupComplete}
               />
             ) : null}
           </div>

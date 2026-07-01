@@ -206,7 +206,8 @@
             "USER_PRODUCT_INQUIRY_FABRIC_SELECTION_INCOMPLETE": "برای ثبت پارچه، هم کلید پارچه و هم کلید رنگ باید ارسال شوند.",
             "USER_PRODUCT_INQUIRY_FABRIC_NOT_AVAILABLE": "پارچه انتخاب‌شده برای این محصول در دسترس نیست.",
             "USER_PRODUCT_INQUIRY_FABRIC_COLOR_NOT_AVAILABLE": "رنگ انتخاب‌شده برای این پارچه در دسترس نیست.",
-            "USER_PRODUCT_INQUIRY_CONTACT_REQUIRED": "اطلاعات تماس برای این درخواست ثبت نشده است."
+            "USER_PRODUCT_INQUIRY_CONTACT_REQUIRED": "اطلاعات تماس برای این درخواست ثبت نشده است.",
+            "USER_PRODUCT_INQUIRY_CLAIM_INVALID_ACCESS_TOKEN": "امکان انتقال درخواست به حساب جدید وجود ندارد. لطفاً دوباره تلاش کنید."
         }
     }
 }

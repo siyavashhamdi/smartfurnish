@@ -9,6 +9,7 @@ import { UserModule } from "../user";
 import {
   UserProductInquiryPreviewSubmitMutation,
   UserProductInquiryContactSubmitMutation,
+  UserProductInquiryClaimMutation,
   UserProductInquiryStatusUpdateMutation,
   UserProductInquiryUpdateMutation,
 } from "./graphql/mutations";
@@ -31,6 +32,7 @@ import { UserProductInquiryService } from "./user-product-inquiry.service";
     UserProductInquiryService,
     UserProductInquiryPreviewSubmitMutation,
     UserProductInquiryContactSubmitMutation,
+    UserProductInquiryClaimMutation,
     UserProductInquiryStatusUpdateMutation,
     UserProductInquiryUpdateMutation,
     UserProductInquiryListQuery,
