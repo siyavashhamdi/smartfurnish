@@ -161,18 +161,44 @@ function sortingToServerSort(
   };
 }
 
+function hasFabricDisplayValue(value: string): boolean {
+  const normalized = value.trim();
+  return normalized.length > 0 && normalized !== EMPTY_DISPLAY;
+}
+
 function fabricCell(
   patternName: string,
   colorName: string,
   colorHex: string,
+  previewCount: number,
+  multipleLabel: string,
+  notSelectedLabel: string,
 ): ReactElement {
+  if (previewCount > 1) {
+    return (
+      <Typography variant="body2" color="text.secondary" sx={{ overflowWrap: "anywhere" }}>
+        {multipleLabel}
+      </Typography>
+    );
+  }
+
   const swatchColor = normalizeFabricHexColor(colorHex || null);
-  const displayPatternName = patternName || EMPTY_DISPLAY;
-  const displayColorName = colorName || EMPTY_DISPLAY;
-  const hasColor = colorName.trim().length > 0 || Boolean(swatchColor);
+  const hasPattern = hasFabricDisplayValue(patternName);
+  const hasColor = hasFabricDisplayValue(colorName) || Boolean(swatchColor);
+
+  if (!hasPattern && !hasColor) {
+    return (
+      <Typography variant="body2" color="text.secondary" sx={{ overflowWrap: "anywhere" }}>
+        {notSelectedLabel}
+      </Typography>
+    );
+  }
+
+  const displayPatternName = hasPattern ? patternName.trim() : EMPTY_DISPLAY;
+  const displayColorName = hasFabricDisplayValue(colorName) ? colorName.trim() : EMPTY_DISPLAY;
 
   return (
-    <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+    <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "center" }}>
       <Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>
         {displayPatternName}
       </Typography>
@@ -589,6 +615,9 @@ const InquiriesList = (): ReactElement => {
             info.row.original.fabricPatternName,
             info.row.original.fabricColorName,
             info.row.original.fabricColorHex,
+            info.row.original.previewCount,
+            t("table.pages.inquiries.columns.fabricMultiple"),
+            t("table.pages.inquiries.columns.fabricNotSelected"),
           ),
       },
       {

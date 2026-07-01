@@ -154,6 +154,11 @@ export class UserProductInquiryDetailPreviewGqlResponse {
   })
   model: UserProductInquiryDetailPreviewModelGqlResponse;
 
+  @Field(() => UserProductInquiryDetailFabricSnapshotGqlResponse, {
+    description: "Selected fabric snapshot for this preview",
+  })
+  fabric: UserProductInquiryDetailFabricSnapshotGqlResponse;
+
   @Field(() => FileAccessUrlGqlResponse, {
     nullable: true,
     description: "Signed access descriptor for the room environment photo",
@@ -214,12 +219,6 @@ export class UserProductInquiryDetailGqlResponse {
     description: "Product snapshot captured when the inquiry was created",
   })
   product: UserProductInquiryDetailProductSnapshotGqlResponse;
-
-  @Field(() => UserProductInquiryDetailFabricSnapshotGqlResponse, {
-    nullable: true,
-    description: "Selected fabric snapshot, if any",
-  })
-  fabric?: UserProductInquiryDetailFabricSnapshotGqlResponse;
 
   @Field(() => UserProductInquiryStatus, { description: "Current inquiry status" })
   status: UserProductInquiryStatus;

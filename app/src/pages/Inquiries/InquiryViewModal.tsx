@@ -16,7 +16,6 @@ import {
   INQUIRY_STATUS_LABEL,
 } from "./inquiries-status.shared";
 import { ProductDetailCoverGallery } from "../Products/ProductDetailCoverGallery";
-import { normalizeFabricHexColor } from "../Products/fabric-selection.util";
 import { useTranslation } from "../../hooks/useTranslation";
 import EntityModalShell from "../../shared/crud/EntityModalShell";
 import ModalFooterActions from "../../shared/crud/ModalFooterActions";
@@ -276,27 +275,6 @@ function InquiryViewModal({
                 {
                   label: t("table.pages.inquiries.columns.status"),
                   value: <StatusChip status={record.status} />,
-                },
-                {
-                  label: t("pages.inquiries.viewModal.sections.fabric"),
-                  value: record.fabric ? (
-                    <Box className={styles.fabricValue}>
-                      <Typography variant="body2" fontWeight={600} component="span">
-                        {displayText(record.fabric.label)}
-                      </Typography>
-                      {record.fabric.colorHex ? (
-                        <span
-                          className={styles.colorSwatch}
-                          style={{
-                            backgroundColor:
-                              normalizeFabricHexColor(record.fabric.colorHex) ?? "transparent",
-                          }}
-                        />
-                      ) : null}
-                    </Box>
-                  ) : (
-                    EMPTY_DISPLAY
-                  ),
                 },
               ]}
             />

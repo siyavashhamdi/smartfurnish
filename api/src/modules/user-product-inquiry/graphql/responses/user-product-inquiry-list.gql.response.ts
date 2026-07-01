@@ -88,6 +88,11 @@ export class UserProductInquiryListSummaryGqlResponse {
   })
   previewGeneratedAt?: Date;
 
+  @Field({
+    description: "Number of AI preview generations on this inquiry",
+  })
+  previewCount: number;
+
   @Field({ nullable: true, description: "Inquiry created date" })
   createdAt?: Date;
 

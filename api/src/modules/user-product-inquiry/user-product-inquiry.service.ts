@@ -135,18 +135,17 @@ export class UserProductInquiryService {
       aspectRatio: previewResult.aspectRatio,
       imageSize: previewResult.imageSize,
       isRiverflowModel,
+      fabricSnapshot: {
+        fabricKey,
+        colorKey,
+        patternName: previewResult.fabric.patternName,
+        colorName: previewResult.fabric.colorName,
+        ...(previewResult.fabric.colorHex
+          ? { colorHex: previewResult.fabric.colorHex }
+          : {}),
+        label: previewResult.fabric.label,
+      },
     });
-
-    const fabricSnapshot = {
-      fabricKey,
-      colorKey,
-      patternName: previewResult.fabric.patternName,
-      colorName: previewResult.fabric.colorName,
-      ...(previewResult.fabric.colorHex
-        ? { colorHex: previewResult.fabric.colorHex }
-        : {}),
-      label: previewResult.fabric.label,
-    };
 
     const existingInquiry = await this.resolvePreviewSubmitInquiry(
       input,
@@ -168,7 +167,6 @@ export class UserProductInquiryService {
 
       const previews = this.normalizePreviewArray(existingInquiry.preview);
       existingInquiry.preview = [...previews, previewEntry];
-      existingInquiry.fabricSnapshot = fabricSnapshot;
       existingInquiry.productSnapshot = {
         title: previewResult.product.title,
       };
@@ -197,7 +195,6 @@ export class UserProductInquiryService {
       productSnapshot: {
         title: previewResult.product.title,
       },
-      fabricSnapshot,
       status: UserProductInquiryStatus.PREVIEW_GENERATED,
       statusHistory: [
         {
@@ -252,11 +249,6 @@ export class UserProductInquiryService {
     }
 
     const userSnapshot = this.toUserProductInquiryUserSnapshot(user);
-    const fabricSnapshot = await this.resolveOptionalFabricSnapshot(
-      input.productId,
-      input.fabricKey,
-      input.colorKey,
-    );
 
     const existingInquiry = await this.resolveContactSubmitInquiry(
       input,
@@ -277,9 +269,6 @@ export class UserProductInquiryService {
       }
 
       existingInquiry.userSnapshot = userSnapshot;
-      if (fabricSnapshot) {
-        existingInquiry.fabricSnapshot = fabricSnapshot;
-      }
       existingInquiry.status = UserProductInquiryStatus.CALL_REQUESTED;
       existingInquiry.contact = contact;
       existingInquiry.statusHistory.push({
@@ -312,7 +301,6 @@ export class UserProductInquiryService {
       productSnapshot: {
         title: product.title,
       },
-      ...(fabricSnapshot ? { fabricSnapshot } : {}),
       status: UserProductInquiryStatus.CALL_REQUESTED,
       statusHistory: [
         {
@@ -371,76 +359,6 @@ export class UserProductInquiryService {
       })
       .sort({ "audit.createdAt": -1 })
       .exec();
-  }
-
-  private async resolveOptionalFabricSnapshot(
-    productId: Types.ObjectId,
-    fabricKey?: string,
-    colorKey?: string,
-  ): Promise<UserProductInquiryFabricSnapshot | undefined> {
-    const normalizedFabricKey = fabricKey?.trim();
-    const normalizedColorKey = colorKey?.trim();
-
-    if (!normalizedFabricKey && !normalizedColorKey) {
-      return undefined;
-    }
-
-    if (!normalizedFabricKey || !normalizedColorKey) {
-      throw new BadRequestException(
-        EXCEPTION_CONSTANT.USER_PRODUCT_INQUIRY_FABRIC_SELECTION_INCOMPLETE,
-      );
-    }
-
-    const product = await this.productService.findActiveProductById(
-      productId.toString(),
-    );
-
-    if (!product) {
-      throw new NotFoundException(
-        EXCEPTION_CONSTANT.PRODUCT_NOT_FOUND_OR_INACTIVE,
-      );
-    }
-
-    return this.resolveFabricSnapshot(
-      product,
-      normalizedFabricKey,
-      normalizedColorKey,
-    );
-  }
-
-  private resolveFabricSnapshot(
-    product: ProductDocument,
-    fabricKey: string,
-    colorKey: string,
-  ): UserProductInquiryFabricSnapshot {
-    const fabric = (product.fabrics ?? []).find(
-      (entry) => entry.key === fabricKey && entry.isActive,
-    );
-
-    if (!fabric) {
-      throw new BadRequestException(
-        EXCEPTION_CONSTANT.USER_PRODUCT_INQUIRY_FABRIC_NOT_AVAILABLE,
-      );
-    }
-
-    const color = (fabric.colors ?? []).find(
-      (entry) => entry.key === colorKey && entry.isActive,
-    );
-
-    if (!color) {
-      throw new BadRequestException(
-        EXCEPTION_CONSTANT.USER_PRODUCT_INQUIRY_FABRIC_COLOR_NOT_AVAILABLE,
-      );
-    }
-
-    return {
-      fabricKey,
-      colorKey,
-      patternName: fabric.patternName,
-      colorName: color.name,
-      ...(color.hexCode ? { colorHex: color.hexCode } : {}),
-      label: `${fabric.patternName} — ${color.name}`,
-    };
   }
 
   private toContactSubmitResponse(
@@ -550,12 +468,6 @@ export class UserProductInquiryService {
     inquiry.statusHistory = input.statusHistory.map((entry) =>
       this.mapUpdateStatusHistoryEntry(entry),
     );
-
-    if (input.fabric === null) {
-      inquiry.set("fabricSnapshot", undefined);
-    } else if (input.fabric) {
-      inquiry.fabricSnapshot = this.mapUpdateFabricSnapshot(input.fabric);
-    }
 
     if (input.preview === null) {
       inquiry.set("preview", undefined);
@@ -711,7 +623,6 @@ export class UserProductInquiryService {
 
   private assertFullUpdateInput(input: UserProductInquiryUpdateGqlInput): void {
     const requiredNullableKeys = [
-      "fabric",
       "preview",
       "contact",
     ] as const;
@@ -936,6 +847,7 @@ export class UserProductInquiryService {
       environmentFileId: input.environmentFileId,
       resultFileId: input.resultFileId,
       generatedAt: new Date(input.generatedAt),
+      fabricSnapshot: this.mapUpdateFabricSnapshot(input.fabric),
       model: {
         provider: input.model.provider.trim(),
         model: input.model.model.trim(),
@@ -1032,18 +944,6 @@ export class UserProductInquiryService {
         title: inquiry.productSnapshot.title,
         coverImageAccessUrls,
       },
-      fabric: inquiry.fabricSnapshot
-        ? {
-            fabricKey: inquiry.fabricSnapshot.fabricKey,
-            colorKey: inquiry.fabricSnapshot.colorKey,
-            patternName: inquiry.fabricSnapshot.patternName,
-            colorName: inquiry.fabricSnapshot.colorName,
-            ...(inquiry.fabricSnapshot.colorHex
-              ? { colorHex: inquiry.fabricSnapshot.colorHex }
-              : {}),
-            label: inquiry.fabricSnapshot.label,
-          }
-        : undefined,
       status: inquiry.status,
       statusHistory: (inquiry.statusHistory ?? []).map((entry) => ({
         status: entry.status,
@@ -1081,6 +981,10 @@ export class UserProductInquiryService {
   private toListSummaryResponse(
     inquiry: UserProductInquiryListRecord,
   ): UserProductInquiryListSummaryGqlResponse {
+    const latestPreviewFabric = this.getLatestPreviewFabricSnapshot(
+      inquiry.preview,
+    );
+
     return {
       id: inquiry._id,
       user: {
@@ -1091,12 +995,12 @@ export class UserProductInquiryService {
       product: {
         title: inquiry.productSnapshot.title,
       },
-      fabric: inquiry.fabricSnapshot?.patternName
+      fabric: latestPreviewFabric?.patternName
         ? {
-            patternName: inquiry.fabricSnapshot.patternName,
-            colorName: inquiry.fabricSnapshot.colorName,
-            ...(inquiry.fabricSnapshot.colorHex
-              ? { colorHex: inquiry.fabricSnapshot.colorHex }
+            patternName: latestPreviewFabric.patternName,
+            colorName: latestPreviewFabric.colorName,
+            ...(latestPreviewFabric.colorHex
+              ? { colorHex: latestPreviewFabric.colorHex }
               : {}),
           }
         : undefined,
@@ -1110,6 +1014,7 @@ export class UserProductInquiryService {
           }
         : undefined,
       previewGeneratedAt: this.getLatestPreviewGeneratedAt(inquiry.preview),
+      previewCount: this.normalizePreviewArray(inquiry.preview).length,
       createdAt: inquiry.audit?.createdAt,
       updatedAt: inquiry.audit?.updatedAt,
     };
@@ -1147,7 +1052,7 @@ export class UserProductInquiryService {
         { "userSnapshot.username": searchRegex },
         { "userSnapshot.phoneNumber": searchRegex },
         { "productSnapshot.title": searchRegex },
-        { "fabricSnapshot.label": searchRegex },
+        { "preview.fabricSnapshot.label": searchRegex },
         { "contact.firstName": searchRegex },
         { "contact.lastName": searchRegex },
         { "contact.phone": searchRegex },
@@ -1188,7 +1093,7 @@ export class UserProductInquiryService {
     );
     this.addListContainsFilter(
       query,
-      "fabricSnapshot.label",
+      "preview.fabricSnapshot.label",
       filters.fabricLabel,
     );
 
@@ -1419,6 +1324,7 @@ export class UserProductInquiryService {
     aspectRatio?: string;
     imageSize: string;
     isRiverflowModel: boolean;
+    fabricSnapshot: UserProductInquiryFabricSnapshot;
   }): UserProductInquiryPreview {
     return {
       environmentFileId: params.environmentFileId,
@@ -1426,6 +1332,7 @@ export class UserProductInquiryService {
       sourceProductImageFileId: params.sourceProductImageFileId,
       generatedAt: params.generatedAt,
       durationSeconds: params.durationSeconds,
+      fabricSnapshot: params.fabricSnapshot,
       model: {
         provider: "openrouter",
         model: params.modelName,
@@ -1434,6 +1341,40 @@ export class UserProductInquiryService {
         imageSize: params.imageSize,
         ...(params.isRiverflowModel ? { reasoningEffort: "high" } : {}),
       },
+    };
+  }
+
+  private getLatestPreviewFabricSnapshot(
+    preview?: UserProductInquiryPreview | UserProductInquiryPreview[] | null,
+  ): UserProductInquiryFabricSnapshot | undefined {
+    const previews = this.normalizePreviewArray(preview);
+    let latestFabric: UserProductInquiryFabricSnapshot | undefined;
+    let latestGeneratedAt: Date | undefined;
+
+    for (const entry of previews) {
+      if (!entry.fabricSnapshot || !entry.generatedAt) {
+        continue;
+      }
+
+      if (!latestGeneratedAt || entry.generatedAt > latestGeneratedAt) {
+        latestGeneratedAt = entry.generatedAt;
+        latestFabric = entry.fabricSnapshot;
+      }
+    }
+
+    return latestFabric;
+  }
+
+  private mapFabricSnapshotToDetailResponse(
+    fabricSnapshot: UserProductInquiryFabricSnapshot,
+  ): UserProductInquiryDetailPreviewGqlResponse["fabric"] {
+    return {
+      fabricKey: fabricSnapshot.fabricKey,
+      colorKey: fabricSnapshot.colorKey,
+      patternName: fabricSnapshot.patternName,
+      colorName: fabricSnapshot.colorName,
+      ...(fabricSnapshot.colorHex ? { colorHex: fabricSnapshot.colorHex } : {}),
+      label: fabricSnapshot.label,
     };
   }
 
@@ -1469,6 +1410,7 @@ export class UserProductInquiryService {
           ? { reasoningEffort: preview.model.reasoningEffort }
           : {}),
       },
+      fabric: this.mapFabricSnapshotToDetailResponse(preview.fabricSnapshot),
       environmentFileAccessUrl: resolveFileAccessUrl(
         preview.environmentFileId,
       ),

@@ -22,14 +22,6 @@ export const USER_PRODUCT_INQUIRY_DETAIL_QUERY = gql`
           ${FILE_ACCESS_URL_FIELDS}
         }
       }
-      fabric {
-        fabricKey
-        colorKey
-        patternName
-        colorName
-        colorHex
-        label
-      }
       statusHistory {
         status
         reason
@@ -55,6 +47,14 @@ export const USER_PRODUCT_INQUIRY_DETAIL_QUERY = gql`
           aspectRatio
           imageSize
           reasoningEffort
+        }
+        fabric {
+          fabricKey
+          colorKey
+          patternName
+          colorName
+          colorHex
+          label
         }
         environmentFileAccessUrl {
           ${FILE_ACCESS_URL_FIELDS}

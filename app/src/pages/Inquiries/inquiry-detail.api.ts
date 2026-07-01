@@ -44,6 +44,14 @@ export type UserProductInquiryDetailPreview = {
   readonly generatedAt: string;
   readonly durationSeconds?: number | null;
   readonly model: UserProductInquiryDetailPreviewModel;
+  readonly fabric: {
+    readonly fabricKey: string;
+    readonly colorKey: string;
+    readonly patternName: string;
+    readonly colorName: string;
+    readonly colorHex?: string | null;
+    readonly label: string;
+  };
   readonly environmentFileAccessUrl?: FileAccessUrl | null;
   readonly resultFileAccessUrl?: FileAccessUrl | null;
   readonly sourceProductImageFileAccessUrl?: FileAccessUrl | null;
@@ -65,14 +73,6 @@ export type UserProductInquiryDetailRow = {
   readonly status: UserProductInquiryStatus;
   readonly user: UserProductInquiryDetailUser;
   readonly product: UserProductInquiryDetailProduct;
-  readonly fabric?: {
-    readonly fabricKey: string;
-    readonly colorKey: string;
-    readonly patternName: string;
-    readonly colorName: string;
-    readonly colorHex?: string | null;
-    readonly label: string;
-  } | null;
   readonly statusHistory: readonly UserProductInquiryDetailStatusHistoryEntry[];
   readonly preview?: readonly UserProductInquiryDetailPreview[] | null;
   readonly contact?: UserProductInquiryDetailContact | null;

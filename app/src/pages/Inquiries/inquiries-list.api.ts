@@ -81,6 +81,7 @@ export type UserProductInquiryListItemRow = {
     readonly requestedAt: string;
   } | null;
   readonly previewGeneratedAt?: string | null;
+  readonly previewCount: number;
   readonly createdAt?: string | null;
   readonly updatedAt?: string | null;
 };
@@ -99,6 +100,7 @@ export type UserProductInquiryListRecord = {
   readonly contactPhone: string;
   readonly contactRequestedAt: string;
   readonly previewGeneratedAt: string;
+  readonly previewCount: number;
   readonly createdAt: string;
   readonly updatedAt: string;
 };
@@ -255,6 +257,7 @@ export function mapUserProductInquiryListRowToRecord(
     contactPhone: display(row.contact?.phone),
     contactRequestedAt: display(row.contact?.requestedAt),
     previewGeneratedAt: display(row.previewGeneratedAt),
+    previewCount: row.previewCount ?? 0,
     createdAt: display(row.createdAt),
     updatedAt: display(row.updatedAt),
   };

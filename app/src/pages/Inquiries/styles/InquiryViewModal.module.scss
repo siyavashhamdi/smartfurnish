@@ -88,22 +88,6 @@
   }
 }
 
-.fabricValue {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.colorSwatch {
-  inline-size: 1rem;
-  block-size: 1rem;
-  border-radius: 999rem;
-  border: 1px solid var(--app-surface-border);
-  flex-shrink: 0;
-}
-
-
 .previewCarousel {
   inline-size: 100%;
 }
@@ -112,12 +96,23 @@
   min-block-size: 14rem;
 }
 
-.previewCarouselTag {
+.previewCarouselSlideTag {
   position: absolute;
   z-index: 5;
   inset-block-start: 0.65rem;
   inset-inline-start: 0.65rem;
   max-inline-size: calc(100% - 1.3rem);
+}
+
+.previewCarouselFabricTags {
+  position: absolute;
+  z-index: 5;
+  inset-block-end: 0.65rem;
+  inset-inline-end: 0.65rem;
+  max-inline-size: calc(100% - 1.3rem);
+}
+
+.previewCarouselTag {
   font-weight: 700;
   background: rgba(15, 26, 20, 0.72) !important;
   color: #ffffff !important;
@@ -129,6 +124,14 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+}
+
+.previewCarouselColorSwatch {
+  inline-size: 0.75rem;
+  block-size: 0.75rem;
+  border-radius: 999rem;
+  border: 0.0625rem solid rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
 }
 
 .previewEntryBox {

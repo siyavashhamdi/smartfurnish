@@ -1,7 +1,8 @@
 import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
-import { Alert, Chip, Paper, Typography } from "@mui/material";
+import { Alert, Chip, Paper, Stack, Typography } from "@mui/material";
 import { memo, type ReactElement } from "react";
 
+import { normalizeFabricHexColor } from "./fabric-selection.util";
 import { PRODUCT_AI_PREVIEW_RESULT_DISCLAIMER } from "./product-ai-preview.constants";
 import styles from "./styles/ProductAiPreviewResult.module.scss";
 
@@ -9,6 +10,9 @@ type ProductAiPreviewResultProps = {
   readonly imageUrl: string;
   readonly productTitle: string;
   readonly fabricLabel: string;
+  readonly fabricPatternName: string;
+  readonly fabricColorName: string;
+  readonly fabricColorHex?: string | null;
   readonly onImageClick?: () => void;
 };
 
@@ -16,9 +20,15 @@ function ProductAiPreviewResultInner({
   imageUrl,
   productTitle,
   fabricLabel,
+  fabricPatternName,
+  fabricColorName,
+  fabricColorHex,
   onImageClick,
 }: ProductAiPreviewResultProps): ReactElement {
   const viewerTitle = `${productTitle} — ${fabricLabel}`;
+  const normalizedPatternName = fabricPatternName.trim();
+  const normalizedColorName = fabricColorName.trim();
+  const swatchColor = normalizeFabricHexColor(fabricColorHex ?? null);
 
   return (
     <div className={styles.root}>
@@ -36,18 +46,54 @@ function ProductAiPreviewResultInner({
         </div>
 
         <div className={styles.imageStage}>
-          <button
-            type="button"
-            className={styles.imageButton}
-            aria-label="بزرگ‌نمایی پیش‌نمایش"
-            onClick={onImageClick}
-          >
-            <img
-              alt="پیش‌نمایش هوشمند مبل در فضای خانه"
-              className={styles.image}
-              src={imageUrl}
-            />
-          </button>
+          <div className={styles.imageFrame}>
+            <button
+              type="button"
+              className={styles.imageButton}
+              aria-label="بزرگ‌نمایی پیش‌نمایش"
+              onClick={onImageClick}
+            >
+              <img
+                alt="پیش‌نمایش هوشمند مبل در فضای خانه"
+                className={styles.image}
+                src={imageUrl}
+              />
+            </button>
+            <Stack
+              direction="row"
+              spacing={0.5}
+              className={styles.fabricBadges}
+              useFlexGap
+              flexWrap="wrap"
+            >
+              {normalizedPatternName ? (
+                <Chip
+                  className={styles.fabricBadge}
+                  label={normalizedPatternName}
+                  size="small"
+                  variant="filled"
+                />
+              ) : null}
+              {normalizedColorName ? (
+                <Chip
+                  className={styles.fabricBadge}
+                  label={
+                    <Stack direction="row" spacing={0.5} alignItems="center" component="span">
+                      <span>{normalizedColorName}</span>
+                      <span
+                        className={styles.fabricBadgeSwatch}
+                        style={{
+                          backgroundColor: swatchColor ?? "transparent",
+                        }}
+                      />
+                    </Stack>
+                  }
+                  size="small"
+                  variant="filled"
+                />
+              ) : null}
+            </Stack>
+          </div>
         </div>
 
         <Alert

@@ -258,6 +258,14 @@ export class UserProductInquiryUpdatePreviewGqlInput {
   @ValidateNested()
   @Type(() => UserProductInquiryUpdatePreviewModelGqlInput)
   model: UserProductInquiryUpdatePreviewModelGqlInput;
+
+  @Field(() => UserProductInquiryUpdateFabricSnapshotGqlInput, {
+    description: "Selected fabric snapshot for this preview",
+  })
+  @IsObject({ message: "Fabric snapshot is required for each preview entry" })
+  @ValidateNested()
+  @Type(() => UserProductInquiryUpdateFabricSnapshotGqlInput)
+  fabric: UserProductInquiryUpdateFabricSnapshotGqlInput;
 }
 
 @InputType()
@@ -327,17 +335,6 @@ export class UserProductInquiryUpdateGqlInput {
   @ValidateNested()
   @Type(() => UserProductInquiryUpdateProductSnapshotGqlInput)
   product: UserProductInquiryUpdateProductSnapshotGqlInput;
-
-  @Field(() => UserProductInquiryUpdateFabricSnapshotGqlInput, {
-    nullable: true,
-    description: "Selected fabric snapshot. Use null to clear it.",
-  })
-  @ValidateIf((input: UserProductInquiryUpdateGqlInput) => input.fabric !== null)
-  @IsOptional()
-  @IsObject({ message: "Fabric snapshot must be an object when provided" })
-  @ValidateNested()
-  @Type(() => UserProductInquiryUpdateFabricSnapshotGqlInput)
-  fabric?: UserProductInquiryUpdateFabricSnapshotGqlInput | null;
 
   @Field(() => UserProductInquiryStatus, { description: "Current inquiry status" })
   @IsEnum(UserProductInquiryStatus, { message: "Status must be valid" })

@@ -499,7 +499,10 @@ export function ProductAiPreviewDialog({
             {activeStepId === "result" ? (
               result ? (
                 <ProductAiPreviewResult
+                  fabricColorHex={result.fabric.colorHex}
+                  fabricColorName={result.fabric.colorName}
                   fabricLabel={result.fabric.label}
+                  fabricPatternName={result.fabric.patternName}
                   imageUrl={result.image}
                   productTitle={result.product.title}
                   onImageClick={handleOpenResultViewer}

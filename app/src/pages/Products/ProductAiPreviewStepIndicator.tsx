@@ -29,6 +29,18 @@ function isStepNavigable(
   return true;
 }
 
+function isStepReachable(
+  stepIndex: number,
+  maxReachedStepIndex: number,
+  stepId: ProductAiPreviewStepId,
+): boolean {
+  if (stepId === "contact") {
+    return true;
+  }
+
+  return stepIndex <= maxReachedStepIndex;
+}
+
 function joinStepClasses(...classes: Array<string | undefined>): string {
   let result = "";
 
@@ -86,7 +98,7 @@ function ProductAiPreviewStepIndicatorInner({
         const isClickable =
           Boolean(onStepSelect) &&
           isStepNavigable(step.id, stepIsCompleted) &&
-          index <= maxReachedStepIndex;
+          isStepReachable(index, maxReachedStepIndex, step.id);
         const connectorReached = index > 0 && index <= maxReachedStepIndex;
         const connectorActive = index > 0 && index === activeStepIndex;
         const stepLabels = stepLabelOverrides?.[step.id] ?? step;

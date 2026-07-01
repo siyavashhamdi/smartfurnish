@@ -1,11 +1,12 @@
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import ImageNotSupportedOutlinedIcon from "@mui/icons-material/ImageNotSupportedOutlined";
-import { Chip, IconButton } from "@mui/material";
+import { Chip, IconButton, Stack } from "@mui/material";
 import { useEffect, useMemo, useState, type ReactElement } from "react";
 
 import { ProductDetailCoverCarousel } from "../Products/ProductDetailCoverCarousel";
 import { ProductDetailImageViewerDialog } from "../Products/ProductDetailImageViewerDialog";
+import { normalizeFabricHexColor } from "../Products/fabric-selection.util";
 import type { UserProductInquiryDetailPreview } from "./inquiry-detail.api";
 import { useTranslation } from "../../hooks/useTranslation";
 import type { FileAccessUrl } from "../../utils/fileAccessUrl.util";
@@ -85,6 +86,9 @@ function InquiryPreviewImageCarousel({
     [slides],
   );
   const viewerTitle = activeSlide ? `${title} — ${activeSlide.label}` : title;
+  const fabricPatternName = preview.fabric.patternName.trim();
+  const fabricColorName = preview.fabric.colorName.trim();
+  const fabricColorHex = normalizeFabricHexColor(preview.fabric.colorHex ?? null);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -130,12 +134,54 @@ function InquiryPreviewImageCarousel({
             onActivate={() => setIsViewerOpen(true)}
             placeholderIcon={<ImageNotSupportedOutlinedIcon />}
           />
-          <Chip
-            className={styles.previewCarouselTag}
-            label={activeSlide.label}
-            size="small"
-            variant="filled"
-          />
+          <Stack
+            direction="row"
+            spacing={0.5}
+            className={styles.previewCarouselSlideTag}
+            useFlexGap
+            flexWrap="wrap"
+          >
+            <Chip
+              className={styles.previewCarouselTag}
+              label={activeSlide.label}
+              size="small"
+              variant="filled"
+            />
+          </Stack>
+          <Stack
+            direction="row"
+            spacing={0.5}
+            className={styles.previewCarouselFabricTags}
+            useFlexGap
+            flexWrap="wrap"
+          >
+            {fabricPatternName ? (
+              <Chip
+                className={styles.previewCarouselTag}
+                label={fabricPatternName}
+                size="small"
+                variant="filled"
+              />
+            ) : null}
+            {fabricColorName ? (
+              <Chip
+                className={styles.previewCarouselTag}
+                label={
+                  <Stack direction="row" spacing={0.5} alignItems="center" component="span">
+                    <span>{fabricColorName}</span>
+                    <span
+                      className={styles.previewCarouselColorSwatch}
+                      style={{
+                        backgroundColor: fabricColorHex ?? "transparent",
+                      }}
+                    />
+                  </Stack>
+                }
+                size="small"
+                variant="filled"
+              />
+            ) : null}
+          </Stack>
           {hasMultipleSlides ? (
             <div className={productStyles.galleryCarouselControls}>
               <IconButton

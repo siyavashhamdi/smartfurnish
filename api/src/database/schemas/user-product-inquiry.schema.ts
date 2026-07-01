@@ -57,6 +57,7 @@ export type UserProductInquiryPreview = {
   generatedAt: Date;
   durationSeconds?: number;
   model: UserProductInquiryPreviewModel;
+  fabricSnapshot: UserProductInquiryFabricSnapshot;
 };
 
 export type UserProductInquiryContact = {
@@ -155,6 +156,10 @@ export const UserProductInquiryPreviewSchema = new MongooseSchema(
       required: true,
       type: UserProductInquiryPreviewModelSchema,
     },
+    fabricSnapshot: {
+      required: true,
+      type: UserProductInquiryFabricSnapshotSchema,
+    },
   },
   { _id: false },
 );
@@ -186,9 +191,6 @@ export class UserProductInquiry extends BaseIdTimestampableBlameableSchema {
 
   @Prop({ required: true, type: UserProductInquiryProductSnapshotSchema })
   productSnapshot: UserProductInquiryProductSnapshot;
-
-  @Prop({ type: UserProductInquiryFabricSnapshotSchema })
-  fabricSnapshot?: UserProductInquiryFabricSnapshot;
 
   @Prop({
     enum: Object.values(UserProductInquiryStatus),
@@ -341,6 +343,41 @@ UserProductInquirySchema.pre(
           "model is required for each preview entry",
         );
       }
+
+      if (!previewEntry?.fabricSnapshot?.fabricKey?.trim()) {
+        this.invalidate(
+          `preview.${index}.fabricSnapshot.fabricKey`,
+          "fabricKey is required for each preview entry",
+        );
+      }
+
+      if (!previewEntry?.fabricSnapshot?.colorKey?.trim()) {
+        this.invalidate(
+          `preview.${index}.fabricSnapshot.colorKey`,
+          "colorKey is required for each preview entry",
+        );
+      }
+
+      if (!previewEntry?.fabricSnapshot?.patternName?.trim()) {
+        this.invalidate(
+          `preview.${index}.fabricSnapshot.patternName`,
+          "patternName is required for each preview entry",
+        );
+      }
+
+      if (!previewEntry?.fabricSnapshot?.colorName?.trim()) {
+        this.invalidate(
+          `preview.${index}.fabricSnapshot.colorName`,
+          "colorName is required for each preview entry",
+        );
+      }
+
+      if (!previewEntry?.fabricSnapshot?.label?.trim()) {
+        this.invalidate(
+          `preview.${index}.fabricSnapshot.label`,
+          "label is required for each preview entry",
+        );
+      }
     });
 
     if (
@@ -416,6 +453,10 @@ UserProductInquirySchema.index(
   { sparse: true },
 );
 UserProductInquirySchema.index({ "preview.resultFileId": 1 }, { sparse: true });
+UserProductInquirySchema.index(
+  { "preview.fabricSnapshot.label": 1 },
+  { sparse: true },
+);
 UserProductInquirySchema.index({
   "productSnapshot.title": "text",
   "userSnapshot.fullName": "text",

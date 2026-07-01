@@ -26,6 +26,7 @@ export const USER_PRODUCT_INQUIRY_LIST_QUERY = gql`
           requestedAt
         }
         previewGeneratedAt
+        previewCount
         createdAt
         updatedAt
       }

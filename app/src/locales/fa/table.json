@@ -147,6 +147,8 @@
                     "userPhone": "شماره تماس",
                     "productTitle": "محصول",
                     "fabricLabel": "پارچه/رنگ",
+                    "fabricMultiple": "متنوع",
+                    "fabricNotSelected": "انتخاب نشده",
                     "status": "وضعیت",
                     "contactFullName": "نام تماس‌گیرنده",
                     "contactPhone": "شماره تماس",
