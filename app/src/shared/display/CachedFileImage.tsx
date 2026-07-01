@@ -1,7 +1,11 @@
 import type { ImgHTMLAttributes, ReactElement } from "react";
 
 import { useCachedFileAccessUrl, useCachedFileUrl } from "../../hooks/useCachedFileAccessUrl";
-import type { FileAccessUrl } from "../../utils/fileAccessUrl.util";
+import {
+  pickFileAccessUrlDescriptor,
+  type FileAccessUrl,
+  type FileAccessUrlVariant,
+} from "../../utils/fileAccessUrl.util";
 
 type CachedFileImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   readonly accessUrl?: FileAccessUrl | null;
@@ -9,6 +13,7 @@ type CachedFileImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   readonly fileId?: string | null;
   /** When false, skips sqlite fetch/cache resolution for this image. */
   readonly cacheEnabled?: boolean;
+  readonly variant?: FileAccessUrlVariant;
 };
 
 export function CachedFileImage({
@@ -17,17 +22,19 @@ export function CachedFileImage({
   fileId,
   alt,
   cacheEnabled = true,
+  variant = "thumbnail",
   ...imageProps
 }: CachedFileImageProps): ReactElement | null {
-  const fromAccess = useCachedFileAccessUrl(accessUrl, {
-    enabled: cacheEnabled && accessUrl != null,
+  const displayAccessUrl = pickFileAccessUrlDescriptor(accessUrl, variant);
+  const fromAccess = useCachedFileAccessUrl(displayAccessUrl, {
+    enabled: cacheEnabled && displayAccessUrl != null,
   });
   const fromUrl = useCachedFileUrl({
     fileId,
     networkUrl,
-    enabled: cacheEnabled && accessUrl == null,
+    enabled: cacheEnabled && displayAccessUrl == null,
   });
-  const resolved = accessUrl != null ? fromAccess : fromUrl;
+  const resolved = displayAccessUrl != null ? fromAccess : fromUrl;
 
   if (!cacheEnabled || !resolved.url) {
     return null;

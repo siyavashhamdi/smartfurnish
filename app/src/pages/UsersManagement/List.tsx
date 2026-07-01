@@ -356,7 +356,9 @@ function UserAvatarCell({
     <Box sx={{ py: 0.5, display: "flex", justifyContent: "center" }}>
       <CachedFileAvatar
         accessUrl={avatarAccessUrl}
-        alt=""
+        alt={displayName}
+        fullscreenOnClick
+        fullscreenTitle={displayName}
         sx={{ width: 28, height: 28, bgcolor: "action.hover" }}
       >
         <AvatarInitial initial={initial} />
@@ -1502,7 +1504,7 @@ const UsersManagementList = (): ReactElement => {
               onChange={setAvatarFile}
               existingFile={buildExistingFilePreview(
                 editForm.avatarAccessUrl,
-                editForm.username.trim() || "آواتار"
+                editForm.username.trim() || "آواتار",
               )}
               onExistingFileClear={() => {
                 setAvatarFile(null);

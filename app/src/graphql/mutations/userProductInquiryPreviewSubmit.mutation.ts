@@ -1,5 +1,7 @@
 import { gql } from "@apollo/client";
 
+import { FILE_ACCESS_URL_FIELDS } from "../fragments/fileAccessUrl.fragment";
+
 export const USER_PRODUCT_INQUIRY_PREVIEW_SUBMIT_MUTATION = gql`
   mutation UserProductInquiryPreviewSubmit(
     $input: UserProductInquiryPreviewSubmitGqlInput!
@@ -14,6 +16,9 @@ export const USER_PRODUCT_INQUIRY_PREVIEW_SUBMIT_MUTATION = gql`
       description
       environmentFileId
       resultFileId
+      resultFileAccessUrl {
+        ${FILE_ACCESS_URL_FIELDS}
+      }
       sourceProductImageFileId
       generatedAt
       aspectRatio

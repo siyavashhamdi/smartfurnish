@@ -551,6 +551,8 @@ export type FileAccessUrlGqlResponse = {
   name?: Maybe<Scalars["String"]["output"]>;
   /** Stored file size in bytes */
   sizeBytes?: Maybe<Scalars["Float"]["output"]>;
+  /** Signed access descriptor for the thumbnail variant of this file, when available */
+  thumbnailAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
   /** Signed access token for the file content endpoint */
   token: Scalars["String"]["output"];
 };

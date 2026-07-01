@@ -245,9 +245,9 @@ export function mapUserProductInquiryListRowToRecord(
 
   return {
     id: String(row.id),
-    userFullName: display(row.user.fullName),
+    userFullName: display(contactFullName),
     username: display(row.user.username),
-    userPhone: display(row.user.phoneNumber),
+    userPhone: display(row.contact?.phone),
     productTitle: display(row.product.title),
     fabricPatternName: display(row.fabric?.patternName),
     fabricColorName: display(row.fabric?.colorName),

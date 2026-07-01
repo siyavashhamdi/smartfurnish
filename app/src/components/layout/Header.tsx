@@ -1,5 +1,4 @@
 import {
-  Avatar,
   Badge,
   Box,
   Button,
@@ -26,7 +25,7 @@ import {
 } from "../../utils/storedUser.util";
 import { useTranslation } from "../../hooks/useTranslation";
 import ThemeToggle from "../ThemeToggle";
-import { AvatarInitial } from "../../shared/display/AvatarInitial";
+import { UserProfileAvatar } from "../../shared/display/UserProfileAvatar";
 import styles from "./styles/header.module.scss";
 import AppTooltip from "../../shared/AppTooltip";
 
@@ -56,7 +55,7 @@ function HeaderPopover(props: {
 
 const Header = (): ReactElement => {
   const { t } = useTranslation();
-  const { user, avatarUrl, loading: userLoading } = useMe();
+  const { user, avatarAccessUrl, loading: userLoading } = useMe();
   const { logout, user: authUser } = useAuth();
   const [notificationAnchor, setNotificationAnchor] = useState<HTMLButtonElement | null>(null);
   const [settingsAnchor, setSettingsAnchor] = useState<HTMLButtonElement | null>(null);
@@ -142,9 +141,12 @@ const Header = (): ReactElement => {
           className={styles.userChip}
           onClick={(event) => setUserAnchor(event.currentTarget)}
         >
-          <Avatar className={styles.avatar} src={avatarUrl ?? undefined} alt={displayName}>
-            <AvatarInitial initial={avatarLetter} />
-          </Avatar>
+          <UserProfileAvatar
+            className={styles.avatar}
+            accessUrl={avatarAccessUrl}
+            displayName={displayName}
+            initial={avatarLetter}
+          />
           <strong>{displayName}</strong>
         </button>
 

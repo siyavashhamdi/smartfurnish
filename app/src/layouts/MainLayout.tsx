@@ -9,7 +9,7 @@ import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneRounded";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
 import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
-import { Avatar, Badge, Box, Button, Container, Divider, IconButton, Popover } from "@mui/material";
+import { Badge, Box, Button, Container, Divider, IconButton, Popover } from "@mui/material";
 import { useQuery } from "@apollo/client/react";
 import { Capacitor } from "@capacitor/core";
 import {
@@ -23,7 +23,7 @@ import {
 } from "react";
 import { Link as RouterLink, NavLink, useLocation } from "react-router-dom";
 import Footer from "../components/layout/Footer";
-import { AvatarInitial } from "../shared/display/AvatarInitial";
+import { UserProfileAvatar } from "../shared/display/UserProfileAvatar";
 import { useAuth } from "../contexts/AuthContext";
 import { UserRole } from "../lib/graphql/generated";
 import { useThemeMode } from "../contexts/ThemeContext";
@@ -225,7 +225,7 @@ export function MainLayout({
   const { t } = useTranslation();
   const { mode, toggleTheme } = useThemeMode();
   const { logout, user: authUser, isLoading: authLoading, isRegisteredUser } = useAuth();
-  const { user, avatarUrl, loading: userLoading } = useMe();
+  const { user, avatarUrl, avatarAccessUrl, loading: userLoading } = useMe();
 
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState<HTMLButtonElement | null>(null);
@@ -918,13 +918,12 @@ export function MainLayout({
                   aria-describedby={userPopoverId}
                   onClick={(event) => setUserAnchorEl(event.currentTarget)}
                 >
-                  <Avatar
+                  <UserProfileAvatar
                     className="main-layout__avatar"
-                    src={avatarUrl ?? undefined}
-                    alt={userDisplayName}
-                  >
-                    <AvatarInitial initial={userInitial} />
-                  </Avatar>
+                    accessUrl={avatarAccessUrl}
+                    displayName={userDisplayName}
+                    initial={userInitial}
+                  />
                   <div className="main-layout__user-meta">
                     <strong className="main-layout__user-name">{userDisplayName}</strong>
                   </div>
@@ -938,13 +937,12 @@ export function MainLayout({
                 >
                   <div className="main-layout__user-panel">
                     <div className="main-layout__user-header">
-                      <Avatar
+                      <UserProfileAvatar
                         className="main-layout__avatar main-layout__avatar--lg"
-                        src={avatarUrl ?? undefined}
-                        alt={userDisplayName}
-                      >
-                        <AvatarInitial initial={userInitial} />
-                      </Avatar>
+                        accessUrl={avatarAccessUrl}
+                        displayName={userDisplayName}
+                        initial={userInitial}
+                      />
                       <div>
                         <h3>{userDisplayName}</h3>
                         {userRoleTitle ? <p>{userRoleTitle}</p> : null}

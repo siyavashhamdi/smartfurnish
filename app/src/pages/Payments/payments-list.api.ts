@@ -1,5 +1,6 @@
 import { parseJalaliParamDate } from "../../utilities/jalali-date-param.util";
 import {
+  buildExistingFilePreview,
   getFileIdFromAccessUrl,
   isExecutableFileType,
   resolveFileAccessUrl,
@@ -344,6 +345,7 @@ export type ProductPaymentRecord = {
   readonly uploadedReceiptFileSizeBytes: number | null;
   readonly uploadedReceiptFilePath: string;
   readonly uploadedReceiptFileAccessUrl: string;
+  readonly uploadedReceiptFileAccessUrlDescriptor: FileAccessUrl | null;
   readonly receiptUploadedBy: string;
   readonly receiptUploaderName: string;
   readonly receiptUploaderUsername: string;
@@ -395,11 +397,6 @@ export function buildPaymentReceiptExistingFile(
     return null;
   }
 
-  const accessUrl = record.uploadedReceiptFileAccessUrl.trim();
-  if (!accessUrl) {
-    return null;
-  }
-
   const name =
     record.uploadedReceiptFileTitle !== "-"
       ? record.uploadedReceiptFileTitle
@@ -415,8 +412,21 @@ export function buildPaymentReceiptExistingFile(
     return null;
   }
 
+  if (record.uploadedReceiptFileAccessUrlDescriptor) {
+    return buildExistingFilePreview(record.uploadedReceiptFileAccessUrlDescriptor, name, {
+      mimeType,
+      sizeBytes: record.uploadedReceiptFileSizeBytes ?? 0,
+    });
+  }
+
+  const accessUrl = record.uploadedReceiptFileAccessUrl.trim();
+  if (!accessUrl) {
+    return null;
+  }
+
   return {
     accessUrl,
+    fullAccessUrl: accessUrl,
     fileId: record.uploadedReceiptFileId !== "-" ? record.uploadedReceiptFileId : undefined,
     name,
     mimeType,
@@ -503,6 +513,7 @@ export function mapProductPaymentListRowToRecord(
     uploadedReceiptFileSizeBytes: null,
     uploadedReceiptFilePath: EMPTY_DISPLAY,
     uploadedReceiptFileAccessUrl: "",
+    uploadedReceiptFileAccessUrlDescriptor: null,
     receiptUploadedBy: display(row.receiptUploadedBy),
     receiptUploaderName: EMPTY_DISPLAY,
     receiptUploaderUsername: EMPTY_DISPLAY,
@@ -565,7 +576,8 @@ export function mapProductPaymentDetailRowToRecord(
     uploadedReceiptFileMimeType: display(receiptFile?.mimeType ?? receiptAccessUrl?.mimeType),
     uploadedReceiptFileSizeBytes: receiptFile?.sizeBytes ?? receiptAccessUrl?.sizeBytes ?? null,
     uploadedReceiptFilePath: display(receiptFile?.path),
-    uploadedReceiptFileAccessUrl: resolveFileAccessUrl(receiptAccessUrl) ?? "",
+    uploadedReceiptFileAccessUrl: resolveFileAccessUrl(receiptAccessUrl, undefined, "full") ?? "",
+    uploadedReceiptFileAccessUrlDescriptor: receiptAccessUrl ?? null,
     receiptUploadedBy: display(row.receiptUploadedBy),
     receiptUploaderName: display(row.receiptUploader?.fullName ?? row.receiptUploader?.username),
     receiptUploaderUsername: display(row.receiptUploader?.username),

@@ -39,4 +39,11 @@ export class FileAccessUrlGqlResponse {
     description: "Stored file size in bytes",
   })
   sizeBytes?: number;
+
+  @Field(() => FileAccessUrlGqlResponse, {
+    nullable: true,
+    description:
+      "Signed access descriptor for the thumbnail variant of this file, when available",
+  })
+  thumbnailAccessUrl?: FileAccessUrlGqlResponse;
 }

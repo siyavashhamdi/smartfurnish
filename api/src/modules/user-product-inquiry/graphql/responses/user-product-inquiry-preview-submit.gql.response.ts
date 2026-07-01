@@ -2,6 +2,7 @@ import { Field, Float, GraphQLISODateTime, ID, ObjectType } from "@nestjs/graphq
 import { Types } from "mongoose";
 
 import { UserProductInquiryStatus } from "../../../../enums";
+import { FileAccessUrlGqlResponse } from "../../../file/graphql/responses";
 
 @ObjectType()
 export class UserProductInquiryPreviewSubmitProductGqlResponse {
@@ -68,6 +69,12 @@ export class UserProductInquiryPreviewSubmitGqlResponse {
 
   @Field(() => ID, { description: "Stored AI preview result image file ID" })
   resultFileId: Types.ObjectId;
+
+  @Field(() => FileAccessUrlGqlResponse, {
+    nullable: true,
+    description: "Access descriptor for the generated preview result image",
+  })
+  resultFileAccessUrl?: FileAccessUrlGqlResponse;
 
   @Field(() => ID, {
     description: "Source AI product image file ID used for generation",

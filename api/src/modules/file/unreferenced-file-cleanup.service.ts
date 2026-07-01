@@ -15,9 +15,15 @@ import {
   UserProduct,
   UserProductDocument,
   UserDocument,
+  UserProductInquiry,
+  UserProductInquiryDocument,
 } from "../../database/schemas";
 import { addNotDeletedCondition } from "../../database/utils/not-deleted-query.util";
 import { FileService } from "./file.service";
+import {
+  collectDistinctStoredFileIds,
+  STORED_FILE_REFERENCE_DEFINITIONS,
+} from "./stored-file-reference.registry";
 
 export type UnreferencedFileCleanupRunResult = {
   referencedFileCount: number;
@@ -53,98 +59,46 @@ export class UnreferencedFileCleanupService {
     private readonly ticketModel: Model<TicketDocument>,
     @InjectModel(UserProduct.name)
     private readonly userProductModel: Model<UserProductDocument>,
+    @InjectModel(UserProductInquiry.name)
+    private readonly userProductInquiryModel: Model<UserProductInquiryDocument>,
     @InjectModel(StoredFile.name)
     private readonly storedFileModel: Model<StoredFileDocument>,
     private readonly fileService: FileService,
   ) {
-    this.fileReferenceSources = [
-      {
-        label: "products.coverImageFileIds",
-        collect: () =>
-          this.productModel.collection.distinct(
-            "coverImageFileIds",
-            addNotDeletedCondition({
-              "coverImageFileIds.0": { $exists: true },
-            }),
-          ),
-      },
-      {
-        label: "products.setPieces.imageFileIds",
-        collect: () =>
-          this.productModel.collection.distinct(
-            "setPieces.imageFileIds",
-            addNotDeletedCondition({
-              "setPieces.imageFileIds.0": { $exists: true },
-            }),
-          ),
-      },
-      {
-        label: "products.fabrics.colors.aiProductImageFileId",
-        collect: () =>
-          this.productModel.collection.distinct(
-            "fabrics.colors.aiProductImageFileId",
-            addNotDeletedCondition({
-              "fabrics.colors.aiProductImageFileId": {
-                $exists: true,
-                $ne: null,
-              },
-            }),
-          ),
-      },
-      {
-        label: "users.profile.avatarFileId",
-        collect: () =>
-          this.userModel.collection.distinct(
-            "profile.avatarFileId",
-            addNotDeletedCondition({
-              "profile.avatarFileId": { $exists: true, $ne: null },
-            }),
-          ),
-      },
-      {
-        label: "tickets.messages.attachmentFileIds",
-        collect: () =>
-          this.ticketModel.collection.distinct(
-            "messages.attachmentFileIds",
-            addNotDeletedCondition({
-              "messages.attachmentFileIds.0": { $exists: true },
-            }),
-          ),
-      },
-      {
-        label: "user_products.purchase.uploadedReceiptFileId",
-        collect: () =>
-          this.userProductModel.collection.distinct(
-            "purchase.uploadedReceiptFileId",
-            addNotDeletedCondition({
-              "purchase.uploadedReceiptFileId": { $exists: true, $ne: null },
-            }),
-          ),
-      },
-      {
-        label: "product_reviews.userSnapshot.avatarFileId",
-        collect: () =>
-          this.productReviewModel.collection.distinct(
-            "userSnapshot.avatarFileId",
-            addNotDeletedCondition({
-              "userSnapshot.avatarFileId": { $exists: true, $ne: null },
-            }),
-          ),
-      },
-      {
-        label: "product_reviews.messages.senderSnapshot.avatarFileId",
-        collect: () =>
-          this.productReviewModel.collection.distinct(
-            "messages.senderSnapshot.avatarFileId",
-            addNotDeletedCondition({
-              "messages.senderSnapshot.avatarFileId": {
-                $exists: true,
-                $ne: null,
-              },
-            }),
-          ),
-      },
-    ];
+    this.fileReferenceSources = STORED_FILE_REFERENCE_DEFINITIONS.map(
+      (definition) => ({
+        label: definition.label,
+        collect: () => {
+          const collection = this.resolveCollectionForReference(
+            definition.collectionName,
+          );
+          return collectDistinctStoredFileIds(collection, definition);
+        },
+      }),
+    );
+  }
+
+  private resolveCollectionForReference(collectionName: string) {
+    switch (collectionName) {
+      case "products":
+        return this.productModel.collection;
+      case "product_reviews":
+        return this.productReviewModel.collection;
+      case "users":
+        return this.userModel.collection;
+      case "tickets":
+        return this.ticketModel.collection;
+      case "user_products":
+        return this.userProductModel.collection;
+      case "user_product_inquiries":
+        return this.userProductInquiryModel.collection;
+      case "files":
+        return this.storedFileModel.collection;
+      default:
+        throw new Error(
+          `Unsupported stored file reference collection: ${collectionName}`,
+        );
+    }
   }
 
   async removeUnreferencedFiles(): Promise<UnreferencedFileCleanupRunResult> {
@@ -233,6 +187,8 @@ export class UnreferencedFileCleanupService {
         clearedUserReferences,
         clearedTicketReferences,
         clearedUserProductReferences,
+        clearedInquiryPreviewReferences,
+        clearedStoredFileThumbnailReferences,
       ] = await Promise.all([
         this.clearUnavailableProductFileReferences(
           unavailableObjectIds,
@@ -254,6 +210,14 @@ export class UnreferencedFileCleanupService {
           unavailableObjectIds,
           updatedAt,
         ),
+        this.clearUnavailableUserProductInquiryPreviewReferences(
+          unavailableObjectIds,
+          updatedAt,
+        ),
+        this.clearUnavailableStoredFileThumbnailReferences(
+          unavailableObjectIds,
+          updatedAt,
+        ),
       ]);
 
       clearedCount +=
@@ -261,7 +225,9 @@ export class UnreferencedFileCleanupService {
         clearedProductReviewReferences +
         clearedUserReferences +
         clearedTicketReferences +
-        clearedUserProductReferences;
+        clearedUserProductReferences +
+        clearedInquiryPreviewReferences +
+        clearedStoredFileThumbnailReferences;
     }
 
     const referencedFileIdsAfterClear = await this.collectReferencedFileIds();
@@ -296,7 +262,11 @@ export class UnreferencedFileCleanupService {
         $or: [
           { coverImageFileIds: { $in: unavailableObjectIds } },
           { "setPieces.imageFileIds": { $in: unavailableObjectIds } },
-          { "fabrics.colors.aiProductImageFileId": { $in: unavailableObjectIds } },
+          {
+            "fabrics.colors.aiProductImageFileId": {
+              $in: unavailableObjectIds,
+            },
+          },
         ],
       }),
       [
@@ -534,6 +504,96 @@ export class UnreferencedFileCleanupService {
           "purchase.uploadedReceiptFileId": null,
           "audit.updatedAt": updatedAt,
         },
+      },
+    );
+
+    return result.modifiedCount ?? 0;
+  }
+
+  private async clearUnavailableUserProductInquiryPreviewReferences(
+    unavailableObjectIds: Types.ObjectId[],
+    updatedAt: Date,
+  ): Promise<number> {
+    const result = await this.userProductInquiryModel.collection.updateMany(
+      addNotDeletedCondition({
+        $or: [
+          { "preview.environmentFileId": { $in: unavailableObjectIds } },
+          { "preview.resultFileId": { $in: unavailableObjectIds } },
+          {
+            "preview.sourceProductImageFileId": { $in: unavailableObjectIds },
+          },
+        ],
+      }),
+      [
+        {
+          $set: {
+            preview: {
+              $filter: {
+                input: {
+                  $map: {
+                    input: { $ifNull: ["$preview", []] },
+                    as: "entry",
+                    in: {
+                      $mergeObjects: [
+                        "$$entry",
+                        {
+                          sourceProductImageFileId: {
+                            $cond: [
+                              {
+                                $in: [
+                                  "$$entry.sourceProductImageFileId",
+                                  unavailableObjectIds,
+                                ],
+                              },
+                              null,
+                              "$$entry.sourceProductImageFileId",
+                            ],
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+                as: "entry",
+                cond: {
+                  $and: [
+                    {
+                      $not: {
+                        $in: [
+                          "$$entry.environmentFileId",
+                          unavailableObjectIds,
+                        ],
+                      },
+                    },
+                    {
+                      $not: {
+                        $in: ["$$entry.resultFileId", unavailableObjectIds],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            "audit.updatedAt": updatedAt,
+          },
+        },
+      ],
+    );
+
+    return result.modifiedCount ?? 0;
+  }
+
+  private async clearUnavailableStoredFileThumbnailReferences(
+    unavailableObjectIds: Types.ObjectId[],
+    updatedAt: Date,
+  ): Promise<number> {
+    const result = await this.storedFileModel.collection.updateMany(
+      addNotDeletedCondition({
+        thumbnailFileId: { $in: unavailableObjectIds },
+      }),
+      {
+        $unset: { thumbnailFileId: "" },
+        $set: { "audit.updatedAt": updatedAt },
       },
     );
 

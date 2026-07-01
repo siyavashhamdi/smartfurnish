@@ -119,6 +119,7 @@ function EntityOptionThumbnail({
         fileId={imageAccessUrl?.fileId}
         alt=""
         variant={avatarVariant}
+        fileVariant="thumbnail"
         className="app-avatar--plain"
         sx={avatarSx}
       />
@@ -283,6 +284,7 @@ function EntityAutocompleteField<TOption extends EntityAutocompleteOption>(
                       fileId={option.imageAccessUrl?.fileId}
                       alt=""
                       variant="rounded"
+                      fileVariant="thumbnail"
                     />
                   ) : (
                     <Avatar variant="rounded" sx={{ color: "text.secondary" }}>

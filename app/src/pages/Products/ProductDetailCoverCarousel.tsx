@@ -10,8 +10,12 @@ import {
 } from "react";
 
 import { CachedFileImage } from "../../shared/display/CachedFileImage";
-import { resolveFileAccessUrl } from "../../utils/fileAccessUrl.util";
-import type { FileAccessUrl } from "../../utils/fileAccessUrl.util";
+import { ProgressiveCachedFileImage } from "../../shared/display/ProgressiveCachedFileImage";
+import {
+  resolveFileAccessUrl,
+  type FileAccessUrl,
+  type FileAccessUrlVariant,
+} from "../../utils/fileAccessUrl.util";
 import styles from "./styles/ProductDetail.module.scss";
 
 const SWIPE_COMMIT_PX = 52;
@@ -86,6 +90,9 @@ function ProductDetailCoverSlide({
   slideClassName,
   placeholderClassName,
   placeholderIcon,
+  imageVariant,
+  useProgressiveFullLoad = false,
+  loadFullImage = false,
 }: {
   readonly accessUrl: FileAccessUrl | null;
   readonly title: string;
@@ -95,6 +102,9 @@ function ProductDetailCoverSlide({
   readonly slideClassName: string;
   readonly placeholderClassName: string;
   readonly placeholderIcon?: ReactNode;
+  readonly imageVariant: FileAccessUrlVariant;
+  readonly useProgressiveFullLoad?: boolean;
+  readonly loadFullImage?: boolean;
 }): ReactElement {
   if (!accessUrl) {
     return (
@@ -106,18 +116,30 @@ function ProductDetailCoverSlide({
     );
   }
 
-  const networkUrl = resolveFileAccessUrl(accessUrl);
+  const slideAlt = `${title} — تصویر ${(slideIndex + 1).toLocaleString("fa-IR")}`;
 
   return (
     <div className={slideClassName} style={getSlideStyle(slideWidthPx)}>
-      <CachedFileImage
-        accessUrl={accessUrl}
-        networkUrl={networkUrl}
-        fileId={accessUrl.fileId}
-        alt={`${title} — تصویر ${(slideIndex + 1).toLocaleString("fa-IR")}`}
-        className={imageClassName}
-        draggable={false}
-      />
+      {useProgressiveFullLoad ? (
+        <ProgressiveCachedFileImage
+          accessUrl={accessUrl}
+          loadFull={loadFullImage}
+          alt={slideAlt}
+          className={imageClassName}
+          frameClassName={styles.progressiveImageFrame}
+          draggable={false}
+        />
+      ) : (
+        <CachedFileImage
+          accessUrl={accessUrl}
+          networkUrl={resolveFileAccessUrl(accessUrl, undefined, imageVariant)}
+          fileId={accessUrl.fileId}
+          variant={imageVariant}
+          alt={slideAlt}
+          className={imageClassName}
+          draggable={false}
+        />
+      )}
     </div>
   );
 }
@@ -135,6 +157,7 @@ export function ProductDetailCoverCarousel({
   const [isDragging, setIsDragging] = useState(false);
   const [slideWidthPx, setSlideWidthPx] = useState(0);
   const [enableTrackTransition, setEnableTrackTransition] = useState(false);
+  const [loadedFullIndices, setLoadedFullIndices] = useState<Set<number>>(() => new Set());
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<DragState>(INITIAL_DRAG_STATE);
 
@@ -142,6 +165,7 @@ export function ProductDetailCoverCarousel({
   const safeIndex = Math.min(activeIndex, Math.max(imageCount - 1, 0));
   const hasMultipleImages = imageCount > 1;
   const isViewer = variant === "viewer";
+  const imageVariant: FileAccessUrlVariant = "thumbnail";
   const carouselClassName = isViewer ? styles.imageViewerCarousel : styles.galleryCarousel;
   const trackClassName = isViewer ? styles.imageViewerCarouselTrack : styles.galleryCarouselTrack;
   const trackDraggingClassName = isViewer
@@ -197,6 +221,31 @@ export function ProductDetailCoverCarousel({
     setEnableTrackTransition(false);
     dragStateRef.current = INITIAL_DRAG_STATE;
   }, [coverImageAccessUrls]);
+
+  useEffect(() => {
+    if (!isViewer) {
+      setLoadedFullIndices(new Set());
+      return;
+    }
+
+    setLoadedFullIndices(new Set([safeIndex]));
+  }, [coverImageAccessUrls, isViewer]);
+
+  useEffect(() => {
+    if (!isViewer) {
+      return;
+    }
+
+    setLoadedFullIndices((current) => {
+      if (current.has(safeIndex)) {
+        return current;
+      }
+
+      const next = new Set(current);
+      next.add(safeIndex);
+      return next;
+    });
+  }, [isViewer, safeIndex]);
 
   const goToIndex = useCallback(
     (nextIndex: number): void => {
@@ -353,13 +402,25 @@ export function ProductDetailCoverCarousel({
         tabIndex={onActivate ? 0 : undefined}
       >
         {accessUrl ? (
-          <CachedFileImage
-            accessUrl={accessUrl}
-            networkUrl={resolveFileAccessUrl(accessUrl)}
-            alt={title}
-            className={imageClassName}
-            draggable={false}
-          />
+          isViewer ? (
+            <ProgressiveCachedFileImage
+              accessUrl={accessUrl}
+              loadFull={loadedFullIndices.has(0)}
+              alt={title}
+              className={imageClassName}
+              frameClassName={styles.progressiveImageFrame}
+              draggable={false}
+            />
+          ) : (
+            <CachedFileImage
+              accessUrl={accessUrl}
+              networkUrl={resolveFileAccessUrl(accessUrl, undefined, imageVariant)}
+              variant={imageVariant}
+              alt={title}
+              className={imageClassName}
+              draggable={false}
+            />
+          )
         ) : (
           <div className={placeholderClassName} aria-hidden="true">
             {placeholderIcon}
@@ -398,6 +459,9 @@ export function ProductDetailCoverCarousel({
               slideClassName={slideClassName}
               placeholderClassName={placeholderClassName}
               placeholderIcon={placeholderIcon}
+              imageVariant={imageVariant}
+              useProgressiveFullLoad={isViewer}
+              loadFullImage={loadedFullIndices.has(slideIndex)}
             />
           );
         })}

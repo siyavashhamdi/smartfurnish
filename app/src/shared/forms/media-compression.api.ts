@@ -114,6 +114,17 @@ export function mapCompressMediaAccessUrl(
     name: accessUrl.name ?? result.file.name,
     mimeType: accessUrl.mimeType ?? result.file.mimeType,
     sizeBytes: accessUrl.sizeBytes ?? result.file.sizeBytes,
+    thumbnailAccessUrl: accessUrl.thumbnailAccessUrl
+      ? {
+          baseUrl: accessUrl.thumbnailAccessUrl.baseUrl,
+          apiPath: accessUrl.thumbnailAccessUrl.apiPath,
+          fileId: String(accessUrl.thumbnailAccessUrl.fileId),
+          token: accessUrl.thumbnailAccessUrl.token,
+          name: accessUrl.thumbnailAccessUrl.name,
+          mimeType: accessUrl.thumbnailAccessUrl.mimeType,
+          sizeBytes: accessUrl.thumbnailAccessUrl.sizeBytes,
+        }
+      : undefined,
   };
 }
 

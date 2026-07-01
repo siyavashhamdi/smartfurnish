@@ -1,4 +1,4 @@
-import { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { BaseIdTimestampableBlameableSchema } from "./base.schema";
 import { timestampablePlugin } from "../plugins/timestampable.plugin";
@@ -32,6 +32,9 @@ export class StoredFile extends BaseIdTimestampableBlameableSchema {
 
   @Prop({ type: Boolean })
   isSystemOrphanCleanup?: boolean;
+
+  @Prop({ ref: "StoredFile", type: Types.ObjectId })
+  thumbnailFileId?: Types.ObjectId;
 }
 
 export const StoredFileSchema = SchemaFactory.createForClass(StoredFile);
@@ -44,3 +47,4 @@ StoredFileSchema.index({ bucket: 1, objectKey: 1 }, { unique: true });
 StoredFileSchema.index({ path: 1 });
 StoredFileSchema.index({ mimeType: 1 });
 StoredFileSchema.index({ "audit.createdAt": -1 });
+StoredFileSchema.index({ thumbnailFileId: 1 }, { sparse: true });

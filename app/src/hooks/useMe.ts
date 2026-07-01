@@ -4,7 +4,7 @@ import { LOCAL_STORAGE_KEYS } from "../constants";
 import { USER_ME_QUERY } from "../graphql/queries/userMe.query";
 import { useCachedFileAccessUrl } from "./useCachedFileAccessUrl";
 import { resolveQueryFetchPolicy } from "../lib/offline-fetch-policy.util";
-import { type FileAccessUrl } from "../utils/fileAccessUrl.util";
+import { type FileAccessUrl, pickFileAccessUrlDescriptor } from "../utils/fileAccessUrl.util";
 import {
   persistNotificationsEnabledPreference,
   USER_PREFERENCES_CHANGED_EVENT,
@@ -41,7 +41,10 @@ export interface UserMeResponse {
 
 export type UseMeResult = Pick<QueryResult<UserMeResponse>, "loading" | "error" | "refetch"> & {
   readonly user: UserMeGqlResponse | null;
+  /** Cached blob URL for the avatar thumbnail (display use). */
   readonly avatarUrl: string | null;
+  /** Original avatar access descriptor (includes full + thumbnail). */
+  readonly avatarAccessUrl: FileAccessUrl | null;
 };
 
 /**
@@ -54,8 +57,13 @@ export const useMe = (): UseMeResult => {
     fetchPolicy: resolveQueryFetchPolicy("cache-and-network"),
     skip: !hasAccessToken,
   });
-  const { url: avatarUrl } = useCachedFileAccessUrl(data?.me?.profile?.avatarAccessUrl, {
-    enabled: hasAccessToken,
+  const avatarAccessUrl = data?.me?.profile?.avatarAccessUrl ?? null;
+  const avatarThumbnailAccessUrl = pickFileAccessUrlDescriptor(
+    avatarAccessUrl,
+    "thumbnail",
+  );
+  const { url: avatarUrl } = useCachedFileAccessUrl(avatarThumbnailAccessUrl, {
+    enabled: hasAccessToken && avatarThumbnailAccessUrl != null,
   });
 
   useEffect(() => {
@@ -71,6 +79,7 @@ export const useMe = (): UseMeResult => {
   return {
     user: data?.me ?? null,
     avatarUrl,
+    avatarAccessUrl,
     loading: hasAccessToken ? loading : false,
     error,
     refetch,

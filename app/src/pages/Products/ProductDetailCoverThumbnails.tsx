@@ -39,8 +39,8 @@ function ProductDetailCoverThumbnailButton({
   readonly thumbImageClassName?: string;
   readonly thumbPlaceholderClassName?: string;
 }): ReactElement {
-  const networkUrl = resolveFileAccessUrl(accessUrl);
-  const { url } = useCachedFileAccessUrl(accessUrl);
+  const networkUrl = resolveFileAccessUrl(accessUrl, undefined, "thumbnail");
+  const { url } = useCachedFileAccessUrl(accessUrl, { variant: "thumbnail" });
   const thumbClass = thumbClassName ?? styles.galleryThumb;
   const thumbActiveClass = thumbActiveClassName ?? styles.galleryThumbActive;
   const thumbImageClass = thumbImageClassName ?? styles.galleryThumbImage;
@@ -59,6 +59,7 @@ function ProductDetailCoverThumbnailButton({
         <CachedFileImage
           accessUrl={accessUrl}
           networkUrl={networkUrl}
+          variant="thumbnail"
           alt={`${title} — تصویر ${(index + 1).toLocaleString("fa-IR")}`}
           className={thumbImageClass}
         />

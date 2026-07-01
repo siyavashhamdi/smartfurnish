@@ -8,10 +8,14 @@ export type FileAccessUrl = {
   readonly name?: string | null;
   readonly mimeType?: string | null;
   readonly sizeBytes?: number | null;
+  readonly thumbnailAccessUrl?: FileAccessUrl | null;
 };
+
+export type FileAccessUrlVariant = "full" | "thumbnail";
 
 export type ExistingFilePreview = {
   readonly accessUrl: string;
+  readonly fullAccessUrl?: string;
   readonly fileId?: string;
   readonly name: string;
   readonly mimeType: string;
@@ -22,9 +26,35 @@ function getFallbackOrigin(): string {
   return resolveApiBaseUrl();
 }
 
+export function pickFileAccessUrlDescriptor(
+  access: FileAccessUrl | null | undefined,
+  variant: FileAccessUrlVariant = "full",
+): FileAccessUrl | null {
+  if (!access) {
+    return null;
+  }
+
+  if (variant === "thumbnail") {
+    return access.thumbnailAccessUrl ?? access;
+  }
+
+  return access;
+}
+
 export function resolveFileAccessUrl(
   access: FileAccessUrl | null | undefined,
-  fallbackOrigin?: string
+  fallbackOrigin?: string,
+  variant: FileAccessUrlVariant = "full",
+): string | null {
+  return resolveFileAccessUrlForDescriptor(
+    pickFileAccessUrlDescriptor(access, variant),
+    fallbackOrigin,
+  );
+}
+
+function resolveFileAccessUrlForDescriptor(
+  access: FileAccessUrl | null | undefined,
+  fallbackOrigin?: string,
 ): string | null {
   const fileId = access?.fileId?.trim();
   const token = access?.token?.trim();
@@ -251,9 +281,12 @@ export function buildExistingFilePreview(
   overrides?: {
     readonly mimeType?: string | null;
     readonly sizeBytes?: number | null;
+    readonly variant?: FileAccessUrlVariant;
   }
 ): ExistingFilePreview | null {
-  const resolved = resolveFileAccessUrl(accessUrl);
+  const variant = overrides?.variant ?? "thumbnail";
+  const fullResolved = resolveFileAccessUrl(accessUrl, undefined, "full");
+  const resolved = resolveFileAccessUrl(accessUrl, undefined, variant) ?? fullResolved;
   if (!resolved) {
     return null;
   }
@@ -269,6 +302,7 @@ export function buildExistingFilePreview(
 
   return {
     accessUrl: resolved,
+    fullAccessUrl: fullResolved ?? resolved,
     fileId,
     name,
     mimeType,

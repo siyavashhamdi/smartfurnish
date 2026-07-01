@@ -8,6 +8,7 @@
  *   npm run seed:product-reviews
  *   npm run migrate:product-prices  (copy legacy root priceIrt onto colors missing price)
  *   npm run migrate:product-discounts  (copy legacy root discount onto colors missing discount)
+ *   npm run migrate:file-thumbnails  (generate thumbnails for existing files collection images)
  */
 
 export {};

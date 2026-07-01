@@ -184,6 +184,8 @@ const ProductReviewAdminCard = ({
           <CachedFileAvatar
             accessUrl={review.user?.profile?.avatarAccessUrl}
             className={styles.reviewAdminAvatar}
+            fullscreenOnClick
+            fullscreenTitle={authorLabel}
           >
             <AvatarInitial initial={resolveAvatarInitial(authorLabel)} />
           </CachedFileAvatar>

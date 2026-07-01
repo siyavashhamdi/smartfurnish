@@ -52,7 +52,7 @@ const ProductCard = ({
         ? `${Math.min(item.discount.value, 100).toLocaleString("fa-IR")}٪ تخفیف`
         : `${formatProductPrice(item.discount.value)} تخفیف`
       : null;
-  const activeCoverNetworkUrl = resolveFileAccessUrl(activeCover);
+  const activeCoverNetworkUrl = resolveFileAccessUrl(activeCover, undefined, "thumbnail");
 
   useEffect(() => {
     setActiveCover(fallbackCover);
@@ -251,6 +251,7 @@ const ProductCard = ({
                 accessUrl={activeCover}
                 networkUrl={activeCoverNetworkUrl}
                 fileId={activeCover?.fileId}
+                variant="thumbnail"
                 alt=""
                 className={styles.priceBarCoverImage}
                 loading="eager"

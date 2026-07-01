@@ -1500,7 +1500,7 @@ export class UserService {
       createdUser.profile ?? {},
     );
 
-    return this.toUserMutationResponse(
+    return this.toUserMutationResponseWithAvatarUrl(
       createdUser.toObject() as UserListRecord,
     );
   }
@@ -1538,7 +1538,7 @@ export class UserService {
       await this.buildUserUpdate(input, existingUser);
 
     if (!update.$set && !update.$unset) {
-      return this.toUserMutationResponse(
+      return this.toUserMutationResponseWithAvatarUrl(
         existingUser.toObject() as UserListRecord,
       );
     }
@@ -1575,7 +1575,17 @@ export class UserService {
       });
     }
 
-    return this.toUserMutationResponse(updatedUser);
+    return this.toUserMutationResponseWithAvatarUrl(updatedUser);
+  }
+
+  private async toUserMutationResponseWithAvatarUrl(
+    user: UserListRecord,
+  ): Promise<UserMutationGqlResponse> {
+    const avatarAccessUrlMap = await this.fileService.getAccessUrlMap([
+      user.profile?.avatarFileId,
+    ]);
+
+    return this.toUserMutationResponse(user, avatarAccessUrlMap);
   }
 
   async updateProfile(

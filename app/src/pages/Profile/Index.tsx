@@ -13,7 +13,6 @@ import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import {
   Alert,
-  Avatar,
   Box,
   Button,
   CircularProgress,
@@ -92,7 +91,7 @@ import { LoginAdornedTextField } from "../Login/components/LoginAdornedTextField
 import loginFormStyles from "../Login/styles/LoginFormShared.module.scss";
 import styles from "./styles/profile.module.scss";
 import AppTooltip from "../../shared/AppTooltip";
-import { AvatarInitial } from "../../shared/display/AvatarInitial";
+import { UserProfileAvatar } from "../../shared/display/UserProfileAvatar";
 
 const PASSWORD_CHANGE_LOGOUT_COUNTDOWN_SECONDS = 5;
 
@@ -203,7 +202,7 @@ const AuthenticatedProfile = (): ReactElement => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user: authUser } = useAuth();
-  const { user: profileUser, avatarUrl, loading: isProfileLoading, refetch } = useMe();
+  const { user: profileUser, avatarUrl, avatarAccessUrl, loading: isProfileLoading, refetch } = useMe();
   const { showError, showSuccess } = useSnackbar();
   const isEditRoute = location.pathname === `${APP_SHELL_ROUTES.profile}/edit`;
   const isPasswordRoute = location.pathname === `${APP_SHELL_ROUTES.profile}/password`;
@@ -640,9 +639,12 @@ const AuthenticatedProfile = (): ReactElement => {
         <div className={styles.pageStack}>
           <div className={styles.hero} {...opaqueShellProps}>
             <div className={styles.avatarWrap}>
-              <Avatar className={styles.avatar} src={avatarUrl ?? undefined} alt={displayName}>
-                <AvatarInitial initial={userInitial} />
-              </Avatar>
+              <UserProfileAvatar
+                className={styles.avatar}
+                accessUrl={avatarAccessUrl}
+                displayName={displayName}
+                initial={userInitial}
+              />
               <input
                 ref={avatarInputRef}
                 className={styles.avatarInput}

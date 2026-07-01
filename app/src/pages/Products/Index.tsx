@@ -198,8 +198,11 @@ const ProductsIndex = (): ReactElement => {
             description: item.summary || item.title,
             url: resolveAbsoluteUrl(appUrl, `${APP_SHELL_ROUTES.products}/${item.id}`),
             imageUrl:
-              resolveFileAccessUrl(getPrimaryCoverImageAccessUrl(item.coverImageAccessUrls)) ??
-              undefined,
+              resolveFileAccessUrl(
+                getPrimaryCoverImageAccessUrl(item.coverImageAccessUrls),
+                undefined,
+                "full",
+              ) ?? undefined,
           })),
         }),
       ],

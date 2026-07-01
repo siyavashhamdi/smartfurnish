@@ -68,6 +68,7 @@ interface FilePreviewSource {
   mimeType: string;
   sizeBytes: number;
   previewUrl?: string | null;
+  fullPreviewUrl?: string | null;
 }
 
 interface FileUploadFieldProps {
@@ -256,6 +257,7 @@ const FileUploadField = ({
           mimeType: existingFile.mimeType,
           sizeBytes: existingFile.sizeBytes,
           previewUrl: cachedExistingPreviewUrl ?? existingFile.accessUrl,
+          fullPreviewUrl: existingFile.fullAccessUrl ?? existingFile.accessUrl,
         }
       : undefined;
   const previewSource = selectedFileSource ?? existingFileSource;
@@ -267,6 +269,7 @@ const FileUploadField = ({
       ? getViewableMediaKind(previewSource.mimeType, previewSource.name)
       : null;
   const previewUrl = previewSource?.previewUrl ?? null;
+  const fullPreviewUrl = previewSource?.fullPreviewUrl ?? previewUrl;
   const pdfDialogUrl = useMemo((): string | null => {
     if (!previewUrl || previewMediaKind !== "pdf") {
       return null;
@@ -633,7 +636,7 @@ const FileUploadField = ({
     if (!previewUrl || !previewSource) {
       return;
     }
-    triggerFileDownload(previewUrl, previewSource.name);
+    triggerFileDownload(fullPreviewUrl ?? previewUrl, previewSource.name);
   };
 
   const handleOpenMediaCompress = (event: SyntheticEvent): void => {
@@ -983,7 +986,7 @@ const FileUploadField = ({
           >
             <Box
               component="img"
-              src={previewUrl}
+              src={fullPreviewUrl ?? previewUrl}
               alt={previewSource?.name ?? ""}
               sx={{
                 display: "block",
@@ -1011,7 +1014,7 @@ const FileUploadField = ({
             <Box
               component="video"
               ref={popupVideoRef}
-              src={previewUrl}
+              src={fullPreviewUrl ?? previewUrl}
               controls
               controlsList={nativeMediaControlsList}
               playsInline
@@ -1044,7 +1047,7 @@ const FileUploadField = ({
             <Box
               component="audio"
               ref={popupAudioRef}
-              src={previewUrl}
+              src={fullPreviewUrl ?? previewUrl}
               controls
               controlsList={nativeMediaControlsList}
               style={{ width: "100%", maxWidth: "32rem" }}

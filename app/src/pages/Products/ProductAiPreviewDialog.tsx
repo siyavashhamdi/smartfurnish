@@ -18,7 +18,6 @@ import {
   type ProductAiPreviewContactStepHandle,
 } from "./ProductAiPreviewContactStep";
 import { ProductAiPreviewGenerationProgress } from "./ProductAiPreviewGenerationProgress";
-import { ProductAiPreviewImageViewerDialog } from "./ProductAiPreviewImageViewerDialog";
 import { ProductAiPreviewResult } from "./ProductAiPreviewResult";
 import { ProductAiPreviewRoomUploader } from "./ProductAiPreviewRoomUploader";
 import { ProductAiPreviewStepIndicator } from "./ProductAiPreviewStepIndicator";
@@ -51,7 +50,8 @@ import type { FabricSelectionController } from "./useFabricSelection";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTranslation } from "../../hooks/useTranslation";
 import { normalizeOptionalMobilePhoneToLocal } from "../../utilities/mobile-phone.util";
-import { resolveFileAccessUrl, type FileAccessUrl } from "../../utils/fileAccessUrl.util";
+import { getFileIdFromAccessUrl, type FileAccessUrl } from "../../utils/fileAccessUrl.util";
+import { FileImageFullscreenDialog } from "../../shared/display/FileImageFullscreenDialog";
 import EntityModalShell from "../../shared/crud/EntityModalShell";
 import ModalFooterActions from "../../shared/crud/ModalFooterActions";
 import styles from "./styles/ProductAiPreviewDialog.module.scss";
@@ -112,9 +112,8 @@ export function ProductAiPreviewDialog({
     useState<ProductAiPreviewSubmittedContact | null>(null);
   const [isResultViewerOpen, setIsResultViewerOpen] = useState(false);
 
-  const selectedProductImageUrl = useMemo(
-    () => resolveFileAccessUrl(fabricSelection.selectedColor?.aiProductImageAccessUrl ?? null),
-    [fabricSelection.selectedColor?.aiProductImageAccessUrl],
+  const hasSelectedProductImage = Boolean(
+    getFileIdFromAccessUrl(fabricSelection.selectedColor?.aiProductImageAccessUrl ?? null),
   );
 
   const canGenerate = Boolean(
@@ -123,7 +122,7 @@ export function ProductAiPreviewDialog({
       fabricSelection.selectedFabricKey &&
       fabricSelection.selectedColorKey &&
       roomFile &&
-      selectedProductImageUrl &&
+      hasSelectedProductImage &&
       !submitting,
   );
 
@@ -322,7 +321,7 @@ export function ProductAiPreviewDialog({
     contactStepRef.current?.submit();
   }, []);
 
-  const missingProductImage = !selectedProductImageUrl;
+  const missingProductImage = !hasSelectedProductImage;
 
   const modalMaxWidth =
     activeStepId === "result"
@@ -504,6 +503,7 @@ export function ProductAiPreviewDialog({
                   fabricLabel={result.fabric.label}
                   fabricPatternName={result.fabric.patternName}
                   imageUrl={result.image}
+                  resultFileAccessUrl={result.resultFileAccessUrl}
                   productTitle={result.product.title}
                   onImageClick={handleOpenResultViewer}
                 />
@@ -552,10 +552,10 @@ export function ProductAiPreviewDialog({
         progress={progress}
       />
 
-      <ProductAiPreviewImageViewerDialog
+      <FileImageFullscreenDialog
         open={isResultViewerOpen}
         title={resultViewerTitle}
-        imageUrl={result?.image ?? ""}
+        accessUrl={result?.resultFileAccessUrl ?? null}
         onClose={handleCloseResultViewer}
       />
     </>

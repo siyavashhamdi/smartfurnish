@@ -102,7 +102,7 @@ function ProductCardCoverSlide({
   readonly shouldLoad: boolean;
   readonly slideWidthPx: number;
 }): ReactElement {
-  const networkUrl = resolveFileAccessUrl(accessUrl);
+  const networkUrl = resolveFileAccessUrl(accessUrl, undefined, "thumbnail");
 
   return (
     <div className={styles.coverCarouselSlide} style={getSlideStyle(slideWidthPx)}>
@@ -111,6 +111,7 @@ function ProductCardCoverSlide({
           accessUrl={accessUrl}
           networkUrl={networkUrl}
           fileId={accessUrl.fileId}
+          variant="thumbnail"
           alt={`${title} — تصویر ${(slideIndex + 1).toLocaleString("fa-IR")}`}
           className={styles.coverImage}
           draggable={false}

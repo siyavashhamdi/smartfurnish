@@ -53,7 +53,7 @@ export class UserProductInquiryListFilterInput {
   @IsMongoId({ message: "Product ID filter must be a valid Mongo ID" })
   productId?: string;
 
-  @Field({ nullable: true, description: "Filter by user full name snapshot" })
+  @Field({ nullable: true, description: "Filter by inquiry contact full name" })
   @IsOptional()
   @IsString({ message: "Full name filter must be a string" })
   userFullName?: string;
@@ -63,7 +63,7 @@ export class UserProductInquiryListFilterInput {
   @IsString({ message: "Username filter must be a string" })
   username?: string;
 
-  @Field({ nullable: true, description: "Filter by user phone snapshot" })
+  @Field({ nullable: true, description: "Filter by inquiry contact phone" })
   @IsOptional()
   @IsString({ message: "Phone filter must be a string" })
   userPhone?: string;

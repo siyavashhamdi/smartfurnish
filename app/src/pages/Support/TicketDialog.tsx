@@ -316,6 +316,8 @@ function MessageSenderAvatar({
     <CachedFileAvatar
       accessUrl={avatarAccessUrl}
       alt={displayName}
+      fullscreenOnClick
+      fullscreenTitle={displayName}
       sx={{
         width: { xs: 34, sm: 38 },
         height: { xs: 34, sm: 38 },

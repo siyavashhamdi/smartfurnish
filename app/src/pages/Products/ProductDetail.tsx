@@ -187,8 +187,14 @@ const ProductDetail = (): ReactElement => {
   const primaryCoverAccessUrl = product
     ? getPrimaryCoverImageAccessUrl(product.coverImageAccessUrls)
     : null;
-  const coverImageNetworkUrl = resolveFileAccessUrl(primaryCoverAccessUrl);
-  const { url: coverImageUrl } = useCachedFileAccessUrl(primaryCoverAccessUrl);
+  const coverImageSeoUrl = resolveFileAccessUrl(
+    primaryCoverAccessUrl,
+    undefined,
+    "full",
+  );
+  const { url: coverImageUrl } = useCachedFileAccessUrl(primaryCoverAccessUrl, {
+    variant: "thumbnail",
+  });
   const selectedColorPricing = resolveColorPricing(fabricSelection.selectedColor);
   const fallbackListPricing = product
     ? resolveProductListPricing(product, { activeOnly: true })
@@ -267,7 +273,7 @@ const ProductDetail = (): ReactElement => {
       keywords: [product.title, ...product.tags, "نمایشگاه مجازی مبلمان", "محصول دکوراسیون"].join(
         ", "
       ),
-      image: coverImageNetworkUrl ?? undefined,
+      image: coverImageSeoUrl ?? undefined,
       imageAlt: product.title,
       canonicalPath,
       ogType: "product",
@@ -279,7 +285,7 @@ const ProductDetail = (): ReactElement => {
           productId: product.id,
           title: product.title,
           description: seoDescription,
-          imageUrl: coverImageNetworkUrl ?? undefined,
+          imageUrl: coverImageSeoUrl ?? undefined,
           keywords: product.tags.join(", "),
           isFree: product.isFree,
           priceIrt: displayPrice,
@@ -299,7 +305,7 @@ const ProductDetail = (): ReactElement => {
         }),
       ],
     };
-  }, [product, coverImageNetworkUrl, displayPrice, isAiPreviewDialogOpen, isMaxRouteOpen, isPurchaseDialogOpen, t]);
+  }, [product, coverImageSeoUrl, displayPrice, isAiPreviewDialogOpen, isMaxRouteOpen, isPurchaseDialogOpen, t]);
 
   usePageSeoOverride(pageSeoOverride);
 

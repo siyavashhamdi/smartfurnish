@@ -1,45 +1,37 @@
 import { Avatar, type AvatarProps } from "@mui/material";
 import { useState, type MouseEvent, type ReactElement } from "react";
 
-import { useCachedFileAccessUrl, useCachedFileUrl } from "../../hooks/useCachedFileAccessUrl";
+import { useCachedFileAccessUrl } from "../../hooks/useCachedFileAccessUrl";
 import {
   pickFileAccessUrlDescriptor,
   type FileAccessUrl,
-  type FileAccessUrlVariant,
 } from "../../utils/fileAccessUrl.util";
+import { AvatarInitial } from "./AvatarInitial";
 import { FileImageFullscreenDialog } from "./FileImageFullscreenDialog";
 
-type CachedFileAvatarProps = Omit<AvatarProps, "src"> & {
+type UserProfileAvatarProps = Omit<AvatarProps, "src" | "onClick"> & {
   readonly accessUrl?: FileAccessUrl | null;
-  readonly networkUrl?: string | null;
-  readonly fileId?: string | null;
-  readonly fileVariant?: FileAccessUrlVariant;
-  readonly fullscreenOnClick?: boolean;
-  readonly fullscreenTitle?: string;
+  readonly displayName: string;
+  readonly initial: string;
+  readonly enableFullscreenOnClick?: boolean;
+  readonly onClick?: (event: MouseEvent<HTMLDivElement>) => void;
 };
 
-export function CachedFileAvatar({
+export function UserProfileAvatar({
   accessUrl,
-  networkUrl,
-  fileId,
-  fileVariant = "thumbnail",
-  fullscreenOnClick = false,
-  fullscreenTitle = "تصویر",
+  displayName,
+  initial,
+  enableFullscreenOnClick = true,
   onClick,
+  className,
   ...avatarProps
-}: CachedFileAvatarProps): ReactElement {
+}: UserProfileAvatarProps): ReactElement {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
-  const displayAccessUrl = pickFileAccessUrlDescriptor(accessUrl, fileVariant);
-  const fromAccess = useCachedFileAccessUrl(displayAccessUrl, {
-    enabled: displayAccessUrl != null,
+  const thumbnailAccessUrl = pickFileAccessUrlDescriptor(accessUrl, "thumbnail");
+  const { url: avatarUrl } = useCachedFileAccessUrl(thumbnailAccessUrl, {
+    enabled: thumbnailAccessUrl != null,
   });
-  const fromUrl = useCachedFileUrl({
-    fileId,
-    networkUrl,
-    enabled: displayAccessUrl == null,
-  });
-  const resolved = displayAccessUrl != null ? fromAccess : fromUrl;
-  const canOpenFullscreen = fullscreenOnClick && accessUrl != null;
+  const canOpenFullscreen = enableFullscreenOnClick && accessUrl != null;
 
   const handleClick = (event: MouseEvent<HTMLDivElement>): void => {
     if (canOpenFullscreen) {
@@ -54,19 +46,23 @@ export function CachedFileAvatar({
     <>
       <Avatar
         {...avatarProps}
-        src={resolved.url ?? undefined}
+        className={className}
+        src={avatarUrl ?? undefined}
+        alt={displayName}
         onClick={canOpenFullscreen || onClick ? handleClick : undefined}
         sx={{
           ...(canOpenFullscreen ? { cursor: "pointer" } : {}),
           ...avatarProps.sx,
         }}
-      />
+      >
+        <AvatarInitial initial={initial} />
+      </Avatar>
       {canOpenFullscreen ? (
         <FileImageFullscreenDialog
           open={isViewerOpen}
           onClose={() => setIsViewerOpen(false)}
           accessUrl={accessUrl}
-          title={fullscreenTitle}
+          title={displayName}
         />
       ) : null}
     </>

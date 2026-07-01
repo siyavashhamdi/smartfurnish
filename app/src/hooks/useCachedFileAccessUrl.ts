@@ -9,8 +9,10 @@ import {
 } from "../lib/file-content-cache";
 import {
   getFileIdFromAccessUrl,
+  pickFileAccessUrlDescriptor,
   resolveFileAccessUrl,
   type FileAccessUrl,
+  type FileAccessUrlVariant,
 } from "../utils/fileAccessUrl.util";
 
 export type CachedFileUrlState = {
@@ -138,16 +140,25 @@ export function useCachedFileUrl({
 
 export function useCachedFileAccessUrl(
   access: FileAccessUrl | null | undefined,
-  options?: { readonly enabled?: boolean }
+  options?: {
+    readonly enabled?: boolean;
+    readonly variant?: FileAccessUrlVariant;
+  },
 ): CachedFileUrlState {
-  const fileId = getFileIdFromAccessUrl(access);
-  const networkUrl = resolveFileAccessUrl(access);
+  const descriptor = pickFileAccessUrlDescriptor(
+    access,
+    options?.variant ?? "thumbnail",
+  );
+  const fileId = getFileIdFromAccessUrl(descriptor);
+  const networkUrl = descriptor
+    ? resolveFileAccessUrl(descriptor, undefined, options?.variant ?? "thumbnail")
+    : null;
 
   return useCachedFileUrl({
     fileId,
     networkUrl,
-    mimeType: access?.mimeType,
-    fileName: access?.name,
+    mimeType: descriptor?.mimeType,
+    fileName: descriptor?.name,
     enabled: options?.enabled,
   });
 }

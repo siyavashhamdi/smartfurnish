@@ -33,6 +33,7 @@ export function createFileAccessUrlDescriptor(
   name?: string,
   mimeType?: string,
   sizeBytes?: number,
+  thumbnailAccessUrl?: FileAccessUrlDescriptor,
 ): FileAccessUrlDescriptor {
   return {
     baseUrl: getPublicAppBaseUrl(),
@@ -42,5 +43,6 @@ export function createFileAccessUrlDescriptor(
     name,
     mimeType,
     sizeBytes,
+    ...(thumbnailAccessUrl ? { thumbnailAccessUrl } : {}),
   };
 }

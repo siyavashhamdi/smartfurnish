@@ -255,7 +255,7 @@ const CatalogSection = ({
                             }
                             existingFile={buildExistingFilePreview(
                               image.accessUrl,
-                              piece.name || "تصویر"
+                              piece.name || "تصویر",
                             )}
                             onExistingFileClear={() =>
                               updateSetPiece(piece.id, {
@@ -482,7 +482,7 @@ const CatalogSection = ({
                                 }
                                 existingFile={buildExistingFilePreview(
                                   color.aiImage.accessUrl,
-                                  color.name || "تصویر"
+                                  color.name || "تصویر",
                                 )}
                                 onExistingFileClear={() =>
                                   updateFabricColor(fabric.id, color.id, {

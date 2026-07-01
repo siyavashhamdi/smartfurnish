@@ -1,5 +1,5 @@
 import { createHmac, randomUUID, timingSafeEqual } from "crypto";
-import { extname } from "path";
+import { basename, extname } from "path";
 import { Readable } from "stream";
 import { Client as MinioClient } from "minio";
 import { Model, Types } from "mongoose";
@@ -32,6 +32,7 @@ import {
 import { assertFileAllowedByPolicy } from "./file-upload-policy.util";
 import { isExecutableFileType } from "./executable-file-type.util";
 import { ImageCompressionService } from "./image-compression.service";
+import { THUMBNAIL_FILE_NAME_SUFFIX } from "./image-thumbnail.constants";
 
 export type { FileAccessUrlDescriptor } from "./file-access-url.util";
 
@@ -65,7 +66,7 @@ type StoredFileStorageLocation = {
 
 @Injectable()
 export class FileService implements OnModuleInit {
-  static readonly FILE_ACCESS_URL_TTL_SECONDS = 60 * 60;
+  static readonly FILE_ACCESS_URL_TTL_SECONDS = 7 * 24 * 60 * 60; // One week
 
   private readonly logger = new Logger(FileService.name);
   private readonly minioClient: MinioClient;
@@ -128,28 +129,75 @@ export class FileService implements OnModuleInit {
       uploadPolicy,
     });
 
+    let uploadBody = uploadPayload.body;
+    let uploadSizeBytes = uploadPayload.sizeBytes;
+    const uploadMimeType = uploadPayload.mimeType;
+    let imageBufferForThumbnail: Buffer | undefined;
+
+    if (
+      this.imageCompressionService.shouldGenerateThumbnail(
+        uploadMimeType,
+        params.name,
+      )
+    ) {
+      if (Buffer.isBuffer(uploadBody)) {
+        imageBufferForThumbnail = uploadBody;
+      } else {
+        const maxSizeBytes = Math.min(
+          SecurityConfig.getMaxRequestSize(),
+          uploadPolicy.maxSizeBytes,
+        );
+        imageBufferForThumbnail = await this.readStreamToBuffer(
+          uploadBody,
+          maxSizeBytes,
+        );
+        uploadBody = imageBufferForThumbnail;
+        uploadSizeBytes = imageBufferForThumbnail.length;
+      }
+    }
+
     await this.minioClient.putObject(
       bucket,
       objectKey,
-      uploadPayload.body,
-      uploadPayload.sizeBytes,
+      uploadBody,
+      uploadSizeBytes,
       {
-        "Content-Type": uploadPayload.mimeType,
+        "Content-Type": uploadMimeType,
         "X-Amz-Meta-Original-Name": encodeURIComponent(params.name),
       },
     );
 
     const storedFile = await this.storedFileModel.create({
       name: params.name,
-      mimeType: uploadPayload.mimeType,
-      sizeBytes: uploadPayload.sizeBytes,
+      mimeType: uploadMimeType,
+      sizeBytes: uploadSizeBytes,
       path: `${bucket}/${objectKey}`,
       bucket,
       objectKey,
       uploadedAt,
     });
 
-    return this.toUploadResult(storedFile);
+    let thumbnailFile: StoredFileDocument | undefined;
+    if (imageBufferForThumbnail) {
+      thumbnailFile = await this.createThumbnailStoredFile({
+        sourceBuffer: imageBufferForThumbnail,
+        sourceMimeType: uploadMimeType,
+        sourceName: params.name,
+        uploadedAt,
+        bucket,
+      });
+
+      if (thumbnailFile) {
+        storedFile.thumbnailFileId = thumbnailFile._id as Types.ObjectId;
+        await storedFile.save();
+      }
+    }
+
+    const thumbnailFilesById = thumbnailFile
+      ? new Map([[thumbnailFile._id.toString(), thumbnailFile]])
+      : undefined;
+
+    return this.toUploadResult(storedFile, thumbnailFilesById);
   }
 
   createAccessUrlDescriptor(
@@ -157,6 +205,7 @@ export class FileService implements OnModuleInit {
     name?: string,
     mimeType?: string,
     sizeBytes?: number,
+    thumbnailAccessUrl?: FileAccessUrlDescriptor,
   ): FileAccessUrlDescriptor {
     return createFileAccessUrlDescriptor(
       fileId,
@@ -164,6 +213,7 @@ export class FileService implements OnModuleInit {
       name,
       mimeType,
       sizeBytes,
+      thumbnailAccessUrl,
     );
   }
 
@@ -178,16 +228,12 @@ export class FileService implements OnModuleInit {
     const files = await this.storedFileModel
       .find({ _id: { $in: uniqueIds } })
       .exec();
+    const thumbnailFilesById = await this.loadThumbnailFilesById(files);
 
     return new Map(
       files.map((file) => [
         file._id.toString(),
-        this.createAccessUrlDescriptor(
-          file._id,
-          file.name,
-          file.mimeType,
-          file.sizeBytes,
-        ),
+        this.buildAccessUrlDescriptorForFile(file, thumbnailFilesById),
       ]),
     );
   }
@@ -203,6 +249,7 @@ export class FileService implements OnModuleInit {
     const files = await this.storedFileModel
       .find({ _id: { $in: uniqueIds } })
       .exec();
+    const thumbnailFilesById = await this.loadThumbnailFilesById(files);
 
     return new Map(
       files.map((file) => [
@@ -212,11 +259,9 @@ export class FileService implements OnModuleInit {
           mimeType: file.mimeType,
           sizeBytes: file.sizeBytes,
           path: file.path,
-          accessUrl: this.createAccessUrlDescriptor(
-            file._id,
-            file.name,
-            file.mimeType,
-            file.sizeBytes,
+          accessUrl: this.buildAccessUrlDescriptorForFile(
+            file,
+            thumbnailFilesById,
           ),
         },
       ]),
@@ -357,7 +402,7 @@ export class FileService implements OnModuleInit {
         addNotDeletedCondition({
           _id: { $in: ids },
         }),
-        { projection: { bucket: 1, objectKey: 1, path: 1 } },
+        { projection: { bucket: 1, objectKey: 1, path: 1, thumbnailFileId: 1 } },
       )
       .toArray();
 
@@ -368,8 +413,35 @@ export class FileService implements OnModuleInit {
     const activeFileIds = storedFiles.map(
       (storedFile) => storedFile._id as Types.ObjectId,
     );
+    const activeFileIdSet = new Set(
+      activeFileIds.map((fileId) => fileId.toString()),
+    );
+    const thumbnailFileIds = [
+      ...new Set(
+        storedFiles
+          .map((storedFile) => storedFile.thumbnailFileId?.toString())
+          .filter(
+            (fileId): fileId is string =>
+              Boolean(fileId) && !activeFileIdSet.has(fileId),
+          ),
+      ),
+    ].map((fileId) => new Types.ObjectId(fileId));
 
-    for (const storedFile of storedFiles) {
+    const thumbnailFiles =
+      thumbnailFileIds.length > 0
+        ? await this.storedFileModel.collection
+            .find(
+              addNotDeletedCondition({
+                _id: { $in: thumbnailFileIds },
+              }),
+              { projection: { bucket: 1, objectKey: 1, path: 1 } },
+            )
+            .toArray()
+        : [];
+
+    const filesToRemoveFromStorage = [...storedFiles, ...thumbnailFiles];
+
+    for (const storedFile of filesToRemoveFromStorage) {
       const location = this.resolveStorageLocationSafely(
         storedFile as StoredFileStorageRecord,
       );
@@ -384,10 +456,16 @@ export class FileService implements OnModuleInit {
     }
 
     if (options?.isSystemOrphanCleanup) {
-      return this.softDeleteStoredFileRecordsAsSystemOrphans(activeFileIds);
+      return this.softDeleteStoredFileRecordsAsSystemOrphans([
+        ...activeFileIds,
+        ...thumbnailFileIds,
+      ]);
     }
 
-    return this.softDeleteStoredFileRecordsByIds(activeFileIds);
+    return this.softDeleteStoredFileRecordsByIds([
+      ...activeFileIds,
+      ...thumbnailFileIds,
+    ]);
   }
 
   async deleteUnreferencedByIds(
@@ -801,6 +879,7 @@ export class FileService implements OnModuleInit {
 
   private toUploadResult(
     storedFile: StoredFileDocument,
+    thumbnailFilesById?: Map<string, StoredFileDocument>,
   ): StoredFileUploadResult {
     return {
       name: storedFile.name,
@@ -808,13 +887,61 @@ export class FileService implements OnModuleInit {
       sizeBytes: storedFile.sizeBytes,
       path: storedFile.path,
       uploadedAt: storedFile.uploadedAt ?? new Date(),
-      accessUrl: this.createAccessUrlDescriptor(
-        storedFile._id,
-        storedFile.name,
-        storedFile.mimeType,
-        storedFile.sizeBytes,
+      accessUrl: this.buildAccessUrlDescriptorForFile(
+        storedFile,
+        thumbnailFilesById,
       ),
     };
+  }
+
+  private async loadThumbnailFilesById(
+    files: StoredFileDocument[],
+  ): Promise<Map<string, StoredFileDocument>> {
+    const thumbnailIds = [
+      ...new Set(
+        files
+          .map((file) => file.thumbnailFileId?.toString())
+          .filter((fileId): fileId is string => Boolean(fileId)),
+      ),
+    ].map((fileId) => new Types.ObjectId(fileId));
+
+    if (thumbnailIds.length === 0) {
+      return new Map();
+    }
+
+    const thumbnailFiles = await this.storedFileModel
+      .find({ _id: { $in: thumbnailIds } })
+      .exec();
+
+    return new Map(
+      thumbnailFiles.map((file) => [file._id.toString(), file]),
+    );
+  }
+
+  private buildAccessUrlDescriptorForFile(
+    file: StoredFileDocument,
+    thumbnailFilesById?: Map<string, StoredFileDocument>,
+  ): FileAccessUrlDescriptor {
+    const thumbnailFileId = file.thumbnailFileId?.toString();
+    const thumbnailFile = thumbnailFileId
+      ? thumbnailFilesById?.get(thumbnailFileId)
+      : undefined;
+    const thumbnailAccessUrl = thumbnailFile
+      ? this.createAccessUrlDescriptor(
+          thumbnailFile._id,
+          thumbnailFile.name,
+          thumbnailFile.mimeType,
+          thumbnailFile.sizeBytes,
+        )
+      : undefined;
+
+    return this.createAccessUrlDescriptor(
+      file._id,
+      file.name,
+      file.mimeType,
+      file.sizeBytes,
+      thumbnailAccessUrl,
+    );
   }
 
   private createAccessToken(fileId: string): string {
@@ -982,6 +1109,61 @@ export class FileService implements OnModuleInit {
     const month = String(uploadedAt.getUTCMonth() + 1).padStart(2, "0");
     const day = String(uploadedAt.getUTCDate()).padStart(2, "0");
     return `${year}/${month}/${day}/${randomUUID()}${extension}`;
+  }
+
+  private buildThumbnailObjectName(uploadedAt: Date = new Date()): string {
+    const year = uploadedAt.getUTCFullYear();
+    const month = String(uploadedAt.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(uploadedAt.getUTCDate()).padStart(2, "0");
+    return `${year}/${month}/${day}/${randomUUID()}${THUMBNAIL_FILE_NAME_SUFFIX}`;
+  }
+
+  private buildThumbnailFileName(sourceName: string): string {
+    const baseName = basename(sourceName, extname(sourceName)) || "image";
+    return `${baseName}${THUMBNAIL_FILE_NAME_SUFFIX}`;
+  }
+
+  private async createThumbnailStoredFile(params: {
+    sourceBuffer: Buffer;
+    sourceMimeType: string;
+    sourceName: string;
+    uploadedAt: Date;
+    bucket: string;
+  }): Promise<StoredFileDocument | undefined> {
+    const thumbnailOutcome =
+      await this.imageCompressionService.generateThumbnail(
+        params.sourceBuffer,
+        params.sourceMimeType,
+        params.sourceName,
+      );
+
+    if (!thumbnailOutcome) {
+      return undefined;
+    }
+
+    const objectKey = this.buildThumbnailObjectName(params.uploadedAt);
+    const thumbnailName = this.buildThumbnailFileName(params.sourceName);
+
+    await this.minioClient.putObject(
+      params.bucket,
+      objectKey,
+      thumbnailOutcome.buffer,
+      thumbnailOutcome.buffer.length,
+      {
+        "Content-Type": thumbnailOutcome.mimeType,
+        "X-Amz-Meta-Original-Name": encodeURIComponent(thumbnailName),
+      },
+    );
+
+    return this.storedFileModel.create({
+      name: thumbnailName,
+      mimeType: thumbnailOutcome.mimeType,
+      sizeBytes: thumbnailOutcome.buffer.length,
+      path: `${params.bucket}/${objectKey}`,
+      bucket: params.bucket,
+      objectKey,
+      uploadedAt: params.uploadedAt,
+    });
   }
 
   private normalizeFileIds(

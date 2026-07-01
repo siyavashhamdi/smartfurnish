@@ -5,7 +5,7 @@ import {
 import { USER_PRODUCT_INQUIRY_PREVIEW_SUBMIT_MUTATION } from "../../graphql/mutations/userProductInquiryPreviewSubmit.mutation";
 import { USER_PRODUCT_INQUIRY_CONTACT_SUBMIT_MUTATION } from "../../graphql/mutations/userProductInquiryContactSubmit.mutation";
 import { apolloClient } from "../../lib/apollo-client";
-import { getFileIdFromAccessUrl } from "../../utils/fileAccessUrl.util";
+import { getFileIdFromAccessUrl, type FileAccessUrl } from "../../utils/fileAccessUrl.util";
 import { uploadFile } from "../../utils/fileUpload.util";
 import { resolveErrorMessageFromCode } from "../../utilities/graphql-error.util";
 
@@ -17,6 +17,7 @@ export type ProductAiPreviewProgress = {
 
 export type ProductAiPreviewStageResult = {
   readonly image: string;
+  readonly resultFileAccessUrl?: FileAccessUrl | null;
   readonly durationSeconds: number;
   readonly description: string | null;
   readonly environmentFileId: string;

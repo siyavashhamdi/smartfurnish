@@ -2,12 +2,15 @@ import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
 import { Alert, Chip, Paper, Stack, Typography } from "@mui/material";
 import { memo, type ReactElement } from "react";
 
+import { CachedFileImage } from "../../shared/display/CachedFileImage";
+import type { FileAccessUrl } from "../../utils/fileAccessUrl.util";
 import { normalizeFabricHexColor } from "./fabric-selection.util";
 import { PRODUCT_AI_PREVIEW_RESULT_DISCLAIMER } from "./product-ai-preview.constants";
 import styles from "./styles/ProductAiPreviewResult.module.scss";
 
 type ProductAiPreviewResultProps = {
-  readonly imageUrl: string;
+  readonly resultFileAccessUrl?: FileAccessUrl | null;
+  readonly imageUrl?: string;
   readonly productTitle: string;
   readonly fabricLabel: string;
   readonly fabricPatternName: string;
@@ -17,6 +20,7 @@ type ProductAiPreviewResultProps = {
 };
 
 function ProductAiPreviewResultInner({
+  resultFileAccessUrl,
   imageUrl,
   productTitle,
   fabricLabel,
@@ -53,11 +57,20 @@ function ProductAiPreviewResultInner({
               aria-label="بزرگ‌نمایی پیش‌نمایش"
               onClick={onImageClick}
             >
-              <img
-                alt="پیش‌نمایش هوشمند مبل در فضای خانه"
-                className={styles.image}
-                src={imageUrl}
-              />
+              {resultFileAccessUrl ? (
+                <CachedFileImage
+                  accessUrl={resultFileAccessUrl}
+                  alt="پیش‌نمایش هوشمند مبل در فضای خانه"
+                  className={styles.image}
+                  variant="thumbnail"
+                />
+              ) : imageUrl ? (
+                <img
+                  alt="پیش‌نمایش هوشمند مبل در فضای خانه"
+                  className={styles.image}
+                  src={imageUrl}
+                />
+              ) : null}
             </button>
             <Stack
               direction="row"

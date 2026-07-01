@@ -174,7 +174,7 @@ export class UserProductInquiryService {
 
       await existingInquiry.save();
 
-      return this.buildPreviewSubmitResponse({
+      return await this.buildPreviewSubmitResponse({
         inquiryId: existingInquiry._id,
         productId: existingInquiry.productId,
         status: existingInquiry.status,
@@ -207,7 +207,7 @@ export class UserProductInquiryService {
       preview: [previewEntry],
     });
 
-    return this.buildPreviewSubmitResponse({
+    return await this.buildPreviewSubmitResponse({
       inquiryId: createdInquiry._id,
       productId: createdInquiry.productId,
       status: createdInquiry.status,
@@ -1071,21 +1071,19 @@ export class UserProductInquiryService {
       query.productId = new Types.ObjectId(filters.productId);
     }
 
-    this.addListContainsFilter(
-      query,
-      "userSnapshot.fullName",
-      filters.userFullName,
-    );
+    if (filters.userFullName?.trim()) {
+      const contactNameRegex = this.createContainsRegex(filters.userFullName);
+      this.addListOrFilter(query, [
+        { "contact.firstName": contactNameRegex },
+        { "contact.lastName": contactNameRegex },
+      ]);
+    }
     this.addListContainsFilter(
       query,
       "userSnapshot.username",
       filters.username,
     );
-    this.addListContainsFilter(
-      query,
-      "userSnapshot.phoneNumber",
-      filters.userPhone,
-    );
+    this.addListContainsFilter(query, "contact.phone", filters.userPhone);
     this.addListContainsFilter(
       query,
       "productSnapshot.title",
@@ -1465,7 +1463,7 @@ export class UserProductInquiryService {
     return inquiry;
   }
 
-  private buildPreviewSubmitResponse(params: {
+  private async buildPreviewSubmitResponse(params: {
     inquiryId: Types.ObjectId;
     productId: Types.ObjectId;
     status: UserProductInquiryStatus;
@@ -1475,8 +1473,14 @@ export class UserProductInquiryService {
     sourceProductImageFileId: Types.ObjectId;
     generatedAt: Date;
     stagingDurationSeconds: number;
-  }): UserProductInquiryPreviewSubmitGqlResponse {
+  }): Promise<UserProductInquiryPreviewSubmitGqlResponse> {
     const { previewResult } = params;
+    const accessUrlMap = await this.fileService.getAccessUrlMap([
+      params.resultFileId,
+    ]);
+    const resultFileAccessUrl = accessUrlMap.get(
+      params.resultFileId.toString(),
+    );
 
     return {
       id: params.inquiryId,
@@ -1488,6 +1492,7 @@ export class UserProductInquiryService {
       description: previewResult.description,
       environmentFileId: params.environmentFileId,
       resultFileId: params.resultFileId,
+      ...(resultFileAccessUrl ? { resultFileAccessUrl } : {}),
       sourceProductImageFileId: params.sourceProductImageFileId,
       generatedAt: params.generatedAt,
       ...(previewResult.aspectRatio

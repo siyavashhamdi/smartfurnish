@@ -1364,6 +1364,11 @@ body[data-theme="dark"] {
   overflow: hidden;
 }
 
+.progressiveImageFrame {
+  position: absolute;
+  inset: 0;
+}
+
 .imageViewerImage {
   position: absolute;
   inset: 0;

@@ -11,11 +11,21 @@ import {
   SKIP_BELOW_BYTES,
   SKIP_IMAGE_MIME_TYPES,
 } from "./image-compression.constants";
+import {
+  THUMBNAIL_MAX_EDGE_PX,
+  THUMBNAIL_MIME_TYPE,
+  THUMBNAIL_QUALITY,
+} from "./image-thumbnail.constants";
 
 export type ImageCompressionOutcome = {
   buffer: Buffer;
   mimeType: string;
   wasCompressed: boolean;
+};
+
+export type ImageThumbnailOutcome = {
+  buffer: Buffer;
+  mimeType: string;
 };
 
 type OutputFormat = "jpeg" | "png" | "webp";
@@ -36,6 +46,54 @@ export class ImageCompressionService {
     }
 
     return !this.shouldSkipCompression(resolvedMimeType, sizeBytes);
+  }
+
+  shouldGenerateThumbnail(mimeType: string, fileName: string): boolean {
+    const resolvedMimeType = this.resolveMimeType(mimeType, fileName);
+    return this.isCompressibleImage(resolvedMimeType, fileName);
+  }
+
+  async generateThumbnail(
+    input: Buffer,
+    mimeType: string,
+    fileName: string,
+  ): Promise<ImageThumbnailOutcome | null> {
+    const resolvedMimeType = this.resolveMimeType(mimeType, fileName);
+    if (!this.isCompressibleImage(resolvedMimeType, fileName)) {
+      return null;
+    }
+
+    try {
+      const image = sharp(input, { failOn: "none" }).rotate();
+      const metadata = await image.metadata();
+
+      if (!metadata.width || !metadata.height) {
+        return null;
+      }
+
+      const buffer = await image
+        .resize({
+          width: THUMBNAIL_MAX_EDGE_PX,
+          height: THUMBNAIL_MAX_EDGE_PX,
+          fit: "inside",
+          withoutEnlargement: true,
+        })
+        .webp({ quality: THUMBNAIL_QUALITY })
+        .toBuffer();
+
+      return {
+        buffer,
+        mimeType: THUMBNAIL_MIME_TYPE,
+      };
+    } catch (error) {
+      this.logger.warn(
+        `Thumbnail generation failed for ${fileName}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
+      return null;
+    }
   }
 
   async compress(

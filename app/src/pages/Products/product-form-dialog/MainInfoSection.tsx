@@ -137,7 +137,7 @@ const MainInfoSection = ({
             const fieldId = getCoverUploadFieldId(cover.id);
             const existingFile = buildExistingFilePreview(
               cover.accessUrl,
-              title.trim() || `کاور ${index + 1}`
+              title.trim() || `کاور ${index + 1}`,
             );
 
             return (
