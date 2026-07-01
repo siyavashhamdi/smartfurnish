@@ -22,7 +22,7 @@ export class UserProductInquiryPreviewSubmitMutation {
   @Mutation(() => UserProductInquiryPreviewSubmitGqlResponse, {
     name: "userProductInquiryPreviewSubmit",
     description:
-      "Persist a smart product preview inquiry after AI preview generation",
+      "Persist a smart product preview inquiry after AI preview generation. Appends to an existing inquiry when inquiryId is provided.",
   })
   async submitPreview(
     @Args("input") input: UserProductInquiryPreviewSubmitGqlInput,

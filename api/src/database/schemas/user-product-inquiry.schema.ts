@@ -26,8 +26,10 @@ export type UserProductInquiryFabricSnapshot = {
 };
 
 export type UserProductInquiryStatusHistoryPayload = {
-  contactedAt: Date;
-  contactedBy: Types.ObjectId;
+  contactedAt?: Date;
+  contactedBy?: Types.ObjectId;
+  completedAt?: Date;
+  completedBy?: Types.ObjectId;
 };
 
 export type UserProductInquiryStatusHistoryEntry = {
@@ -63,12 +65,6 @@ export type UserProductInquiryContact = {
   phone: string;
   requestedAt: Date;
   customerNote?: string;
-};
-
-export type UserProductInquirySale = {
-  completedAt: Date;
-  completedBy?: Types.ObjectId;
-  note?: string;
 };
 
 export type UserProductInquiryDocument = UserProductInquiry & Document;
@@ -108,8 +104,10 @@ export const UserProductInquiryFabricSnapshotSchema = new MongooseSchema(
 
 export const UserProductInquiryStatusHistoryPayloadSchema = new MongooseSchema(
   {
-    contactedAt: { required: true, type: Date },
-    contactedBy: { ref: "User", required: true, type: Types.ObjectId },
+    contactedAt: { type: Date },
+    contactedBy: { ref: "User", type: Types.ObjectId },
+    completedAt: { type: Date },
+    completedBy: { ref: "User", type: Types.ObjectId },
   },
   { _id: false },
 );
@@ -172,15 +170,6 @@ export const UserProductInquiryContactSchema = new MongooseSchema(
   { _id: false },
 );
 
-export const UserProductInquirySaleSchema = new MongooseSchema(
-  {
-    completedAt: { required: true, type: Date },
-    completedBy: { ref: "User", type: Types.ObjectId },
-    note: { maxlength: 2000, trim: true, type: String },
-  },
-  { _id: false },
-);
-
 @Schema({ collection: "user_product_inquiries" })
 export class UserProductInquiry extends BaseIdTimestampableBlameableSchema {
   @Prop({ default: false, required: true, type: Boolean })
@@ -220,14 +209,11 @@ export class UserProductInquiry extends BaseIdTimestampableBlameableSchema {
   })
   statusHistory: UserProductInquiryStatusHistoryEntry[];
 
-  @Prop({ type: UserProductInquiryPreviewSchema })
-  preview?: UserProductInquiryPreview;
+  @Prop({ type: [UserProductInquiryPreviewSchema] })
+  preview?: UserProductInquiryPreview[];
 
   @Prop({ type: UserProductInquiryContactSchema })
   contact?: UserProductInquiryContact;
-
-  @Prop({ type: UserProductInquirySaleSchema })
-  sale?: UserProductInquirySale;
 }
 
 export const UserProductInquirySchema =
@@ -275,50 +261,87 @@ UserProductInquirySchema.pre(
           "changedAt is required for each statusHistory entry",
         );
       }
+
+      if (entry.status === UserProductInquiryStatus.CONTACTED) {
+        if (!entry.payload?.contactedAt) {
+          this.invalidate(
+            `statusHistory.${index}.payload.contactedAt`,
+            "contactedAt is required when status is CONTACTED",
+          );
+        }
+
+        if (!entry.payload?.contactedBy) {
+          this.invalidate(
+            `statusHistory.${index}.payload.contactedBy`,
+            "contactedBy is required when status is CONTACTED",
+          );
+        }
+      }
+
+      if (entry.status === UserProductInquiryStatus.SALE_COMPLETED) {
+        if (!entry.payload?.completedAt) {
+          this.invalidate(
+            `statusHistory.${index}.payload.completedAt`,
+            "completedAt is required when status is SALE_COMPLETED",
+          );
+        }
+
+        if (!entry.payload?.completedBy) {
+          this.invalidate(
+            `statusHistory.${index}.payload.completedBy`,
+            "completedBy is required when status is SALE_COMPLETED",
+          );
+        }
+      }
     });
 
-    const hasPreview = inquiry.preview != null;
+    if (inquiry.preview != null && !Array.isArray(inquiry.preview)) {
+      inquiry.preview = [inquiry.preview as UserProductInquiryPreview];
+    }
+
+    const previews = inquiry.preview ?? [];
+    const hasPreview = previews.length > 0;
     const requiresContact =
       inquiry.status !== UserProductInquiryStatus.PREVIEW_GENERATED;
     const requiresSale =
       inquiry.status === UserProductInquiryStatus.SALE_COMPLETED;
 
-    if (hasPreview) {
-      if (!inquiry.preview?.environmentFileId) {
+    previews.forEach((previewEntry, index) => {
+      if (!previewEntry?.environmentFileId) {
         this.invalidate(
-          "preview.environmentFileId",
-          "environmentFileId is required when preview is present",
+          `preview.${index}.environmentFileId`,
+          "environmentFileId is required for each preview entry",
         );
       }
 
-      if (!inquiry.preview?.resultFileId) {
+      if (!previewEntry?.resultFileId) {
         this.invalidate(
-          "preview.resultFileId",
-          "resultFileId is required when preview is present",
+          `preview.${index}.resultFileId`,
+          "resultFileId is required for each preview entry",
         );
       }
 
-      if (!inquiry.preview?.generatedAt) {
+      if (!previewEntry?.generatedAt) {
         this.invalidate(
-          "preview.generatedAt",
-          "generatedAt is required when preview is present",
+          `preview.${index}.generatedAt`,
+          "generatedAt is required for each preview entry",
         );
       }
 
-      if (!inquiry.preview?.model?.provider?.trim()) {
+      if (!previewEntry?.model?.provider?.trim()) {
         this.invalidate(
-          "preview.model.provider",
-          "provider is required when preview is present",
+          `preview.${index}.model.provider`,
+          "provider is required for each preview entry",
         );
       }
 
-      if (!inquiry.preview?.model?.model?.trim()) {
+      if (!previewEntry?.model?.model?.trim()) {
         this.invalidate(
-          "preview.model.model",
-          "model is required when preview is present",
+          `preview.${index}.model.model`,
+          "model is required for each preview entry",
         );
       }
-    }
+    });
 
     if (
       inquiry.status === UserProductInquiryStatus.PREVIEW_GENERATED &&
@@ -353,24 +376,16 @@ UserProductInquirySchema.pre(
     }
 
     if (requiresSale) {
-      if (!inquiry.sale) {
+      if (
+        lastHistoryEntry.status !== UserProductInquiryStatus.SALE_COMPLETED ||
+        !lastHistoryEntry.payload?.completedAt ||
+        !lastHistoryEntry.payload?.completedBy
+      ) {
         this.invalidate(
-          "sale",
-          "sale is required when status is SALE_COMPLETED",
+          "statusHistory",
+          "SALE_COMPLETED status requires completedAt and completedBy in the last statusHistory entry payload",
         );
-      } else if (!inquiry.sale.completedAt) {
-        this.invalidate("sale.completedAt", "completedAt is required");
       }
-    }
-
-    if (
-      inquiry.sale &&
-      inquiry.status !== UserProductInquiryStatus.SALE_COMPLETED
-    ) {
-      this.invalidate(
-        "sale",
-        "sale is only allowed when status is SALE_COMPLETED",
-      );
     }
 
     if (
@@ -401,7 +416,6 @@ UserProductInquirySchema.index(
   { sparse: true },
 );
 UserProductInquirySchema.index({ "preview.resultFileId": 1 }, { sparse: true });
-UserProductInquirySchema.index({ "sale.completedAt": -1 }, { sparse: true });
 UserProductInquirySchema.index({
   "productSnapshot.title": "text",
   "userSnapshot.fullName": "text",

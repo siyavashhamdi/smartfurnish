@@ -1,0 +1,164 @@
+@use "../../../styles/variables" as variables;
+
+.productGallerySection {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1.1rem 1.15rem;
+  border: 1px solid var(--app-surface-border);
+  border-radius: variables.$border-radius-lg;
+  background: var(--app-surface-elevated);
+}
+
+.productGallery {
+  :global(.galleryMain) {
+    min-block-size: 16rem;
+  }
+
+  :global(.heroMedia) {
+    min-block-size: 16rem;
+  }
+}
+
+.section {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1.1rem 1.15rem;
+  border: 1px solid var(--app-surface-border);
+  border-radius: variables.$border-radius-lg;
+  background: var(--app-surface-elevated);
+}
+
+.sectionCollapsible {
+  display: grid;
+  gap: 0;
+  padding: 0;
+  border: 1px solid var(--app-surface-border);
+  border-radius: variables.$border-radius-lg;
+  background: var(--app-surface-elevated);
+}
+
+.sectionToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  inline-size: 100%;
+  padding: 1.1rem 1.15rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: start;
+}
+
+.sectionToggleIcon {
+  flex-shrink: 0;
+  color: var(--app-text-secondary);
+  transition: transform 0.2s ease;
+}
+
+.sectionToggleIconExpanded {
+  transform: rotate(180deg);
+}
+
+.sectionBody {
+  padding: 0 1.15rem 1.1rem;
+  inline-size: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.latinValue {
+  direction: ltr;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.phoneLink {
+  direction: ltr;
+  text-align: end;
+  display: inline-block;
+  inline-size: 100%;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-primary-main);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.fabricValue {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.colorSwatch {
+  inline-size: 1rem;
+  block-size: 1rem;
+  border-radius: 999rem;
+  border: 1px solid var(--app-surface-border);
+  flex-shrink: 0;
+}
+
+
+.previewCarousel {
+  inline-size: 100%;
+}
+
+.previewCarouselStage {
+  min-block-size: 14rem;
+}
+
+.previewCarouselTag {
+  position: absolute;
+  z-index: 5;
+  inset-block-start: 0.65rem;
+  inset-inline-start: 0.65rem;
+  max-inline-size: calc(100% - 1.3rem);
+  font-weight: 700;
+  background: rgba(15, 26, 20, 0.72) !important;
+  color: #ffffff !important;
+  backdrop-filter: blur(0.35rem);
+  border: 0.0625rem solid rgba(255, 255, 255, 0.16) !important;
+
+  :global(.MuiChip-label) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.previewEntryBox {
+  border: 1px solid var(--app-surface-border);
+  border-radius: variables.$border-radius-lg;
+  background: color-mix(in srgb, var(--app-surface-elevated) 94%, var(--app-surface-border));
+  overflow: hidden;
+}
+
+.previewEntryToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  inline-size: 100%;
+  padding: 0.9rem 1rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: start;
+}
+
+.previewEntryToggleCopy {
+  min-inline-size: 0;
+  flex: 1 1 auto;
+}
+
+.previewEntryBody {
+  padding: 0 1rem 1rem;
+  inline-size: 100%;
+  box-sizing: border-box;
+}

@@ -29,7 +29,7 @@ const UsersManagementFilterTabs = ({
         value: tab,
         label: t(`pages.usersManagement.roleFilters.${tab}`),
       }))}
-      onChange={onChange}
+      onChange={(tab, _event) => onChange(tab)}
       ariaLabel={t("pages.usersManagement.roleFilters.ariaLabel")}
     />
   );

@@ -28,6 +28,12 @@ export function ProductAiPreviewRoomUploader({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [dragActive, setDragActive] = useState(false);
 
+  const openFilePicker = (): void => {
+    if (!disabled) {
+      inputRef.current?.click();
+    }
+  };
+
   const handleFiles = (files: FileList | null): void => {
     const nextFile = files?.[0];
 
@@ -100,7 +106,7 @@ export function ProductAiPreviewRoomUploader({
             </div>
             <Button
               disabled={disabled}
-              onClick={() => inputRef.current?.click()}
+              onClick={openFilePicker}
               size="small"
               variant="outlined"
             >
@@ -109,7 +115,18 @@ export function ProductAiPreviewRoomUploader({
           </div>
         </div>
       ) : (
-        <div className={styles.emptyState}>
+        <div
+          className={`${styles.emptyState}${disabled ? "" : ` ${styles.emptyStateClickable}`}`}
+          onClick={openFilePicker}
+          onKeyDown={(event) => {
+            if (!disabled && (event.key === "Enter" || event.key === " ")) {
+              event.preventDefault();
+              openFilePicker();
+            }
+          }}
+          role={disabled ? undefined : "button"}
+          tabIndex={disabled ? undefined : 0}
+        >
           <div className={styles.uploadIconWrap} aria-hidden="true">
             <CloudUploadRoundedIcon className={styles.uploadIcon} />
           </div>
@@ -124,7 +141,10 @@ export function ProductAiPreviewRoomUploader({
           </div>
           <Button
             disabled={disabled}
-            onClick={() => inputRef.current?.click()}
+            onClick={(event) => {
+              event.stopPropagation();
+              openFilePicker();
+            }}
             startIcon={<ImageOutlinedIcon />}
             variant="contained"
           >

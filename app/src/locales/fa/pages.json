@@ -82,6 +82,86 @@
         "inquiries": {
             "title": "استعلام‌ها",
             "subtitle": "مشاهده و پیگیری استعلام‌های ثبت‌شده محصولات از پیش‌نمایش هوشمند.",
+            "actions": {
+                "view": "مشاهده جزئیات",
+                "editStatus": "ویرایش وضعیت",
+                "history": "تاریخچه وضعیت"
+            },
+            "historyModal": {
+                "title": "تاریخچه وضعیت",
+                "loading": "در حال دریافت تاریخچه...",
+                "empty": "هنوز تغییری در وضعیت ثبت نشده است.",
+                "contactPayloadTitle": "جزئیات تماس"
+            },
+            "statusEdit": {
+                "title": "ویرایش وضعیت استعلام",
+                "submit": "ثبت وضعیت",
+                "descriptionLabel": "توضیحات",
+                "descriptionPlaceholder": "مثلاً با مشتری تماس گرفته شد و بازدید هماهنگ شد.",
+                "contactedAtLabel": "زمان تماس",
+                "contactedByLabel": "تماس توسط",
+                "completedAtLabel": "تاریخ تکمیل فروش",
+                "completedByLabel": "تکمیل‌شده توسط",
+                "success": "وضعیت استعلام با موفقیت ثبت شد.",
+                "error": "ثبت وضعیت استعلام انجام نشد."
+            },
+            "viewModal": {
+                "title": "جزئیات استعلام",
+                "subtitle": "استعلام محصول",
+                "loading": "در حال دریافت جزئیات استعلام...",
+                "sections": {
+                    "general": "اطلاعات کلی",
+                    "user": "کاربر",
+                    "product": "محصول",
+                    "fabric": "پارچه و رنگ",
+                    "preview": "پیش‌نمایش هوشمند",
+                    "contact": "اطلاعات تماس",
+                    "statusHistory": "تاریخچه وضعیت",
+                    "audit": "زمان‌بندی و ثبت"
+                },
+                "fields": {
+                    "id": "شناسه استعلام",
+                    "isArchived": "بایگانی‌شده",
+                    "userId": "شناسه کاربر",
+                    "productId": "شناسه محصول",
+                    "fabricLabel": "برچسب پارچه",
+                    "fabricKey": "کلید پارچه",
+                    "colorKey": "کلید رنگ",
+                    "patternName": "نام طرح",
+                    "colorName": "نام رنگ",
+                    "colorHex": "کد رنگ",
+                    "durationSeconds": "مدت تولید (ثانیه)",
+                    "previewEntry": "پیش‌نمایش {{index}}",
+                    "environmentFileId": "شناسه فایل محیط",
+                    "resultFileId": "شناسه فایل نتیجه",
+                    "sourceProductImageFileId": "شناسه تصویر محصول",
+                    "modelProvider": "ارائه‌دهنده مدل",
+                    "modelName": "نام مدل",
+                    "aspectRatio": "نسبت تصویر",
+                    "imageSize": "اندازه تصویر",
+                    "reasoningEffort": "تلاش استدلال",
+                    "placementPrompt": "دستور قرارگیری",
+                    "environmentFile": "عکس محیط",
+                    "resultFile": "تصویر پیش‌نمایش",
+                    "sourceProductImageFile": "تصویر محصول مبنا",
+                    "customerNote": "یادداشت مشتری",
+                    "createdBy": "ثبت‌شده توسط",
+                    "updatedBy": "بروزرسانی توسط"
+                },
+                "previewCarousel": {
+                    "nextImage": "تصویر بعدی",
+                    "previousImage": "تصویر قبلی"
+                },
+                "history": {
+                    "status": "وضعیت",
+                    "reason": "دلیل",
+                    "description": "توضیح",
+                    "changedAt": "زمان تغییر",
+                    "changedBy": "تغییر توسط",
+                    "contactedAt": "زمان تماس",
+                    "contactedBy": "تماس توسط"
+                }
+            },
             "statusFilters": {
                 "ariaLabel": "فیلتر وضعیت استعلام",
                 "PREVIEW_GENERATED": "تولید پیش‌نمایش",

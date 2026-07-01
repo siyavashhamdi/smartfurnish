@@ -1,4 +1,4 @@
-import { useCallback, type ReactElement } from "react";
+import { useCallback, type MouseEvent, type ReactElement } from "react";
 
 import SegmentFilterTabs from "../../shared/tabs/SegmentFilterTabs";
 import { PRODUCT_FORM_SECTION_TABS, type ProductSectionTab } from "./product-section-tabs.shared";
@@ -13,7 +13,7 @@ const ProductFormSectionTabs = ({
   onChange,
 }: ProductFormSectionTabsProps): ReactElement => {
   const handleTabChange = useCallback(
-    (tab: ProductSectionTab): void => {
+    (tab: ProductSectionTab, _event: MouseEvent<HTMLButtonElement>): void => {
       onChange(tab);
     },
     [onChange]

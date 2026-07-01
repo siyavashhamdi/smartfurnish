@@ -1,10 +1,12 @@
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
-import { Alert, Stack, Typography } from "@mui/material";
+import { Stack, Typography } from "@mui/material";
 import { memo, type ReactElement } from "react";
 
 import {
   PRODUCT_AI_PREVIEW_BETTER_EXPERIENCE_SIGNUP_LEAD,
   PRODUCT_AI_PREVIEW_CONTACT_SUCCESS_MESSAGE,
+  PRODUCT_AI_PREVIEW_CONTACT_SUCCESS_CLOSING,
+  PRODUCT_AI_PREVIEW_CONTACT_SUCCESS_TITLE,
 } from "./product-ai-preview.constants";
 import { SignupForm } from "../Login/SignupForm";
 import styles from "./styles/ProductAiPreviewBetterExperienceStep.module.scss";
@@ -32,14 +34,20 @@ function ProductAiPreviewBetterExperienceStepInner({
       className={`${styles.root}${showSignup ? "" : ` ${styles.successOnly}`}`}
       spacing={2.5}
     >
-      <Alert
-        className={styles.successAlert}
-        icon={<CheckCircleRoundedIcon fontSize="inherit" />}
-        severity="success"
-        variant="outlined"
-      >
-        {PRODUCT_AI_PREVIEW_CONTACT_SUCCESS_MESSAGE}
-      </Alert>
+      <div className={styles.successPanel} role="status" aria-live="polite">
+        <span className={styles.successIconWrap} aria-hidden="true">
+          <CheckCircleRoundedIcon className={styles.successIcon} />
+        </span>
+        <Typography className={styles.successTitle} component="p" variant="h6">
+          {PRODUCT_AI_PREVIEW_CONTACT_SUCCESS_TITLE}
+        </Typography>
+        <Typography className={styles.successMessage} color="text.secondary" variant="body1">
+          {PRODUCT_AI_PREVIEW_CONTACT_SUCCESS_MESSAGE}
+        </Typography>
+        <Typography className={styles.successClosing} color="text.secondary" variant="body2">
+          {PRODUCT_AI_PREVIEW_CONTACT_SUCCESS_CLOSING}
+        </Typography>
+      </div>
 
       {showSignup && contactPrefill ? (
         <>

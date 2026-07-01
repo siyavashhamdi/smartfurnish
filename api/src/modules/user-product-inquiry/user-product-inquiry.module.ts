@@ -2,14 +2,20 @@ import { Module } from "@nestjs/common";
 
 import { AppSettingsModule } from "../app-settings";
 import { DatabaseModule } from "../database";
+import { FileModule } from "../file";
 import { ProductModule } from "../product";
 import { ProductAiPreviewModule } from "../product-ai-preview";
 import { UserModule } from "../user";
 import {
   UserProductInquiryPreviewSubmitMutation,
   UserProductInquiryContactSubmitMutation,
+  UserProductInquiryStatusUpdateMutation,
+  UserProductInquiryUpdateMutation,
 } from "./graphql/mutations";
-import { UserProductInquiryListQuery } from "./graphql/queries";
+import {
+  UserProductInquiryDetailQuery,
+  UserProductInquiryListQuery,
+} from "./graphql/queries";
 import { UserProductInquiryService } from "./user-product-inquiry.service";
 
 @Module({
@@ -19,12 +25,16 @@ import { UserProductInquiryService } from "./user-product-inquiry.service";
     UserModule,
     ProductModule,
     ProductAiPreviewModule,
+    FileModule,
   ],
   providers: [
     UserProductInquiryService,
     UserProductInquiryPreviewSubmitMutation,
     UserProductInquiryContactSubmitMutation,
+    UserProductInquiryStatusUpdateMutation,
+    UserProductInquiryUpdateMutation,
     UserProductInquiryListQuery,
+    UserProductInquiryDetailQuery,
   ],
   exports: [UserProductInquiryService],
 })

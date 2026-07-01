@@ -60,8 +60,11 @@
   font-weight: variables.$font-weight-semibold;
   white-space: nowrap;
   cursor: pointer;
+  touch-action: manipulation;
   transition: color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 .filterTab:hover {
@@ -76,6 +79,11 @@
     color: inherit;
     opacity: 1;
   }
+}
+
+.filterTabActiveBackground {
+  background: var(--app-surface-bg);
+  border-color: color-mix(in srgb, var(--app-surface-border) 72%, transparent);
 }
 
 .filterTabGridCell {

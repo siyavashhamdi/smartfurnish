@@ -146,6 +146,14 @@ const DashboardAppRoutesContent = (): ReactElement => {
           }
         />
         <Route
+          path={`${APP_SHELL_ROUTES.inquiries}/view/:inquiryId`}
+          element={wrapProtected(<InquiriesIndex />)}
+        />
+        <Route
+          path={`${APP_SHELL_ROUTES.inquiries}/history/:inquiryId`}
+          element={wrapProtected(<InquiriesIndex />)}
+        />
+        <Route
           path={APP_SHELL_ROUTES.inquiries}
           element={wrapProtected(<InquiriesIndex />)}
         />

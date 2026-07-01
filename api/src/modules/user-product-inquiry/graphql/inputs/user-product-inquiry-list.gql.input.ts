@@ -1,5 +1,6 @@
 import { Type } from "class-transformer";
 import {
+  IsArray,
   IsBoolean,
   IsDateString,
   IsEnum,
@@ -79,13 +80,25 @@ export class UserProductInquiryListFilterInput {
 
   @Field(() => UserProductInquiryStatus, {
     nullable: true,
-    description: "Filter inquiries by status",
+    description: "Filter inquiries by a single status",
   })
   @IsOptional()
   @IsEnum(UserProductInquiryStatus, {
     message: "Status filter must be a valid inquiry status",
   })
   status?: UserProductInquiryStatus;
+
+  @Field(() => [UserProductInquiryStatus], {
+    nullable: true,
+    description: "Filter inquiries by one or more statuses (OR)",
+  })
+  @IsOptional()
+  @IsArray({ message: "Statuses filter must be an array" })
+  @IsEnum(UserProductInquiryStatus, {
+    each: true,
+    message: "Each status filter must be a valid inquiry status",
+  })
+  statuses?: UserProductInquiryStatus[];
 
   @Field(() => Boolean, {
     nullable: true,

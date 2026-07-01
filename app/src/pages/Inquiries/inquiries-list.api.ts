@@ -24,6 +24,40 @@ export const INQUIRY_STATUS_TAB_ORDER: readonly UserProductInquiryStatusFilterTa
   "ALL",
 ];
 
+export const DEFAULT_INQUIRY_STATUS_TAB_SELECTION: readonly UserProductInquiryStatus[] = [
+  "CALL_REQUESTED",
+];
+
+export function hasInquiryStatusTabSelectionApplied(
+  tabs: readonly UserProductInquiryStatus[],
+): boolean {
+  return (
+    tabs.length === 0 ||
+    tabs.length > 1 ||
+    tabs[0] !== DEFAULT_INQUIRY_STATUS_TAB_SELECTION[0]
+  );
+}
+
+export function resolveInquiryStatusTabSelection(
+  current: readonly UserProductInquiryStatus[],
+  tab: UserProductInquiryStatusFilterTab,
+  additiveSelect: boolean,
+): UserProductInquiryStatus[] {
+  if (tab === "ALL") {
+    return additiveSelect ? [...current] : [];
+  }
+
+  if (additiveSelect) {
+    if (current.includes(tab)) {
+      return current.filter((item) => item !== tab);
+    }
+
+    return [...current, tab];
+  }
+
+  return [tab];
+}
+
 export type UserProductInquiryListItemRow = {
   readonly id: string;
   readonly user: {
@@ -120,6 +154,7 @@ export type UserProductInquiryListQueryVariables = {
       productTitle?: string | null;
       fabricLabel?: string | null;
       status?: UserProductInquiryStatus | null;
+      statuses?: UserProductInquiryStatus[] | null;
       contactFirstName?: string | null;
       contactLastName?: string | null;
       contactPhone?: string | null;
@@ -231,7 +266,7 @@ export function buildUserProductInquiryListQueryVariables(
   sort: Partial<Record<UserProductInquiryListSortField, SortingOrder>>,
   page: number,
   pageSize: number,
-  statusTab: UserProductInquiryStatusFilterTab = "ALL",
+  activeStatusTabs: readonly UserProductInquiryStatus[] = DEFAULT_INQUIRY_STATUS_TAB_SELECTION,
 ): UserProductInquiryListQueryVariables {
   return {
     input: {
@@ -242,7 +277,7 @@ export function buildUserProductInquiryListQueryVariables(
         userPhone: trimToNull(filters.userPhone),
         productTitle: trimToNull(filters.productTitle),
         fabricLabel: trimToNull(filters.fabricLabel),
-        status: statusTab !== "ALL" ? statusTab : null,
+        statuses: activeStatusTabs.length > 0 ? [...activeStatusTabs] : null,
         contactFirstName: trimToNull(filters.contactFirstName),
         contactLastName: trimToNull(filters.contactLastName),
         contactPhone: trimToNull(filters.contactPhone),

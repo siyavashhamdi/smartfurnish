@@ -23,6 +23,10 @@
   text-align: center;
 }
 
+.emptyStateClickable {
+  cursor: pointer;
+}
+
 .uploadIconWrap {
   display: grid;
   place-items: center;

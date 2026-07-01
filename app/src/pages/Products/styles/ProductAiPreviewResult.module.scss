@@ -59,6 +59,16 @@
   background: transparent;
   cursor: zoom-in;
   border-radius: variables.$border-radius-md;
+  transition: transform 180ms ease;
+
+  &:hover .image {
+    border-color: color-mix(in srgb, variables.$color-secondary-main 52%, transparent);
+  }
+
+  &:focus-visible {
+    outline: 0.12rem solid color-mix(in srgb, variables.$color-primary-main 72%, transparent);
+    outline-offset: 0.18rem;
+  }
 }
 
 .image {
@@ -69,6 +79,7 @@
   object-fit: contain;
   border: 2px solid color-mix(in srgb, variables.$color-secondary-main 28%, transparent);
   border-radius: variables.$border-radius-md;
+  transition: border-color 180ms ease;
 }
 
 .disclaimerBanner {

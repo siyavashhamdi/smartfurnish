@@ -23,7 +23,7 @@ const ProductDetailSectionTabs = ({
     <SegmentFilterTabs
       activeTab={activeTab}
       tabs={tabs}
-      onChange={onChange}
+      onChange={(tab, _event) => onChange(tab)}
       ariaLabel="بخش‌های صفحه محصول"
       pinned
       pinnedAnchorId="product-detail-tabs"

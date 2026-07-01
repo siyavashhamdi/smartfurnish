@@ -24,7 +24,7 @@ const NotificationFilterTabs = ({
         value: tab,
         label: t(`pages.notifications.filters.${tab}`),
       }))}
-      onChange={onChange}
+      onChange={(tab, _event) => onChange(tab)}
       ariaLabel={t("pages.notifications.filters.ariaLabel")}
       pinned
     />

@@ -7,7 +7,8 @@ import {
   type ChangeEvent,
   type ReactElement,
 } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useQuery } from "@apollo/client/react";
 import { Box, Chip, Stack, TextField, Typography, useMediaQuery } from "@mui/material";
 import type { Theme } from "@mui/material/styles";
 import {
@@ -20,6 +21,7 @@ import {
 } from "@tanstack/react-table";
 
 import { USER_PRODUCT_INQUIRY_LIST_QUERY } from "../../graphql/queries/userProductInquiryList.query";
+import { USER_PRODUCT_INQUIRY_DETAIL_QUERY } from "../../graphql/queries/userProductInquiryDetail.query";
 import { useAuth } from "../../contexts/AuthContext";
 import { UserRole } from "../../lib/graphql/generated";
 import { useDebounce } from "../../hooks/useDebounce";
@@ -30,16 +32,25 @@ import {
 import { useSnackbar } from "../../hooks/useSnackbar";
 import { useTranslation } from "../../hooks/useTranslation";
 import { APP_SHELL_ROUTES } from "../../routing/app-shell-routes";
+import {
+  inquiryHistoryPath,
+  inquiryViewPath,
+  readInquiryHistoryIdFromPathname,
+  readInquiryViewIdFromPathname,
+} from "../../routing/inquiry-route-path";
 import { normalizeFabricHexColor } from "../Products/fabric-selection.util";
 import AppTooltip from "../../shared/AppTooltip";
 import { sanitizeMobilePhoneInput } from "../../utilities/mobile-phone.util";
 import EntityTableShell from "../../shared/crud/EntityTableShell";
+import CrudRowActions from "../../shared/crud/CrudRowActions";
 import crudPrimitives from "../../shared/crud/styles/crudPrimitives.module.scss";
 import DateTimeValue from "../../shared/display/DateTimeValue";
 import JalaliDateFilterField from "../../shared/table/JalaliDateFilterField";
 import {
+  DEFAULT_INQUIRY_STATUS_TAB_SELECTION,
   EMPTY_USER_PRODUCT_INQUIRY_LIST_FILTERS,
   buildUserProductInquiryListQueryVariables,
+  hasInquiryStatusTabSelectionApplied,
   hasUserProductInquiryFiltersApplied,
   mapUserProductInquiryListRowToRecord,
   type UserProductInquiryListFilters,
@@ -49,10 +60,21 @@ import {
   type UserProductInquiryListRecord,
   type UserProductInquiryListSortField,
   type UserProductInquiryStatus,
-  type UserProductInquiryStatusFilterTab,
   type SortingOrder,
 } from "./inquiries-list.api";
+import {
+  mapUserProductInquiryDetailRowToRecord,
+  type UserProductInquiryDetailQuery,
+  type UserProductInquiryDetailQueryVariables,
+  type UserProductInquiryDetailRecord,
+} from "./inquiry-detail.api";
 import InquiriesStatusFilterTabs from "./InquiriesStatusFilterTabs";
+import InquiryHistoryModal from "./InquiryHistoryModal";
+import InquiryViewModal from "./InquiryViewModal";
+import {
+  INQUIRY_STATUS_COLOR,
+  INQUIRY_STATUS_LABEL,
+} from "./inquiries-status.shared";
 
 const EMPTY_DISPLAY = "—";
 
@@ -64,6 +86,7 @@ const TABLE_TOOLBAR_OPTIONS = {
 } as const;
 
 const COLUMN_WIDTH_BY_ID: Record<string, string> = {
+  actions: "8.5rem",
   productTitle: "16rem",
   userPhone: "10rem",
   userFullName: "13rem",
@@ -78,28 +101,8 @@ const COLUMN_WIDTH_BY_ID: Record<string, string> = {
   updatedAt: "10rem",
 };
 
-const STATUS_LABEL: Record<UserProductInquiryStatus, string> = {
-  PREVIEW_GENERATED: "تولید پیش‌نمایش",
-  CALL_REQUESTED: "درخواست تماس",
-  PENDING: "در انتظار",
-  CONTACTED: "تماس‌گرفته‌شده",
-  SALE_COMPLETED: "فروخته شده",
-  CLOSED: "بسته‌شده",
-  CANCELLED: "لغوشده",
-};
-
-const STATUS_COLOR: Record<
-  UserProductInquiryStatus,
-  "default" | "primary" | "success" | "warning" | "error" | "info"
-> = {
-  PREVIEW_GENERATED: "info",
-  CALL_REQUESTED: "warning",
-  PENDING: "warning",
-  CONTACTED: "primary",
-  SALE_COMPLETED: "success",
-  CLOSED: "default",
-  CANCELLED: "error",
-};
+const STATUS_LABEL = INQUIRY_STATUS_LABEL;
+const STATUS_COLOR = INQUIRY_STATUS_COLOR;
 
 const LATIN_TEXT_FILTER_KEYS = new Set<keyof UserProductInquiryListFilters>([
   "username",
@@ -212,6 +215,8 @@ function textCell(value: unknown, monospace = false): ReactElement {
 
 const InquiriesList = (): ReactElement => {
   const isMobile = useMediaQuery((muiTheme: Theme) => muiTheme.breakpoints.down("md"));
+  const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useTranslation();
   const { showError } = useSnackbar();
@@ -219,8 +224,9 @@ const InquiriesList = (): ReactElement => {
   const hasShownLoadErrorRef = useRef(false);
 
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [activeStatusTab, setActiveStatusTab] =
-    useState<UserProductInquiryStatusFilterTab>("ALL");
+  const [activeStatusTabs, setActiveStatusTabs] = useState<UserProductInquiryStatus[]>([
+    ...DEFAULT_INQUIRY_STATUS_TAB_SELECTION,
+  ]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     productTitle: true,
     userPhone: true,
@@ -235,6 +241,13 @@ const InquiriesList = (): ReactElement => {
     previewGeneratedAt: false,
     updatedAt: false,
   });
+
+  useEffect(() => {
+    setColumnVisibility((current) => ({
+      ...current,
+      status: activeStatusTabs.length === 0,
+    }));
+  }, [activeStatusTabs]);
   const [showColumnFilters, setShowColumnFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
@@ -244,16 +257,18 @@ const InquiriesList = (): ReactElement => {
   const [pendingFilters, setPendingFilters] = useState<UserProductInquiryListFilters>(
     EMPTY_USER_PRODUCT_INQUIRY_LIST_FILTERS
   );
+  const viewInquiryId = readInquiryViewIdFromPathname(location.pathname) ?? null;
+  const historyInquiryId = readInquiryHistoryIdFromPathname(location.pathname) ?? null;
   const debouncedPendingFilters = useDebounce(pendingFilters, 500);
   const applyFiltersRef = useRef<(() => void) | null>(null);
   const serverSort = useMemo(() => sortingToServerSort(sorting), [sorting]);
 
   const hasAppliedFilters = useMemo(
     () =>
-      activeStatusTab !== "ALL" ||
+      hasInquiryStatusTabSelectionApplied(activeStatusTabs) ||
       debouncedSearchQuery.trim() !== "" ||
       hasUserProductInquiryFiltersApplied(appliedFilters),
-    [activeStatusTab, appliedFilters, debouncedSearchQuery]
+    [activeStatusTabs, appliedFilters, debouncedSearchQuery]
   );
 
   const buildVariables = useCallback(
@@ -264,9 +279,9 @@ const InquiriesList = (): ReactElement => {
         serverSort,
         page,
         pageSize,
-        activeStatusTab
+        activeStatusTabs
       ),
-    [activeStatusTab, appliedFilters, debouncedSearchQuery, serverSort]
+    [activeStatusTabs, appliedFilters, debouncedSearchQuery, serverSort]
   );
 
   const {
@@ -285,9 +300,100 @@ const InquiriesList = (): ReactElement => {
     variables: buildVariables,
     selectPage: selectUserProductInquiryListPage,
     mapItem: mapUserProductInquiryListRowToRecord,
-    resetPageDeps: [debouncedSearchQuery, appliedFilters, serverSort, activeStatusTab],
+    resetPageDeps: [debouncedSearchQuery, appliedFilters, serverSort, activeStatusTabs],
     skip: !isSuperAdmin,
   });
+
+  const { data: inquiryDetailData, loading: inquiryDetailLoading, refetch: refetchInquiryDetail } = useQuery<
+    UserProductInquiryDetailQuery,
+    UserProductInquiryDetailQueryVariables
+  >(USER_PRODUCT_INQUIRY_DETAIL_QUERY, {
+    variables: { input: { id: viewInquiryId ?? "" } },
+    skip: !viewInquiryId,
+    fetchPolicy: "network-only",
+  });
+
+  const { data: inquiryHistoryData, loading: inquiryHistoryLoading } = useQuery<UserProductInquiryDetailQuery, UserProductInquiryDetailQueryVariables>(
+    USER_PRODUCT_INQUIRY_DETAIL_QUERY,
+    {
+      variables: { input: { id: historyInquiryId ?? "" } },
+      skip: !historyInquiryId,
+      fetchPolicy: "network-only",
+    },
+  );
+
+  const viewInquiryRecord = useMemo((): UserProductInquiryDetailRecord | null => {
+    if (!viewInquiryId || inquiryDetailData?.userProductInquiryDetail?.id !== viewInquiryId) {
+      return null;
+    }
+
+    return mapUserProductInquiryDetailRowToRecord(inquiryDetailData.userProductInquiryDetail);
+  }, [inquiryDetailData, viewInquiryId]);
+
+  const historyInquiryRecord = useMemo((): UserProductInquiryDetailRecord | null => {
+    if (!historyInquiryId || inquiryHistoryData?.userProductInquiryDetail?.id !== historyInquiryId) {
+      return null;
+    }
+
+    return mapUserProductInquiryDetailRowToRecord(inquiryHistoryData.userProductInquiryDetail);
+  }, [historyInquiryId, inquiryHistoryData]);
+
+  const historyInquirySubtitle = useMemo((): string | undefined => {
+    const titleFromRecord = historyInquiryRecord?.product.title?.trim();
+    if (titleFromRecord) {
+      return titleFromRecord;
+    }
+
+    return rows.find((row) => row.id === historyInquiryId)?.productTitle;
+  }, [historyInquiryId, historyInquiryRecord, rows]);
+
+  const openViewModal = useCallback(
+    (record: UserProductInquiryListRecord): void => {
+      navigate(inquiryViewPath(record.id));
+    },
+    [navigate],
+  );
+
+  const closeViewModal = useCallback((): void => {
+    navigate(APP_SHELL_ROUTES.inquiries);
+  }, [navigate]);
+
+  const openHistoryModal = useCallback(
+    (record: UserProductInquiryListRecord): void => {
+      navigate(inquiryHistoryPath(record.id));
+    },
+    [navigate],
+  );
+
+  const closeHistoryModal = useCallback((): void => {
+    navigate(APP_SHELL_ROUTES.inquiries);
+  }, [navigate]);
+
+  const prevViewInquiryIdRef = useRef<string | null>(null);
+  const prevHistoryInquiryIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (prevViewInquiryIdRef.current && !viewInquiryId) {
+      void onRefresh();
+    }
+
+    prevViewInquiryIdRef.current = viewInquiryId;
+  }, [onRefresh, viewInquiryId]);
+
+  useEffect(() => {
+    if (prevHistoryInquiryIdRef.current && !historyInquiryId) {
+      void onRefresh();
+    }
+
+    prevHistoryInquiryIdRef.current = historyInquiryId;
+  }, [historyInquiryId, onRefresh]);
+
+  const handleViewStatusEditSuccess = useCallback((): void => {
+    void onRefresh();
+    if (viewInquiryId) {
+      void refetchInquiryDetail();
+    }
+  }, [onRefresh, refetchInquiryDetail, viewInquiryId]);
 
   useEffect(() => {
     if (!error) {
@@ -335,11 +441,11 @@ const InquiriesList = (): ReactElement => {
     setSearchQuery("");
     setPendingFilters(EMPTY_USER_PRODUCT_INQUIRY_LIST_FILTERS);
     setAppliedFilters(EMPTY_USER_PRODUCT_INQUIRY_LIST_FILTERS);
-    setActiveStatusTab("ALL");
+    setActiveStatusTabs([...DEFAULT_INQUIRY_STATUS_TAB_SELECTION]);
   };
 
-  const handleStatusTabChange = (tab: UserProductInquiryStatusFilterTab): void => {
-    setActiveStatusTab(tab);
+  const handleStatusTabsChange = (tabs: UserProductInquiryStatus[]): void => {
+    setActiveStatusTabs(tabs);
   };
 
   const renderTextFilter = (
@@ -539,8 +645,22 @@ const InquiriesList = (): ReactElement => {
         header: t("table.pages.inquiries.columns.updatedAt"),
         cell: (info) => <DateTimeValue value={info.getValue() as string} />,
       },
+      {
+        id: "actions",
+        header: t("table.columns.actions"),
+        enableSorting: false,
+        enableHiding: false,
+        cell: ({ row }) => (
+          <CrudRowActions
+            onView={() => openViewModal(row.original)}
+            viewLabel={t("pages.inquiries.actions.view")}
+            onOperationHistory={() => openHistoryModal(row.original)}
+            operationHistoryLabel={t("pages.inquiries.actions.history")}
+          />
+        ),
+      },
     ],
-    [t]
+    [openHistoryModal, openViewModal, t]
   );
 
   const table = useReactTable({
@@ -563,33 +683,52 @@ const InquiriesList = (): ReactElement => {
   }
 
   return (
-    <EntityTableShell<UserProductInquiryListRecord>
-      table={table}
-      pagedRows={table.getRowModel().rows}
-      isMobile={isMobile}
-      searchValue={searchQuery}
-      onSearchChange={handleSearchChange}
-      onClearSearch={handleClearSearch}
-      onRefresh={onRefresh}
-      loading={loading}
-      toolbarOptions={TABLE_TOOLBAR_OPTIONS}
-      filtersBelowToolbar={
-        <InquiriesStatusFilterTabs
-          activeTab={activeStatusTab}
-          onChange={handleStatusTabChange}
-        />
-      }
-      showColumnFilters={showColumnFilters}
-      onShowColumnFiltersChange={setShowColumnFilters}
-      onApplyFilters={handleApplyFilters}
-      onClearFilters={handleClearFilters}
-      renderFilterCell={renderFilterCell}
-      columnWidthById={COLUMN_WIDTH_BY_ID}
-      columnLayoutMode="fixed"
-      noDataLabel={error ? t("errors.general.loadData") : undefined}
-      hasActiveFilters={hasAppliedFilters}
-      pagination={pagination}
-    />
+    <>
+      <EntityTableShell<UserProductInquiryListRecord>
+        table={table}
+        pagedRows={table.getRowModel().rows}
+        isMobile={isMobile}
+        searchValue={searchQuery}
+        onSearchChange={handleSearchChange}
+        onClearSearch={handleClearSearch}
+        onRefresh={onRefresh}
+        loading={loading}
+        toolbarOptions={TABLE_TOOLBAR_OPTIONS}
+        filtersBelowToolbar={
+          <InquiriesStatusFilterTabs
+            activeStatusTabs={activeStatusTabs}
+            onChange={handleStatusTabsChange}
+          />
+        }
+        showColumnFilters={showColumnFilters}
+        onShowColumnFiltersChange={setShowColumnFilters}
+        onApplyFilters={handleApplyFilters}
+        onClearFilters={handleClearFilters}
+        renderFilterCell={renderFilterCell}
+        columnWidthById={COLUMN_WIDTH_BY_ID}
+        columnLayoutMode="fixed"
+        noDataLabel={error ? t("errors.general.loadData") : undefined}
+        hasActiveFilters={hasAppliedFilters}
+        pagination={pagination}
+        onRowClick={openViewModal}
+      />
+
+      <InquiryViewModal
+        open={viewInquiryId != null}
+        loading={inquiryDetailLoading}
+        record={viewInquiryRecord}
+        onClose={closeViewModal}
+        onStatusEditSuccess={handleViewStatusEditSuccess}
+      />
+
+      <InquiryHistoryModal
+        open={historyInquiryId != null}
+        loading={inquiryHistoryLoading}
+        record={historyInquiryRecord}
+        subtitle={historyInquirySubtitle}
+        onClose={closeHistoryModal}
+      />
+    </>
   );
 };
 

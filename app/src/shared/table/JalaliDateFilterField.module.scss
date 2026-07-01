@@ -10,6 +10,7 @@
 
 .textFieldInput {
   cursor: pointer;
+  font-family: var(--app-font-family);
 }
 
 /* Align react-multi-date-picker popup with app light/dark tokens */
@@ -80,6 +81,28 @@
 
   .jalali-date-filter-popup .rmdp-day.rmdp-selected.rmdp-today span {
     color: #fff !important;
+  }
+
+  .jalali-date-filter-popup .rmdp-time-picker,
+  .jalali-date-filter-popup .rmdp-time-picker div input,
+  .jalali-date-filter-popup .rmdp-time-picker div .rmdp-am {
+    font-family: var(--app-font-family) !important;
+  }
+
+  .jalali-date-filter-popup .rmdp-time-picker {
+    min-width: 15rem !important;
+  }
+
+  .jalali-date-filter-popup .rmdp-time-picker div input {
+    inline-size: 1.85rem !important;
+    min-inline-size: 1.85rem !important;
+    padding-inline: 0.2rem !important;
+    box-sizing: border-box;
+  }
+
+  .jalali-date-filter-popup .rmdp-time-picker div .rmdp-am {
+    min-inline-size: 1.6rem;
+    text-align: center;
   }
 
   /* Popper arrow */

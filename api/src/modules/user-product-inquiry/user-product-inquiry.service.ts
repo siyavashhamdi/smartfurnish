@@ -7,13 +7,18 @@ import { EXCEPTION_CONSTANT } from "../../constants/exception.constant";
 import { DEFAULT_OPENROUTER_MODEL } from "../app-settings/app-settings.types";
 import {
   User,
+  Product,
+  ProductDocument,
   UserProductInquiry,
   UserProductInquiryDocument,
   UserProductInquiryFabricSnapshot,
   UserProductInquiryUserSnapshot,
-  ProductDocument,
+  UserProductInquiryStatusHistoryEntry,
+  UserProductInquiryStatusHistoryPayload,
+  UserProductInquiryPreview,
+  UserProductInquiryContact,
 } from "../../database/schemas";
-import { UserProductInquiryStatus } from "../../enums";
+import { UserProductInquiryStatus, UserRole } from "../../enums";
 import { SortingOrder } from "../../common/pagination/input/sorting-order.enum";
 import { buildSortOptions } from "../../common/pagination/utils";
 import {
@@ -21,12 +26,24 @@ import {
   normalizeAuthIdentityMobileForSubmit,
 } from "../../utils/contact-validation.util";
 import { AppSettingsService } from "../app-settings";
+import { FileService } from "../file";
 import { ProductService } from "../product/product.service";
 import { ProductAiPreviewService } from "../product-ai-preview/services/product-ai-preview.service";
+import type { ProductAiPreviewResult } from "../product-ai-preview/services/product-ai-preview.service";
 import { UserService } from "../user/user.service";
 import {
   UserProductInquiryListGqlInput,
   UserProductInquiryListSortOptionInput,
+  UserProductInquiryDetailGqlInput,
+  UserProductInquiryStatusUpdateGqlInput,
+  UserProductInquiryUpdateGqlInput,
+  UserProductInquiryUpdateContactGqlInput,
+  UserProductInquiryUpdateFabricSnapshotGqlInput,
+  UserProductInquiryUpdatePreviewGqlInput,
+  UserProductInquiryUpdateProductSnapshotGqlInput,
+  UserProductInquiryUpdateStatusHistoryEntryGqlInput,
+  UserProductInquiryUpdateStatusHistoryPayloadGqlInput,
+  UserProductInquiryUpdateUserSnapshotGqlInput,
   UserProductInquiryPreviewSubmitGqlInput,
   UserProductInquiryContactSubmitGqlInput,
 } from "./graphql/inputs";
@@ -35,6 +52,8 @@ import {
   UserProductInquiryListPaginatedOffsetGqlResponse,
   UserProductInquiryListSummaryGqlResponse,
   UserProductInquiryContactSubmitGqlResponse,
+  UserProductInquiryDetailGqlResponse,
+  UserProductInquiryDetailPreviewGqlResponse,
 } from "./graphql/responses";
 
 type UserProductInquiryListRecord = UserProductInquiry & {
@@ -42,6 +61,8 @@ type UserProductInquiryListRecord = UserProductInquiry & {
   audit?: {
     createdAt?: Date;
     updatedAt?: Date;
+    createdBy?: Types.ObjectId;
+    updatedBy?: Types.ObjectId;
   };
 };
 
@@ -58,10 +79,13 @@ export class UserProductInquiryService {
   constructor(
     @InjectModel(UserProductInquiry.name)
     private readonly userProductInquiryModel: Model<UserProductInquiryDocument>,
+    @InjectModel(Product.name)
+    private readonly productModel: Model<ProductDocument>,
     private readonly appSettingsService: AppSettingsService,
     private readonly userService: UserService,
     private readonly productService: ProductService,
     private readonly productAiPreviewService: ProductAiPreviewService,
+    private readonly fileService: FileService,
   ) {}
 
   async submitPreview(
@@ -100,6 +124,71 @@ export class UserProductInquiryService {
     const stagingDurationSeconds =
       await this.appSettingsService.getProductAiPreviewStagingDurationSeconds();
 
+    const previewEntry = this.buildPreviewEntry({
+      environmentFileId: input.environmentFileId,
+      resultFileId: new Types.ObjectId(resultFileId),
+      sourceProductImageFileId: new Types.ObjectId(sourceProductImageFileId),
+      generatedAt,
+      durationSeconds: previewResult.durationSeconds,
+      modelName,
+      placementPrompt,
+      aspectRatio: previewResult.aspectRatio,
+      imageSize: previewResult.imageSize,
+      isRiverflowModel,
+    });
+
+    const fabricSnapshot = {
+      fabricKey,
+      colorKey,
+      patternName: previewResult.fabric.patternName,
+      colorName: previewResult.fabric.colorName,
+      ...(previewResult.fabric.colorHex
+        ? { colorHex: previewResult.fabric.colorHex }
+        : {}),
+      label: previewResult.fabric.label,
+    };
+
+    const existingInquiry = await this.resolvePreviewSubmitInquiry(
+      input,
+      userId,
+    );
+
+    if (existingInquiry) {
+      if (!existingInquiry.productId.equals(input.productId)) {
+        throw new BadRequestException(
+          EXCEPTION_CONSTANT.USER_PRODUCT_INQUIRY_PRODUCT_MISMATCH,
+        );
+      }
+
+      if (!this.canAppendPreviewToInquiry(existingInquiry.status)) {
+        throw new BadRequestException(
+          EXCEPTION_CONSTANT.USER_PRODUCT_INQUIRY_CONTACT_ALREADY_SUBMITTED,
+        );
+      }
+
+      const previews = this.normalizePreviewArray(existingInquiry.preview);
+      existingInquiry.preview = [...previews, previewEntry];
+      existingInquiry.fabricSnapshot = fabricSnapshot;
+      existingInquiry.productSnapshot = {
+        title: previewResult.product.title,
+      };
+      existingInquiry.markModified("preview");
+
+      await existingInquiry.save();
+
+      return this.buildPreviewSubmitResponse({
+        inquiryId: existingInquiry._id,
+        productId: existingInquiry.productId,
+        status: existingInquiry.status,
+        previewResult,
+        environmentFileId: input.environmentFileId,
+        resultFileId: new Types.ObjectId(resultFileId),
+        sourceProductImageFileId: new Types.ObjectId(sourceProductImageFileId),
+        generatedAt,
+        stagingDurationSeconds,
+      });
+    }
+
     const createdInquiry = await this.userProductInquiryModel.create({
       isArchived: false,
       userId,
@@ -108,16 +197,7 @@ export class UserProductInquiryService {
       productSnapshot: {
         title: previewResult.product.title,
       },
-      fabricSnapshot: {
-        fabricKey,
-        colorKey,
-        patternName: previewResult.fabric.patternName,
-        colorName: previewResult.fabric.colorName,
-        ...(previewResult.fabric.colorHex
-          ? { colorHex: previewResult.fabric.colorHex }
-          : {}),
-        label: previewResult.fabric.label,
-      },
+      fabricSnapshot,
       status: UserProductInquiryStatus.PREVIEW_GENERATED,
       statusHistory: [
         {
@@ -127,54 +207,20 @@ export class UserProductInquiryService {
           changedBy: userId,
         },
       ],
-      preview: {
-        environmentFileId: input.environmentFileId,
-        resultFileId: new Types.ObjectId(resultFileId),
-        sourceProductImageFileId: new Types.ObjectId(sourceProductImageFileId),
-        generatedAt,
-        durationSeconds: previewResult.durationSeconds,
-        model: {
-          provider: "openrouter",
-          model: modelName,
-          ...(placementPrompt ? { placementPrompt } : {}),
-          ...(previewResult.aspectRatio
-            ? { aspectRatio: previewResult.aspectRatio }
-            : {}),
-          imageSize: previewResult.imageSize,
-          ...(isRiverflowModel ? { reasoningEffort: "high" } : {}),
-        },
-      },
+      preview: [previewEntry],
     });
 
-    return {
-      id: createdInquiry._id,
+    return this.buildPreviewSubmitResponse({
+      inquiryId: createdInquiry._id,
       productId: createdInquiry.productId,
       status: createdInquiry.status,
-      image: previewResult.image,
-      durationSeconds: previewResult.durationSeconds,
-      stagingDurationSeconds,
-      description: previewResult.description,
+      previewResult,
       environmentFileId: input.environmentFileId,
       resultFileId: new Types.ObjectId(resultFileId),
       sourceProductImageFileId: new Types.ObjectId(sourceProductImageFileId),
       generatedAt,
-      ...(previewResult.aspectRatio
-        ? { aspectRatio: previewResult.aspectRatio }
-        : {}),
-      imageSize: previewResult.imageSize,
-      product: {
-        id: new Types.ObjectId(previewResult.product.id),
-        title: previewResult.product.title,
-      },
-      fabric: {
-        patternName: previewResult.fabric.patternName,
-        colorName: previewResult.fabric.colorName,
-        ...(previewResult.fabric.colorHex
-          ? { colorHex: previewResult.fabric.colorHex }
-          : {}),
-        label: previewResult.fabric.label,
-      },
-    };
+      stagingDurationSeconds,
+    });
   }
 
   async submitContact(
@@ -450,6 +496,588 @@ export class UserProductInquiryService {
     };
   }
 
+  async detail(
+    input: UserProductInquiryDetailGqlInput,
+  ): Promise<UserProductInquiryDetailGqlResponse> {
+    const inquiry = await this.userProductInquiryModel
+      .findOne({
+        _id: input.id,
+        $or: [
+          { "audit.deletedAt": null },
+          { "audit.deletedAt": { $exists: false } },
+        ],
+      })
+      .lean<UserProductInquiryListRecord>()
+      .exec();
+
+    if (!inquiry) {
+      throw new NotFoundException(
+        EXCEPTION_CONSTANT.USER_PRODUCT_INQUIRY_NOT_FOUND,
+      );
+    }
+
+    return this.toDetailResponse(inquiry);
+  }
+
+  async update(
+    input: UserProductInquiryUpdateGqlInput,
+  ): Promise<UserProductInquiryDetailGqlResponse> {
+    const inquiry = await this.userProductInquiryModel
+      .findOne({
+        _id: input.id,
+        $or: [
+          { "audit.deletedAt": null },
+          { "audit.deletedAt": { $exists: false } },
+        ],
+      })
+      .exec();
+
+    if (!inquiry) {
+      throw new NotFoundException(
+        EXCEPTION_CONSTANT.USER_PRODUCT_INQUIRY_NOT_FOUND,
+      );
+    }
+
+    await this.assertUpdateReferencesExist(input);
+    this.assertFullUpdateInput(input);
+
+    inquiry.isArchived = input.isArchived;
+    inquiry.userId = input.userId;
+    inquiry.productId = input.productId;
+    inquiry.userSnapshot = this.mapUpdateUserSnapshot(input.user);
+    inquiry.productSnapshot = this.mapUpdateProductSnapshot(input.product);
+    inquiry.status = input.status;
+    inquiry.statusHistory = input.statusHistory.map((entry) =>
+      this.mapUpdateStatusHistoryEntry(entry),
+    );
+
+    if (input.fabric === null) {
+      inquiry.set("fabricSnapshot", undefined);
+    } else if (input.fabric) {
+      inquiry.fabricSnapshot = this.mapUpdateFabricSnapshot(input.fabric);
+    }
+
+    if (input.preview === null) {
+      inquiry.set("preview", undefined);
+    } else if (input.preview) {
+      inquiry.preview = input.preview.map((preview) =>
+        this.mapUpdatePreview(preview),
+      );
+    }
+
+    if (input.contact === null) {
+      inquiry.set("contact", undefined);
+    } else if (input.contact) {
+      inquiry.contact = this.mapUpdateContact(input.contact);
+    }
+
+    inquiry.markModified("statusHistory");
+
+    try {
+      await inquiry.save();
+    } catch (error) {
+      throw new BadRequestException(
+        error instanceof Error ? error.message : EXCEPTION_CONSTANT.UNKNOWN_ERROR_OCCURRED,
+      );
+    }
+
+    return this.toDetailResponse(inquiry.toObject() as UserProductInquiryListRecord);
+  }
+
+  async updateStatus(
+    input: UserProductInquiryStatusUpdateGqlInput,
+    adminUserId: Types.ObjectId,
+  ): Promise<UserProductInquiryDetailGqlResponse> {
+    const inquiry = await this.userProductInquiryModel
+      .findOne({
+        _id: input.id,
+        $or: [
+          { "audit.deletedAt": null },
+          { "audit.deletedAt": { $exists: false } },
+        ],
+      })
+      .exec();
+
+    if (!inquiry) {
+      throw new NotFoundException(
+        EXCEPTION_CONSTANT.USER_PRODUCT_INQUIRY_NOT_FOUND,
+      );
+    }
+
+    const changedAt = new Date();
+    const description = this.normalizeOptionalText(input.description);
+    const historyEntry: UserProductInquiryStatusHistoryEntry = {
+      status: input.status,
+      reason: this.resolveStatusUpdateReason(input.status),
+      changedAt,
+      changedBy: adminUserId,
+      ...(description ? { description } : {}),
+    };
+
+    if (input.status === UserProductInquiryStatus.CONTACTED) {
+      if (!input.payload?.contactedAt || !input.payload?.contactedBy) {
+        throw new BadRequestException(
+          "Contact payload is required when status is CONTACTED",
+        );
+      }
+
+      await this.assertSuperAdminUserExists(input.payload.contactedBy);
+
+      historyEntry.payload = {
+        contactedAt: new Date(input.payload.contactedAt),
+        contactedBy: input.payload.contactedBy,
+      };
+    }
+
+    if (input.status === UserProductInquiryStatus.SALE_COMPLETED) {
+      if (!input.payload?.completedAt || !input.payload?.completedBy) {
+        throw new BadRequestException(
+          "Sale completion payload is required when status is SALE_COMPLETED",
+        );
+      }
+
+      await this.assertSuperAdminUserExists(input.payload.completedBy);
+
+      const salePayload = {
+        completedAt: new Date(input.payload.completedAt),
+        completedBy: input.payload.completedBy,
+      };
+
+      const isSalePayloadCorrection =
+        inquiry.status === UserProductInquiryStatus.SALE_COMPLETED;
+
+      if (isSalePayloadCorrection) {
+        const lastEntry =
+          inquiry.statusHistory[inquiry.statusHistory.length - 1];
+
+        if (lastEntry.status !== UserProductInquiryStatus.SALE_COMPLETED) {
+          throw new BadRequestException(
+            "Cannot update sale completion payload when the last status history entry is not SALE_COMPLETED",
+          );
+        }
+
+        lastEntry.payload = salePayload;
+
+        if (description) {
+          lastEntry.description = description;
+        }
+
+        inquiry.markModified("statusHistory");
+      } else {
+        historyEntry.payload = salePayload;
+        inquiry.status = input.status;
+        inquiry.statusHistory.push(historyEntry);
+        inquiry.markModified("statusHistory");
+      }
+    } else {
+      inquiry.status = input.status;
+      inquiry.statusHistory.push(historyEntry);
+      inquiry.markModified("statusHistory");
+    }
+
+    try {
+      await inquiry.save();
+    } catch (error) {
+      throw new BadRequestException(
+        error instanceof Error ? error.message : EXCEPTION_CONSTANT.UNKNOWN_ERROR_OCCURRED,
+      );
+    }
+
+    return this.toDetailResponse(inquiry.toObject() as UserProductInquiryListRecord);
+  }
+
+  private resolveStatusUpdateReason(
+    status: UserProductInquiryStatus,
+  ): string {
+    switch (status) {
+      case UserProductInquiryStatus.PREVIEW_GENERATED:
+        return "Smart preview generated";
+      case UserProductInquiryStatus.CALL_REQUESTED:
+        return "In-person visit contact requested";
+      case UserProductInquiryStatus.PENDING:
+        return "Inquiry marked as pending";
+      case UserProductInquiryStatus.CONTACTED:
+        return "Customer contacted";
+      case UserProductInquiryStatus.SALE_COMPLETED:
+        return "Sale completed";
+      case UserProductInquiryStatus.CLOSED:
+        return "Inquiry closed";
+      case UserProductInquiryStatus.CANCELLED:
+        return "Inquiry cancelled";
+      default:
+        return "Status updated by administrator";
+    }
+  }
+
+  private assertFullUpdateInput(input: UserProductInquiryUpdateGqlInput): void {
+    const requiredNullableKeys = [
+      "fabric",
+      "preview",
+      "contact",
+    ] as const;
+
+    for (const key of requiredNullableKeys) {
+      if (input[key] === undefined) {
+        throw new BadRequestException(
+          `userProductInquiryUpdate.${key} is required; pass null to clear optional sections`,
+        );
+      }
+    }
+  }
+
+  private async assertUpdateReferencesExist(
+    input: UserProductInquiryUpdateGqlInput,
+  ): Promise<void> {
+    const [ownerUser, product] = await Promise.all([
+      this.userService.findById(input.userId),
+      this.productModel.findById(input.productId).select({ _id: 1 }).lean().exec(),
+    ]);
+
+    if (!ownerUser) {
+      throw new NotFoundException(EXCEPTION_CONSTANT.USER_NOT_FOUND);
+    }
+
+    if (!product) {
+      throw new NotFoundException(EXCEPTION_CONSTANT.PRODUCT_NOT_FOUND);
+    }
+
+    const referencedUserIds: Types.ObjectId[] = [input.userId];
+    const referencedFileIds: Types.ObjectId[] = [];
+    const superAdminChecks: Promise<void>[] = [];
+
+    for (const entry of input.statusHistory) {
+      if (entry.changedBy) {
+        referencedUserIds.push(entry.changedBy);
+      }
+
+      if (entry.payload?.contactedBy) {
+        referencedUserIds.push(entry.payload.contactedBy);
+        superAdminChecks.push(
+          this.assertSuperAdminUserExists(entry.payload.contactedBy),
+        );
+      }
+
+      if (entry.payload?.completedBy) {
+        referencedUserIds.push(entry.payload.completedBy);
+        superAdminChecks.push(
+          this.assertSuperAdminUserExists(entry.payload.completedBy),
+        );
+      }
+    }
+
+    if (input.preview?.length) {
+      for (const preview of input.preview) {
+        referencedFileIds.push(
+          preview.environmentFileId,
+          preview.resultFileId,
+        );
+
+        if (preview.sourceProductImageFileId) {
+          referencedFileIds.push(preview.sourceProductImageFileId);
+        }
+      }
+    }
+
+    await Promise.all([
+      this.assertUsersExist(referencedUserIds),
+      this.assertStoredFilesExist(referencedFileIds),
+      ...superAdminChecks,
+    ]);
+  }
+
+  private async assertUsersExist(
+    userIds: readonly Types.ObjectId[],
+  ): Promise<void> {
+    const uniqueIds = [
+      ...new Set(userIds.map((userId) => userId.toString())),
+    ];
+
+    await Promise.all(
+      uniqueIds.map(async (userId) => {
+        const user = await this.userService.findById(new Types.ObjectId(userId));
+
+        if (!user) {
+          throw new NotFoundException(EXCEPTION_CONSTANT.USER_NOT_FOUND);
+        }
+      }),
+    );
+  }
+
+  private async assertSuperAdminUserExists(
+    userId: Types.ObjectId,
+  ): Promise<void> {
+    const user = await this.userService.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException(EXCEPTION_CONSTANT.USER_NOT_FOUND);
+    }
+
+    if (!user.roles?.includes(UserRole.SUPER_ADMIN)) {
+      throw new BadRequestException(
+        "Contacted by user must have SUPER_ADMIN role",
+      );
+    }
+  }
+
+  private async assertStoredFilesExist(
+    fileIds: readonly Types.ObjectId[],
+  ): Promise<void> {
+    const uniqueIds = [
+      ...new Set(fileIds.map((fileId) => fileId.toString())),
+    ];
+
+    if (uniqueIds.length === 0) {
+      return;
+    }
+
+    const summaries = await this.fileService.getFileSummariesByIds(uniqueIds);
+
+    if (summaries.size !== uniqueIds.length) {
+      throw new NotFoundException(EXCEPTION_CONSTANT.FILE_NOT_FOUND);
+    }
+  }
+
+  private mapUpdateUserSnapshot(
+    input: UserProductInquiryUpdateUserSnapshotGqlInput,
+  ): UserProductInquiryUserSnapshot {
+    const phoneNumber = this.normalizeOptionalText(input.phoneNumber);
+
+    return {
+      fullName: input.fullName.trim(),
+      username: input.username.trim().toLowerCase(),
+      ...(phoneNumber ? { phoneNumber } : {}),
+    };
+  }
+
+  private mapUpdateProductSnapshot(
+    input: UserProductInquiryUpdateProductSnapshotGqlInput,
+  ): { title: string } {
+    return {
+      title: input.title.trim(),
+    };
+  }
+
+  private mapUpdateFabricSnapshot(
+    input: UserProductInquiryUpdateFabricSnapshotGqlInput,
+  ): UserProductInquiryFabricSnapshot {
+    const colorHex = this.normalizeOptionalText(input.colorHex);
+
+    return {
+      fabricKey: input.fabricKey.trim(),
+      colorKey: input.colorKey.trim(),
+      patternName: input.patternName.trim(),
+      colorName: input.colorName.trim(),
+      label: input.label.trim(),
+      ...(colorHex ? { colorHex } : {}),
+    };
+  }
+
+  private mapUpdateStatusHistoryEntry(
+    input: UserProductInquiryUpdateStatusHistoryEntryGqlInput,
+  ): UserProductInquiryStatusHistoryEntry {
+    const description = this.normalizeOptionalText(input.description);
+
+    return {
+      status: input.status,
+      reason: input.reason.trim(),
+      changedAt: new Date(input.changedAt),
+      ...(description ? { description } : {}),
+      ...(input.changedBy ? { changedBy: input.changedBy } : {}),
+      ...(input.payload
+        ? { payload: this.mapStatusHistoryPayloadFromUpdateInput(input.payload) }
+        : {}),
+    };
+  }
+
+  private mapStatusHistoryPayloadFromUpdateInput(
+    input: UserProductInquiryUpdateStatusHistoryPayloadGqlInput,
+  ): UserProductInquiryStatusHistoryPayload {
+    const payload: UserProductInquiryStatusHistoryPayload = {};
+
+    if (input.contactedAt) {
+      payload.contactedAt = new Date(input.contactedAt);
+    }
+
+    if (input.contactedBy) {
+      payload.contactedBy = input.contactedBy;
+    }
+
+    if (input.completedAt) {
+      payload.completedAt = new Date(input.completedAt);
+    }
+
+    if (input.completedBy) {
+      payload.completedBy = input.completedBy;
+    }
+
+    return payload;
+  }
+
+  private mapStatusHistoryPayloadToResponse(
+    payload: UserProductInquiryStatusHistoryPayload,
+  ) {
+    return {
+      ...(payload.contactedAt ? { contactedAt: payload.contactedAt } : {}),
+      ...(payload.contactedBy ? { contactedBy: payload.contactedBy } : {}),
+      ...(payload.completedAt ? { completedAt: payload.completedAt } : {}),
+      ...(payload.completedBy ? { completedBy: payload.completedBy } : {}),
+    };
+  }
+
+  private mapUpdatePreview(
+    input: UserProductInquiryUpdatePreviewGqlInput,
+  ): UserProductInquiryPreview {
+    const placementPrompt = this.normalizeOptionalText(input.model.placementPrompt);
+    const aspectRatio = this.normalizeOptionalText(input.model.aspectRatio);
+    const imageSize = this.normalizeOptionalText(input.model.imageSize);
+    const reasoningEffort = this.normalizeOptionalText(input.model.reasoningEffort);
+
+    return {
+      environmentFileId: input.environmentFileId,
+      resultFileId: input.resultFileId,
+      generatedAt: new Date(input.generatedAt),
+      model: {
+        provider: input.model.provider.trim(),
+        model: input.model.model.trim(),
+        ...(placementPrompt ? { placementPrompt } : {}),
+        ...(aspectRatio ? { aspectRatio } : {}),
+        ...(imageSize ? { imageSize } : {}),
+        ...(reasoningEffort ? { reasoningEffort } : {}),
+      },
+      ...(input.sourceProductImageFileId
+        ? { sourceProductImageFileId: input.sourceProductImageFileId }
+        : {}),
+      ...(input.durationSeconds != null
+        ? { durationSeconds: input.durationSeconds }
+        : {}),
+    };
+  }
+
+  private mapUpdateContact(
+    input: UserProductInquiryUpdateContactGqlInput,
+  ): UserProductInquiryContact {
+    const phoneRaw = input.phone.trim();
+
+    if (!isValidMobilePhone(phoneRaw)) {
+      throw new BadRequestException(EXCEPTION_CONSTANT.INVALID_MOBILE);
+    }
+
+    const normalizedPhone = normalizeAuthIdentityMobileForSubmit(phoneRaw);
+
+    if (!normalizedPhone) {
+      throw new BadRequestException(EXCEPTION_CONSTANT.INVALID_MOBILE);
+    }
+
+    const customerNote = this.normalizeOptionalText(input.customerNote);
+
+    return {
+      firstName: input.firstName.trim(),
+      lastName: input.lastName.trim(),
+      phone: normalizedPhone,
+      requestedAt: new Date(input.requestedAt),
+      ...(customerNote ? { customerNote } : {}),
+    };
+  }
+
+  private async toDetailResponse(
+    inquiry: UserProductInquiryListRecord,
+  ): Promise<UserProductInquiryDetailGqlResponse> {
+    const [user, product] = await Promise.all([
+      this.userService.findById(inquiry.userId),
+      this.productModel
+        .findById(inquiry.productId)
+        .select({ coverImageFileIds: 1 })
+        .lean<{ coverImageFileIds?: Types.ObjectId[] } | null>()
+        .exec(),
+    ]);
+
+    const coverImageFileIds = product?.coverImageFileIds ?? [];
+    const previews = this.normalizePreviewArray(inquiry.preview);
+    const previewFileIds = previews.flatMap((preview) => [
+      preview.environmentFileId,
+      preview.resultFileId,
+      preview.sourceProductImageFileId,
+    ]);
+    const fileAccessUrlMap = await this.fileService.getAccessUrlMap([
+      ...coverImageFileIds,
+      ...previewFileIds,
+    ]);
+
+    const resolveFileAccessUrl = (fileId?: Types.ObjectId) => {
+      if (!fileId) {
+        return undefined;
+      }
+
+      return fileAccessUrlMap.get(fileId.toString());
+    };
+
+    const coverImageAccessUrls = coverImageFileIds
+      .map((fileId) => resolveFileAccessUrl(fileId))
+      .filter((accessUrl): accessUrl is NonNullable<typeof accessUrl> =>
+        Boolean(accessUrl),
+      );
+
+    return {
+      id: inquiry._id,
+      isArchived: inquiry.isArchived,
+      userId: inquiry.userId,
+      productId: inquiry.productId,
+      user: {
+        fullName: inquiry.userSnapshot.fullName,
+        username: inquiry.userSnapshot.username,
+        phoneNumber: inquiry.userSnapshot.phoneNumber,
+        roles: user?.roles ?? [],
+      },
+      product: {
+        title: inquiry.productSnapshot.title,
+        coverImageAccessUrls,
+      },
+      fabric: inquiry.fabricSnapshot
+        ? {
+            fabricKey: inquiry.fabricSnapshot.fabricKey,
+            colorKey: inquiry.fabricSnapshot.colorKey,
+            patternName: inquiry.fabricSnapshot.patternName,
+            colorName: inquiry.fabricSnapshot.colorName,
+            ...(inquiry.fabricSnapshot.colorHex
+              ? { colorHex: inquiry.fabricSnapshot.colorHex }
+              : {}),
+            label: inquiry.fabricSnapshot.label,
+          }
+        : undefined,
+      status: inquiry.status,
+      statusHistory: (inquiry.statusHistory ?? []).map((entry) => ({
+        status: entry.status,
+        reason: entry.reason,
+        ...(entry.description ? { description: entry.description } : {}),
+        changedAt: entry.changedAt,
+        ...(entry.changedBy ? { changedBy: entry.changedBy } : {}),
+        ...(entry.payload
+          ? { payload: this.mapStatusHistoryPayloadToResponse(entry.payload) }
+          : {}),
+      })),
+      preview: previews.length
+        ? previews.map((preview) =>
+            this.mapPreviewToDetailResponse(preview, resolveFileAccessUrl),
+          )
+        : undefined,
+      contact: inquiry.contact
+        ? {
+            firstName: inquiry.contact.firstName,
+            lastName: inquiry.contact.lastName,
+            phone: inquiry.contact.phone,
+            requestedAt: inquiry.contact.requestedAt,
+            ...(inquiry.contact.customerNote
+              ? { customerNote: inquiry.contact.customerNote }
+              : {}),
+          }
+        : undefined,
+      createdAt: inquiry.audit?.createdAt,
+      updatedAt: inquiry.audit?.updatedAt,
+      ...(inquiry.audit?.createdBy ? { createdBy: inquiry.audit.createdBy } : {}),
+      ...(inquiry.audit?.updatedBy ? { updatedBy: inquiry.audit.updatedBy } : {}),
+    };
+  }
+
   private toListSummaryResponse(
     inquiry: UserProductInquiryListRecord,
   ): UserProductInquiryListSummaryGqlResponse {
@@ -481,7 +1109,7 @@ export class UserProductInquiryService {
             requestedAt: inquiry.contact.requestedAt,
           }
         : undefined,
-      previewGeneratedAt: inquiry.preview?.generatedAt,
+      previewGeneratedAt: this.getLatestPreviewGeneratedAt(inquiry.preview),
       createdAt: inquiry.audit?.createdAt,
       updatedAt: inquiry.audit?.updatedAt,
     };
@@ -564,7 +1192,9 @@ export class UserProductInquiryService {
       filters.fabricLabel,
     );
 
-    if (filters.status) {
+    if (filters.statuses?.length) {
+      query.status = { $in: filters.statuses };
+    } else if (filters.status) {
       query.status = filters.status;
     }
 
@@ -743,6 +1373,197 @@ export class UserProductInquiryService {
     return {
       firstName,
       lastName: lastName || "\u200c",
+    };
+  }
+
+  private normalizePreviewArray(
+    preview?: UserProductInquiryPreview | UserProductInquiryPreview[] | null,
+  ): UserProductInquiryPreview[] {
+    if (preview == null) {
+      return [];
+    }
+
+    if (Array.isArray(preview)) {
+      return preview;
+    }
+
+    return [preview];
+  }
+
+  private getLatestPreviewGeneratedAt(
+    preview?: UserProductInquiryPreview | UserProductInquiryPreview[] | null,
+  ): Date | undefined {
+    const previews = this.normalizePreviewArray(preview);
+
+    return previews.reduce<Date | undefined>((latest, entry) => {
+      if (!entry.generatedAt) {
+        return latest;
+      }
+
+      if (!latest || entry.generatedAt > latest) {
+        return entry.generatedAt;
+      }
+
+      return latest;
+    }, undefined);
+  }
+
+  private buildPreviewEntry(params: {
+    environmentFileId: Types.ObjectId;
+    resultFileId: Types.ObjectId;
+    sourceProductImageFileId: Types.ObjectId;
+    generatedAt: Date;
+    durationSeconds: number;
+    modelName: string;
+    placementPrompt?: string;
+    aspectRatio?: string;
+    imageSize: string;
+    isRiverflowModel: boolean;
+  }): UserProductInquiryPreview {
+    return {
+      environmentFileId: params.environmentFileId,
+      resultFileId: params.resultFileId,
+      sourceProductImageFileId: params.sourceProductImageFileId,
+      generatedAt: params.generatedAt,
+      durationSeconds: params.durationSeconds,
+      model: {
+        provider: "openrouter",
+        model: params.modelName,
+        ...(params.placementPrompt ? { placementPrompt: params.placementPrompt } : {}),
+        ...(params.aspectRatio ? { aspectRatio: params.aspectRatio } : {}),
+        imageSize: params.imageSize,
+        ...(params.isRiverflowModel ? { reasoningEffort: "high" } : {}),
+      },
+    };
+  }
+
+  private mapPreviewToDetailResponse(
+    preview: UserProductInquiryPreview,
+    resolveFileAccessUrl: (
+      fileId?: Types.ObjectId,
+    ) => UserProductInquiryDetailPreviewGqlResponse["environmentFileAccessUrl"],
+  ): UserProductInquiryDetailPreviewGqlResponse {
+    return {
+      environmentFileId: preview.environmentFileId,
+      resultFileId: preview.resultFileId,
+      ...(preview.sourceProductImageFileId
+        ? { sourceProductImageFileId: preview.sourceProductImageFileId }
+        : {}),
+      generatedAt: preview.generatedAt,
+      ...(preview.durationSeconds != null
+        ? { durationSeconds: preview.durationSeconds }
+        : {}),
+      model: {
+        provider: preview.model.provider,
+        model: preview.model.model,
+        ...(preview.model.placementPrompt
+          ? { placementPrompt: preview.model.placementPrompt }
+          : {}),
+        ...(preview.model.aspectRatio
+          ? { aspectRatio: preview.model.aspectRatio }
+          : {}),
+        ...(preview.model.imageSize
+          ? { imageSize: preview.model.imageSize }
+          : {}),
+        ...(preview.model.reasoningEffort
+          ? { reasoningEffort: preview.model.reasoningEffort }
+          : {}),
+      },
+      environmentFileAccessUrl: resolveFileAccessUrl(
+        preview.environmentFileId,
+      ),
+      resultFileAccessUrl: resolveFileAccessUrl(preview.resultFileId),
+      sourceProductImageFileAccessUrl: resolveFileAccessUrl(
+        preview.sourceProductImageFileId,
+      ),
+    };
+  }
+
+  private canAppendPreviewToInquiry(status: UserProductInquiryStatus): boolean {
+    return (
+      status === UserProductInquiryStatus.PREVIEW_GENERATED ||
+      status === UserProductInquiryStatus.CALL_REQUESTED
+    );
+  }
+
+  private async resolvePreviewSubmitInquiry(
+    input: UserProductInquiryPreviewSubmitGqlInput,
+    userId: Types.ObjectId,
+  ): Promise<UserProductInquiryDocument | null> {
+    if (!input.inquiryId) {
+      return null;
+    }
+
+    const notDeletedFilter = {
+      $or: [
+        { "audit.deletedAt": null },
+        { "audit.deletedAt": { $exists: false } },
+      ],
+    };
+
+    const inquiry = await this.userProductInquiryModel
+      .findOne({
+        _id: input.inquiryId,
+        ...notDeletedFilter,
+      })
+      .exec();
+
+    if (!inquiry) {
+      throw new NotFoundException(
+        EXCEPTION_CONSTANT.USER_PRODUCT_INQUIRY_NOT_FOUND,
+      );
+    }
+
+    if (!inquiry.userId.equals(userId)) {
+      throw new ForbiddenException(
+        EXCEPTION_CONSTANT.USER_PRODUCT_INQUIRY_OWNERSHIP_REQUIRED,
+      );
+    }
+
+    return inquiry;
+  }
+
+  private buildPreviewSubmitResponse(params: {
+    inquiryId: Types.ObjectId;
+    productId: Types.ObjectId;
+    status: UserProductInquiryStatus;
+    previewResult: ProductAiPreviewResult;
+    environmentFileId: Types.ObjectId;
+    resultFileId: Types.ObjectId;
+    sourceProductImageFileId: Types.ObjectId;
+    generatedAt: Date;
+    stagingDurationSeconds: number;
+  }): UserProductInquiryPreviewSubmitGqlResponse {
+    const { previewResult } = params;
+
+    return {
+      id: params.inquiryId,
+      productId: params.productId,
+      status: params.status,
+      image: previewResult.image,
+      durationSeconds: previewResult.durationSeconds,
+      stagingDurationSeconds: params.stagingDurationSeconds,
+      description: previewResult.description,
+      environmentFileId: params.environmentFileId,
+      resultFileId: params.resultFileId,
+      sourceProductImageFileId: params.sourceProductImageFileId,
+      generatedAt: params.generatedAt,
+      ...(previewResult.aspectRatio
+        ? { aspectRatio: previewResult.aspectRatio }
+        : {}),
+      imageSize: previewResult.imageSize,
+      product: {
+        id: new Types.ObjectId(previewResult.product.id),
+        title: previewResult.product.title,
+      },
+      fabric: {
+        patternName: previewResult.fabric.patternName,
+        colorName: previewResult.fabric.colorName,
+        ...(previewResult.fabric.colorHex
+          ? { colorHex: previewResult.fabric.colorHex }
+          : {}),
+        label: previewResult.fabric.label,
+      },
     };
   }
 }

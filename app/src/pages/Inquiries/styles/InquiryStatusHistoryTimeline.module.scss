@@ -1,0 +1,113 @@
+@use "../../../styles/variables" as variables;
+
+.timeline {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  inline-size: 100%;
+  box-sizing: border-box;
+}
+
+.item {
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.dot {
+  inline-size: 0.65rem;
+  block-size: 0.65rem;
+  border-radius: 999rem;
+  border: 2px solid var(--timeline-accent, var(--app-primary-main));
+  background: var(--app-surface-elevated);
+  flex-shrink: 0;
+}
+
+.dotLatest {
+  background: var(--timeline-accent, var(--app-primary-main));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--timeline-accent, var(--app-primary-main)) 18%, transparent);
+}
+
+.card {
+  position: relative;
+  display: grid;
+  gap: 0.75rem;
+  padding-block: 0.95rem;
+  padding-inline: 0.5rem;
+  border: 1px solid var(--app-surface-border);
+  border-radius: variables.$border-radius-lg;
+  background: var(--app-surface-elevated);
+  min-inline-size: 0;
+  inline-size: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.cardAccent {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: 0.2rem;
+  background: var(--timeline-accent, var(--app-primary-main));
+  pointer-events: none;
+}
+
+.cardLatest {
+  border-color: color-mix(in srgb, var(--timeline-accent, var(--app-primary-main)) 42%, var(--app-surface-border));
+  background: color-mix(in srgb, var(--timeline-accent, var(--app-primary-main)) 6%, var(--app-surface-elevated));
+}
+
+.cardHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  inline-size: 100%;
+}
+
+.cardHeaderStart {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.changedAt {
+  color: var(--app-text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  text-align: end;
+}
+
+.descriptionBlock {
+  display: grid;
+  gap: 0.35rem;
+  inline-size: 100%;
+}
+
+.description {
+  margin: 0;
+  margin-block-start: 0.25rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: variables.$border-radius-md;
+  background: color-mix(in srgb, var(--app-surface-bg) 78%, transparent);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  inline-size: 100%;
+  box-sizing: border-box;
+}
+
+.emptyState {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--app-text-secondary);
+  font-size: 0.875rem;
+  border: 1px dashed var(--app-surface-border);
+  border-radius: variables.$border-radius-lg;
+  background: color-mix(in srgb, var(--app-surface-bg) 65%, transparent);
+  inline-size: 100%;
+  box-sizing: border-box;
+}

@@ -1,0 +1,75 @@
+.root {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.lead {
+  margin: 0;
+  line-height: 1.8;
+}
+
+.detailsPanel {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--app-surface-border) 88%, transparent);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--app-surface-border) 7%, var(--app-surface-bg));
+  box-shadow: 0 1px 2px rgba(26, 46, 31, 0.04);
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.8rem;
+  background: var(--app-surface-bg);
+  border: 1px solid color-mix(in srgb, var(--app-surface-border) 72%, transparent);
+}
+
+.fieldIconWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.35rem;
+  block-size: 2.35rem;
+  border-radius: 999rem;
+  color: var(--app-text-secondary);
+  background: color-mix(in srgb, var(--app-surface-border) 18%, var(--app-surface-bg));
+}
+
+.fieldIcon {
+  font-size: 1.15rem !important;
+}
+
+.fieldContent {
+  display: grid;
+  gap: 0.2rem;
+  min-inline-size: 0;
+}
+
+.fieldLabel {
+  margin: 0;
+  color: var(--app-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.fieldValue {
+  margin: 0;
+  color: var(--app-text-primary);
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.fieldValueLatin {
+  direction: ltr;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}

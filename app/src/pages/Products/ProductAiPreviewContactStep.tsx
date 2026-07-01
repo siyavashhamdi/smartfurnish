@@ -16,7 +16,10 @@ import {
   type Ref,
 } from "react";
 
-import { PRODUCT_AI_PREVIEW_CONTACT_DIALOG_LEAD } from "./product-ai-preview.constants";
+import {
+  PRODUCT_AI_PREVIEW_CONTACT_DIALOG_LEAD,
+  PRODUCT_AI_PREVIEW_CONTACT_SUBMITTED_LEAD,
+} from "./product-ai-preview.constants";
 import {
   getProductAiPreviewErrorMessage,
   submitUserProductInquiryContact,
@@ -27,6 +30,7 @@ import { useMe } from "../../hooks/useMe";
 import { useSnackbar } from "../../hooks/useSnackbar";
 import { LoginAdornedTextField } from "../Login/components/LoginAdornedTextField";
 import formStyles from "../Login/styles/LoginFormShared.module.scss";
+import contactStyles from "./styles/ProductAiPreviewContactStep.module.scss";
 import {
   isValidMobilePhone,
   normalizeAuthIdentityMobileForSubmit,
@@ -43,6 +47,7 @@ type ProductAiPreviewContactStepProps = {
   readonly inquiryId: string | null;
   readonly fabricKey: string | null;
   readonly colorKey: string | null;
+  readonly readonlyContact?: ProductAiPreviewSubmittedContact | null;
   readonly onSubmittingChange?: (submitting: boolean) => void;
   readonly onCanSubmitChange?: (canSubmit: boolean) => void;
   readonly onMePrefillSlowBannerChange?: (visible: boolean) => void;
@@ -92,12 +97,47 @@ function resolveDefaultPhone(phoneNumber?: string | null): string {
   return normalizeOptionalMobilePhoneToLocal(phoneNumber ?? "") ?? "";
 }
 
+type SubmittedContactFieldProps = {
+  readonly icon: ReactElement;
+  readonly label: string;
+  readonly value: string;
+  readonly latin?: boolean;
+};
+
+function SubmittedContactField({
+  icon,
+  label,
+  value,
+  latin = false,
+}: SubmittedContactFieldProps): ReactElement {
+  return (
+    <div className={contactStyles.fieldRow}>
+      <span className={contactStyles.fieldIconWrap} aria-hidden="true">
+        {icon}
+      </span>
+      <div className={contactStyles.fieldContent}>
+        <Typography className={contactStyles.fieldLabel} component="p" variant="caption">
+          {label}
+        </Typography>
+        <Typography
+          className={`${contactStyles.fieldValue}${latin ? ` ${contactStyles.fieldValueLatin}` : ""}`}
+          component="p"
+          variant="body1"
+        >
+          {value}
+        </Typography>
+      </div>
+    </div>
+  );
+}
+
 function ProductAiPreviewContactStepInner(
   {
     productId,
     inquiryId,
     fabricKey,
     colorKey,
+    readonlyContact = null,
     onSubmittingChange,
     onCanSubmitChange,
     onMePrefillSlowBannerChange,
@@ -105,6 +145,8 @@ function ProductAiPreviewContactStepInner(
   }: ProductAiPreviewContactStepProps,
   ref: Ref<ProductAiPreviewContactStepHandle>,
 ): ReactElement {
+  const isReadonly = readonlyContact !== null;
+
   const { isAnonymousUser } = useAuth();
   const { user: meUser, loading: meLoading } = useMe();
   const { showError } = useSnackbar();
@@ -115,6 +157,10 @@ function ProductAiPreviewContactStepInner(
   const [prefilled, setPrefilled] = useState(false);
 
   useEffect(() => {
+    if (isReadonly) {
+      return;
+    }
+
     if (prefilled) {
       return;
     }
@@ -135,10 +181,11 @@ function ProductAiPreviewContactStepInner(
     );
     setPhone(resolveDefaultPhone(meUser?.profile?.phoneNumber));
     setPrefilled(true);
-  }, [isAnonymousUser, meLoading, meUser, prefilled]);
+  }, [isAnonymousUser, isReadonly, meLoading, meUser, prefilled]);
 
   useEffect(() => {
-    const shouldTrackSlowPrefill = !isAnonymousUser && meLoading && !prefilled;
+    const shouldTrackSlowPrefill =
+      !isReadonly && !isAnonymousUser && meLoading && !prefilled;
 
     if (!shouldTrackSlowPrefill) {
       onMePrefillSlowBannerChange?.(false);
@@ -153,16 +200,22 @@ function ProductAiPreviewContactStepInner(
       window.clearTimeout(timer);
       onMePrefillSlowBannerChange?.(false);
     };
-  }, [isAnonymousUser, meLoading, onMePrefillSlowBannerChange, prefilled]);
+  }, [isAnonymousUser, isReadonly, meLoading, onMePrefillSlowBannerChange, prefilled]);
 
   const phoneInvalid = Boolean(phone.trim()) && !isValidMobilePhone(phone);
   const isFormValid =
     Boolean(fullName.trim()) && Boolean(phone.trim()) && !phoneInvalid;
 
   useEffect(() => {
+    if (isReadonly) {
+      onSubmittingChange?.(false);
+      onCanSubmitChange?.(false);
+      return;
+    }
+
     onSubmittingChange?.(submitting);
     onCanSubmitChange?.(isFormValid);
-  }, [isFormValid, onCanSubmitChange, onSubmittingChange, submitting]);
+  }, [isFormValid, isReadonly, onCanSubmitChange, onSubmittingChange, submitting]);
 
   const handleSubmit = useCallback(async (): Promise<void> => {
     if (!isFormValid || submitting) {
@@ -241,6 +294,32 @@ function ProductAiPreviewContactStepInner(
   const handlePhoneChange = useCallback((event: ChangeEvent<HTMLInputElement>): void => {
     setPhone(sanitizeMobilePhoneInput(event.target.value));
   }, []);
+
+  if (isReadonly && readonlyContact) {
+    const readonlyPhone =
+      normalizeOptionalMobilePhoneToLocal(readonlyContact.phone) ?? readonlyContact.phone;
+
+    return (
+      <div className={contactStyles.root}>
+        <Typography className={contactStyles.lead} color="text.secondary" variant="body2">
+          {PRODUCT_AI_PREVIEW_CONTACT_SUBMITTED_LEAD}
+        </Typography>
+        <div className={contactStyles.detailsPanel}>
+          <SubmittedContactField
+            icon={<PersonIcon className={contactStyles.fieldIcon} />}
+            label="نام و نام خانوادگی"
+            value={readonlyContact.fullName}
+          />
+          <SubmittedContactField
+            icon={<PhoneIcon className={contactStyles.fieldIcon} />}
+            label="شماره موبایل"
+            latin
+            value={readonlyPhone}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form id="product-ai-preview-contact-step-form" onSubmit={handleFormSubmit}>

@@ -123,6 +123,7 @@ export async function submitUserProductInquiryPreview(params: {
   readonly fabricKey: string;
   readonly colorKey: string;
   readonly environmentFileId: string;
+  readonly inquiryId?: string | null;
 }): Promise<UserProductInquiryPreviewSubmitResult> {
   const result = await apolloClient.mutate<UserProductInquiryPreviewSubmitMutationResult>({
     mutation: USER_PRODUCT_INQUIRY_PREVIEW_SUBMIT_MUTATION,
@@ -131,6 +132,7 @@ export async function submitUserProductInquiryPreview(params: {
         colorKey: params.colorKey,
         environmentFileId: params.environmentFileId,
         fabricKey: params.fabricKey,
+        inquiryId: params.inquiryId?.trim() || undefined,
         productId: params.productId,
       },
     },

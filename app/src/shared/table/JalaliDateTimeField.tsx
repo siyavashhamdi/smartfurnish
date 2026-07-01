@@ -1,5 +1,7 @@
 import { type MouseEvent, type ReactElement, useMemo } from "react";
 import DatePicker from "react-multi-date-picker";
+import "react-multi-date-picker/styles/layouts/prime.css";
+import "react-multi-date-picker/styles/backgrounds/bg-dark.css";
 import TimePicker from "react-multi-date-picker/plugins/time_picker";
 import DateObject from "react-date-object";
 import persian from "react-date-object/calendars/persian";

@@ -18,8 +18,15 @@ type ProductAiPreviewStepIndicatorProps = {
   readonly onStepSelect?: (stepId: ProductAiPreviewStepId) => void;
 };
 
-function isStepNavigable(stepId: ProductAiPreviewStepId): boolean {
-  return stepId !== "coming-soon";
+function isStepNavigable(
+  stepId: ProductAiPreviewStepId,
+  stepIsCompleted: boolean,
+): boolean {
+  if (stepId === "coming-soon") {
+    return stepIsCompleted;
+  }
+
+  return true;
 }
 
 function joinStepClasses(...classes: Array<string | undefined>): string {
@@ -68,6 +75,7 @@ function ProductAiPreviewStepIndicatorInner({
   return (
     <div className={stepStyles.track} aria-label="مراحل پیش‌نمایش هوشمند">
       {PRODUCT_AI_PREVIEW_STEPS.map((step, index) => {
+        const stepIsCompleted = Boolean(isStepCompleted?.(step.id));
         const state = resolveStepState(
           index,
           activeStepIndex,
@@ -77,7 +85,7 @@ function ProductAiPreviewStepIndicatorInner({
         );
         const isClickable =
           Boolean(onStepSelect) &&
-          isStepNavigable(step.id) &&
+          isStepNavigable(step.id, stepIsCompleted) &&
           index <= maxReachedStepIndex;
         const connectorReached = index > 0 && index <= maxReachedStepIndex;
         const connectorActive = index > 0 && index === activeStepIndex;
@@ -112,7 +120,7 @@ function ProductAiPreviewStepIndicatorInner({
               }}
             >
               <span className={stepStyles.stepNumber}>{index + 1}</span>
-              {state === "completed" ? (
+              {stepIsCompleted ? (
                 <span className={stepStyles.stepTick} aria-hidden="true">
                   <CheckRoundedIcon fontSize="inherit" />
                 </span>

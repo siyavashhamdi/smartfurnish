@@ -85,6 +85,14 @@ const ROUTE_TITLE_RULES: readonly RouteTitleRule[] = [
     match: (p) => /^\/more\/system-settings\/edit\/[^/]+$/.test(p),
     key: "app.pageTitles.systemSettingEdit",
   },
+  {
+    match: (p) => /^\/inquiries\/view\/[^/]+$/.test(p),
+    key: "pages.inquiries.viewModal.title",
+  },
+  {
+    match: (p) => /^\/inquiries\/history\/[^/]+$/.test(p),
+    key: "pages.inquiries.historyModal.title",
+  },
   { match: (p) => p === "/users/new", key: "pages.usersManagement.create.title" },
   {
     match: (p) => /^\/users\/edit\/[^/]+\/confirm$/.test(p),

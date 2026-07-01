@@ -18,6 +18,7 @@ import {
   type ProductAiPreviewContactStepHandle,
 } from "./ProductAiPreviewContactStep";
 import { ProductAiPreviewGenerationProgress } from "./ProductAiPreviewGenerationProgress";
+import { ProductAiPreviewImageViewerDialog } from "./ProductAiPreviewImageViewerDialog";
 import { ProductAiPreviewResult } from "./ProductAiPreviewResult";
 import { ProductAiPreviewRoomUploader } from "./ProductAiPreviewRoomUploader";
 import { ProductAiPreviewStepIndicator } from "./ProductAiPreviewStepIndicator";
@@ -109,6 +110,7 @@ export function ProductAiPreviewDialog({
   );
   const [submittedContact, setSubmittedContact] =
     useState<ProductAiPreviewSubmittedContact | null>(null);
+  const [isResultViewerOpen, setIsResultViewerOpen] = useState(false);
 
   const selectedProductImageUrl = useMemo(
     () => resolveFileAccessUrl(fabricSelection.selectedColor?.aiProductImageAccessUrl ?? null),
@@ -137,11 +139,18 @@ export function ProductAiPreviewDialog({
     setRoomPreviewUrl(null);
     setInquiryId(null);
     setSubmittedContact(null);
+    setIsResultViewerOpen(false);
     setContactSubmitting(false);
     setContactCanSubmit(false);
     setContactMePrefillSlowBanner(false);
     resetGenerationState();
   }, [resetGenerationState]);
+
+  useEffect(() => {
+    if (activeStepId !== "result") {
+      setIsResultViewerOpen(false);
+    }
+  }, [activeStepId]);
 
   useEffect(() => {
     if (!open) {
@@ -189,6 +198,7 @@ export function ProductAiPreviewDialog({
         colorKey: fabricSelection.selectedColorKey,
         environmentFileId,
         fabricKey: fabricSelection.selectedFabricKey,
+        inquiryId,
         productId,
       });
 
@@ -219,6 +229,7 @@ export function ProductAiPreviewDialog({
     fabricSelection.selectedColorKey,
     fabricSelection.selectedFabricKey,
     productId,
+    inquiryId,
     roomFile,
   ]);
 
@@ -228,6 +239,7 @@ export function ProductAiPreviewDialog({
   }, []);
 
   const handleNewPreview = useCallback((): void => {
+    setRoomFile(null);
     setActiveStepId("setup");
   }, []);
 
@@ -239,6 +251,7 @@ export function ProductAiPreviewDialog({
   }, []);
 
   const handleContactSubmitted = useCallback((contact: ProductAiPreviewSubmittedContact): void => {
+    setContactSubmitting(false);
     setInquiryId(contact.inquiryId);
     setSubmittedContact(contact);
     setActiveStepId("coming-soon");
@@ -259,6 +272,24 @@ export function ProductAiPreviewDialog({
     };
   }, [submittedContact]);
 
+  const handleOpenResultViewer = useCallback((): void => {
+    setIsResultViewerOpen(true);
+  }, []);
+
+  const handleCloseResultViewer = useCallback((): void => {
+    setIsResultViewerOpen(false);
+  }, []);
+
+  const resultViewerTitle = useMemo((): string => {
+    if (!result) {
+      return productTitle.trim() || t("app.pageTitles.productAiPreview");
+    }
+
+    return `${result.product.title} — ${result.fabric.label}`;
+  }, [productTitle, result, t]);
+
+  const isContactRequestSubmitted = submittedContact !== null;
+
   const isStepCompleted = useCallback(
     (stepId: ProductAiPreviewStepId): boolean => {
       const activeStepIndex = getProductAiPreviewStepIndex(activeStepId);
@@ -267,22 +298,23 @@ export function ProductAiPreviewDialog({
         case "setup":
           return Boolean(result);
         case "result":
+          if (isContactRequestSubmitted && Boolean(result)) {
+            return true;
+          }
+
           return Boolean(result) && activeStepIndex > getProductAiPreviewStepIndex("result");
         case "contact":
           return maxReachedStepIndex >= getProductAiPreviewStepIndex("coming-soon");
         case "coming-soon":
+          return maxReachedStepIndex >= getProductAiPreviewStepIndex("coming-soon");
         default:
           return false;
       }
     },
-    [activeStepId, maxReachedStepIndex, result],
+    [activeStepId, isContactRequestSubmitted, maxReachedStepIndex, result],
   );
 
   const handleStepSelect = useCallback((stepId: ProductAiPreviewStepId): void => {
-    if (stepId === "coming-soon") {
-      return;
-    }
-
     setActiveStepId(stepId);
   }, []);
 
@@ -331,16 +363,24 @@ export function ProductAiPreviewDialog({
             icon: REFRESH_ICON,
             onClick: handleNewPreview,
           },
-          {
-            key: "visit",
-            label: IN_PERSON_VISIT_BUTTON_LABEL,
-            variant: "contained" as const,
-            color: "primary" as const,
-            icon: VISIT_ICON,
-            onClick: handleGoToContactStep,
-          },
+          ...(isContactRequestSubmitted
+            ? []
+            : [
+                {
+                  key: "visit",
+                  label: IN_PERSON_VISIT_BUTTON_LABEL,
+                  variant: "contained" as const,
+                  color: "primary" as const,
+                  icon: VISIT_ICON,
+                  onClick: handleGoToContactStep,
+                },
+              ]),
         ];
       case "contact":
+        if (isContactRequestSubmitted) {
+          return [closeAction];
+        }
+
         return [
           {
             ...closeAction,
@@ -356,6 +396,7 @@ export function ProductAiPreviewDialog({
           },
         ];
       case "coming-soon":
+        return [closeAction];
       default:
         return [closeAction];
     }
@@ -368,6 +409,7 @@ export function ProductAiPreviewDialog({
     handleGenerate,
     handleGoToContactStep,
     handleNewPreview,
+    isContactRequestSubmitted,
     onClose,
     result,
   ]);
@@ -460,6 +502,7 @@ export function ProductAiPreviewDialog({
                   fabricLabel={result.fabric.label}
                   imageUrl={result.image}
                   productTitle={result.product.title}
+                  onImageClick={handleOpenResultViewer}
                 />
               ) : (
                 <div className={stepStyles.stepEmptyState}>
@@ -480,6 +523,7 @@ export function ProductAiPreviewDialog({
                 inquiryId={inquiryId}
                 fabricKey={fabricSelection.selectedFabricKey}
                 colorKey={fabricSelection.selectedColorKey}
+                readonlyContact={isContactRequestSubmitted ? submittedContact : null}
                 onCanSubmitChange={setContactCanSubmit}
                 onMePrefillSlowBannerChange={setContactMePrefillSlowBanner}
                 onSubmittingChange={setContactSubmitting}
@@ -503,6 +547,13 @@ export function ProductAiPreviewDialog({
         onDismissError={handleDismissError}
         open={submitting || Boolean(generationError)}
         progress={progress}
+      />
+
+      <ProductAiPreviewImageViewerDialog
+        open={isResultViewerOpen}
+        title={resultViewerTitle}
+        imageUrl={result?.image ?? ""}
+        onClose={handleCloseResultViewer}
       />
     </>
   );

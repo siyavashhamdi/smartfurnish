@@ -1,5 +1,5 @@
 import { Transform } from "class-transformer";
-import { IsNotEmpty, IsString, MaxLength } from "class-validator";
+import { IsNotEmpty, IsOptional, IsString, MaxLength } from "class-validator";
 import { Field, ID, InputType } from "@nestjs/graphql";
 import { Types } from "mongoose";
 
@@ -12,6 +12,16 @@ export class UserProductInquiryPreviewSubmitGqlInput {
   @IsObjectId({ message: "Product ID must be a valid MongoDB ObjectId" })
   @Transform(toObjectId)
   productId: Types.ObjectId;
+
+  @Field(() => ID, {
+    nullable: true,
+    description:
+      "Existing inquiry ID from a prior smart preview submit. When provided, appends a new preview generation to that inquiry.",
+  })
+  @IsOptional()
+  @IsObjectId({ message: "Inquiry ID must be a valid MongoDB ObjectId" })
+  @Transform(toObjectId)
+  inquiryId?: Types.ObjectId;
 
   @Field({ description: "Selected fabric key" })
   @IsString({ message: "Fabric key must be a string" })
