@@ -27,4 +27,11 @@ export class BadgeCountGqlResponse {
       "Support ticket badge count. Staff users receive open tickets; end users receive answered own tickets.",
   })
   tickets?: number | null;
+
+  @Field(() => Int, {
+    nullable: true,
+    description:
+      "Actionable inquiry badge count for staff users in CALL_REQUESTED, CONTACTED, or PENDING status.",
+  })
+  inquiries?: number | null;
 }

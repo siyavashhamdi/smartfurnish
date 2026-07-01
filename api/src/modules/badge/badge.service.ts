@@ -11,12 +11,15 @@ import {
   TicketDocument,
   UserProduct,
   UserProductDocument,
+  UserProductInquiry,
+  UserProductInquiryDocument,
 } from "../../database/schemas";
 import {
   BadgeCountTriggerAction,
   BadgeCountTriggerSource,
   GeneralSubscriptionUpdateType,
   TicketStatus,
+  UserProductInquiryStatus,
   UserProductPurchaseStatus,
   UserRole,
 } from "../../enums";
@@ -42,6 +45,12 @@ export interface PublishBadgeCountSignalInput {
 
 @Injectable()
 export class BadgeService {
+  private static readonly INQUIRY_BADGE_STATUSES = [
+    UserProductInquiryStatus.CALL_REQUESTED,
+    UserProductInquiryStatus.CONTACTED,
+    UserProductInquiryStatus.PENDING,
+  ] as const;
+
   constructor(
     @InjectModel(Product.name)
     private readonly productModel: Model<ProductDocument>,
@@ -51,6 +60,8 @@ export class BadgeService {
     private readonly notificationModel: Model<NotificationDocument>,
     @InjectModel(Ticket.name)
     private readonly ticketModel: Model<TicketDocument>,
+    @InjectModel(UserProductInquiry.name)
+    private readonly userProductInquiryModel: Model<UserProductInquiryDocument>,
     private readonly userService: UserService,
     private readonly userSubscriptionService: UserSubscriptionService,
     private readonly pushNotificationService: PushNotificationService,
@@ -65,23 +76,27 @@ export class BadgeService {
         payments: null,
         notifications: null,
         tickets: null,
+        inquiries: null,
       };
     }
 
     const isStaff = this.isStaff(user);
 
-    const [products, payments, notifications, tickets] = await Promise.all([
-      this.countProducts(isStaff),
-      isStaff ? this.countPendingPayments() : Promise.resolve(null),
-      this.countUnreadNotifications(user),
-      this.countTickets(user, isStaff),
-    ]);
+    const [products, payments, notifications, tickets, inquiries] =
+      await Promise.all([
+        this.countProducts(isStaff),
+        isStaff ? this.countPendingPayments() : Promise.resolve(null),
+        this.countUnreadNotifications(user),
+        this.countTickets(user, isStaff),
+        isStaff ? this.countActionableInquiries() : Promise.resolve(null),
+      ]);
 
     return {
       products,
       payments,
       notifications,
       tickets,
+      inquiries,
     };
   }
 
@@ -197,6 +212,19 @@ export class BadgeService {
         };
 
     return this.ticketModel.countDocuments(filterQuery).exec();
+  }
+
+  private countActionableInquiries(): Promise<number> {
+    return this.userProductInquiryModel
+      .countDocuments({
+        isArchived: false,
+        status: { $in: [...BadgeService.INQUIRY_BADGE_STATUSES] },
+        $or: [
+          { "audit.deletedAt": null },
+          { "audit.deletedAt": { $exists: false } },
+        ],
+      })
+      .exec();
   }
 
   private isStaff(user: AuthenticatedUser): boolean {

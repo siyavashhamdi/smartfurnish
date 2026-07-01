@@ -3,7 +3,7 @@ import {
   ArrayMinSize,
   IsArray,
   IsBoolean,
-  IsDateString,
+  IsDate,
   IsEnum,
   IsNotEmpty,
   IsNumber,
@@ -98,8 +98,8 @@ export class UserProductInquiryUpdateStatusHistoryPayloadGqlInput {
     description: "When contact was made",
   })
   @IsOptional()
-  @IsDateString({}, { message: "Contacted at must be an ISO date" })
-  contactedAt?: string;
+  @IsDate({ message: "Contacted at must be an ISO date" })
+  contactedAt?: Date;
 
   @Field(() => ID, {
     nullable: true,
@@ -115,8 +115,8 @@ export class UserProductInquiryUpdateStatusHistoryPayloadGqlInput {
     description: "When the sale was completed",
   })
   @IsOptional()
-  @IsDateString({}, { message: "Completed at must be an ISO date" })
-  completedAt?: string;
+  @IsDate({ message: "Completed at must be an ISO date" })
+  completedAt?: Date;
 
   @Field(() => ID, {
     nullable: true,
@@ -147,8 +147,8 @@ export class UserProductInquiryUpdateStatusHistoryEntryGqlInput {
   description?: string | null;
 
   @Field(() => GraphQLISODateTime, { description: "When the status changed" })
-  @IsDateString({}, { message: "Changed at must be an ISO date" })
-  changedAt: string;
+  @IsDate({ message: "Changed at must be an ISO date" })
+  changedAt: Date;
 
   @Field(() => ID, {
     nullable: true,
@@ -238,8 +238,8 @@ export class UserProductInquiryUpdatePreviewGqlInput {
   sourceProductImageFileId?: Types.ObjectId | null;
 
   @Field(() => GraphQLISODateTime, { description: "When the preview was generated" })
-  @IsDateString({}, { message: "Generated at must be an ISO date" })
-  generatedAt: string;
+  @IsDate({ message: "Generated at must be an ISO date" })
+  generatedAt: Date;
 
   @Field(() => Float, {
     nullable: true,
@@ -289,8 +289,8 @@ export class UserProductInquiryUpdateContactGqlInput {
   phone: string;
 
   @Field(() => GraphQLISODateTime, { description: "When contact was requested" })
-  @IsDateString({}, { message: "Requested at must be an ISO date" })
-  requestedAt: string;
+  @IsDate({ message: "Requested at must be an ISO date" })
+  requestedAt: Date;
 
   @Field({ nullable: true, description: "Optional customer note" })
   @IsOptional()

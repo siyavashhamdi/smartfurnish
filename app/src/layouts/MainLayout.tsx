@@ -135,6 +135,7 @@ type BadgeCountQuery = {
     readonly payments?: number | null;
     readonly notifications?: number | null;
     readonly tickets?: number | null;
+    readonly inquiries?: number | null;
   };
 };
 
@@ -328,6 +329,7 @@ export function MainLayout({
     readonly payments?: number | null;
     readonly notifications?: number;
     readonly tickets?: number;
+    readonly inquiries?: number;
     readonly others?: number;
   }>({});
 
@@ -464,14 +466,23 @@ export function MainLayout({
   const notificationBadgeCount =
     liveCounts.notifications ?? badgeCountData?.badgeCount.notifications ?? 0;
   const supportBadgeCount = liveCounts.tickets ?? badgeCountData?.badgeCount.tickets ?? 0;
+  const inquiriesBadgeCount =
+    liveCounts.inquiries ?? badgeCountData?.badgeCount.inquiries ?? 0;
   const appShellNavBadgeCounts = useMemo<AppShellNavBadgeCounts>(
     () => ({
       products: productsBadgeCount,
       payments: paymentBadgeCount,
       notifications: notificationBadgeCount,
       support: supportBadgeCount,
+      inquiries: inquiriesBadgeCount,
     }),
-    [productsBadgeCount, notificationBadgeCount, paymentBadgeCount, supportBadgeCount]
+    [
+      productsBadgeCount,
+      notificationBadgeCount,
+      paymentBadgeCount,
+      supportBadgeCount,
+      inquiriesBadgeCount,
+    ]
   );
 
   const headerSettingsItems = useMemo(

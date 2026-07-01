@@ -1,6 +1,14 @@
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useState,
+  type ReactElement,
+} from "react";
 import { useQuery } from "@apollo/client/react";
-import { Button, MenuItem, Stack, TextField } from "@mui/material";
+import { MenuItem, Stack, TextField } from "@mui/material";
 
 import {
   INQUIRY_STATUS_LABEL,
@@ -12,6 +20,7 @@ import type {
   UserProductInquiryStatusUpdateMutationVariables,
 } from "./inquiry-status-update.api";
 import {
+  type InquiryContactPayload,
   type InquirySalePayload,
   toLocalDateTimeInputValueFromIso,
 } from "./inquiry-sale-payload.util";
@@ -36,7 +45,6 @@ import type {
   UserDetailQuery,
   UserDetailQueryVariables,
 } from "../UsersManagement/users-management-list.api";
-import styles from "./styles/InquiryStatusEditSection.module.scss";
 
 const DESCRIPTION_MAX_LENGTH = 2000;
 
@@ -49,21 +57,85 @@ function createDefaultDateTimeValue(): string {
   return toLocalDateTimeInputValue(new Date());
 }
 
+type StatusEditFormSnapshot = {
+  readonly status: UserProductInquiryStatus;
+  readonly description: string;
+  readonly contactedAt: string;
+  readonly contactedById: string | null;
+  readonly completedAt: string;
+  readonly completedById: string | null;
+};
+
+function buildBaselineSnapshot(params: {
+  readonly initialStatus: UserProductInquiryStatus;
+  readonly initialContactPayload: InquiryContactPayload | null;
+  readonly initialSalePayload: InquirySalePayload | null;
+}): StatusEditFormSnapshot {
+  return {
+    status: params.initialStatus,
+    description: "",
+    contactedAt:
+      params.initialStatus === "CONTACTED" && params.initialContactPayload
+        ? toLocalDateTimeInputValueFromIso(params.initialContactPayload.contactedAt)
+        : "",
+    contactedById:
+      params.initialStatus === "CONTACTED" && params.initialContactPayload?.contactedBy
+        ? params.initialContactPayload.contactedBy
+        : null,
+    completedAt:
+      params.initialStatus === "SALE_COMPLETED" && params.initialSalePayload
+        ? toLocalDateTimeInputValueFromIso(params.initialSalePayload.completedAt)
+        : "",
+    completedById:
+      params.initialStatus === "SALE_COMPLETED" && params.initialSalePayload?.completedBy
+        ? params.initialSalePayload.completedBy
+        : null,
+  };
+}
+
+function areSnapshotsEqual(
+  left: StatusEditFormSnapshot,
+  right: StatusEditFormSnapshot,
+): boolean {
+  return (
+    left.status === right.status &&
+    left.description === right.description &&
+    left.contactedAt === right.contactedAt &&
+    left.contactedById === right.contactedById &&
+    left.completedAt === right.completedAt &&
+    left.completedById === right.completedById
+  );
+}
+
+export type InquiryStatusEditSectionHandle = {
+  submit: () => void;
+};
+
 type InquiryStatusEditSectionProps = {
   readonly inquiryId: string;
   readonly initialStatus: UserProductInquiryStatus;
+  readonly initialContactPayload?: InquiryContactPayload | null;
   readonly initialSalePayload?: InquirySalePayload | null;
   readonly onSuccess?: () => void;
   readonly onSubmittingChange?: (submitting: boolean) => void;
+  readonly onCanSubmitChange?: (canSubmit: boolean) => void;
 };
 
-function InquiryStatusEditSection({
-  inquiryId,
-  initialStatus,
-  initialSalePayload = null,
-  onSuccess,
-  onSubmittingChange,
-}: InquiryStatusEditSectionProps): ReactElement {
+const InquiryStatusEditSection = forwardRef<
+  InquiryStatusEditSectionHandle,
+  InquiryStatusEditSectionProps
+>(function InquiryStatusEditSection(
+  {
+    inquiryId,
+    initialStatus,
+    initialContactPayload = null,
+    initialSalePayload = null,
+    onSuccess,
+    onSubmittingChange,
+    onCanSubmitChange,
+  },
+  ref,
+): ReactElement {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [status, setStatus] = useState<UserProductInquiryStatus>(initialStatus);
@@ -82,9 +154,15 @@ function InquiryStatusEditSection({
   }, [user]);
 
   const resetContactPayload = useCallback((): void => {
+    if (initialStatus === "CONTACTED" && initialContactPayload) {
+      setContactedAt(toLocalDateTimeInputValueFromIso(initialContactPayload.contactedAt));
+      setContactedBy(null);
+      return;
+    }
+
     setContactedAt(createDefaultDateTimeValue());
     setContactedBy(defaultSuperAdmin);
-  }, [defaultSuperAdmin]);
+  }, [defaultSuperAdmin, initialContactPayload, initialStatus]);
 
   const resetSalePayload = useCallback((): void => {
     if (initialStatus === "SALE_COMPLETED" && initialSalePayload) {
@@ -106,6 +184,25 @@ function InquiryStatusEditSection({
     fetchPolicy: "cache-first",
   });
 
+  const { data: initialContactedByUserData } = useQuery<
+    UserDetailQuery,
+    UserDetailQueryVariables
+  >(USER_DETAIL_QUERY, {
+    variables: { input: { id: initialContactPayload?.contactedBy ?? "" } },
+    skip: initialStatus !== "CONTACTED" || !initialContactPayload?.contactedBy,
+    fetchPolicy: "cache-first",
+  });
+
+  const baselineSnapshot = useMemo(
+    () =>
+      buildBaselineSnapshot({
+        initialStatus,
+        initialContactPayload,
+        initialSalePayload,
+      }),
+    [initialContactPayload, initialSalePayload, initialStatus, inquiryId],
+  );
+
   useEffect(() => {
     setStatus(initialStatus);
     setDescription("");
@@ -114,10 +211,24 @@ function InquiryStatusEditSection({
     setCompletedAt("");
     setCompletedBy(null);
 
+    if (initialStatus === "CONTACTED" && initialContactPayload) {
+      setContactedAt(toLocalDateTimeInputValueFromIso(initialContactPayload.contactedAt));
+    }
+
     if (initialStatus === "SALE_COMPLETED" && initialSalePayload) {
       setCompletedAt(toLocalDateTimeInputValueFromIso(initialSalePayload.completedAt));
     }
-  }, [initialSalePayload, initialStatus, inquiryId]);
+  }, [initialContactPayload, initialSalePayload, initialStatus, inquiryId]);
+
+  useEffect(() => {
+    const userDetail = initialContactedByUserData?.userDetail;
+
+    if (!userDetail || initialStatus !== "CONTACTED") {
+      return;
+    }
+
+    setContactedBy(userToActiveSuperAdminOption(userDetail));
+  }, [initialContactedByUserData, initialStatus]);
 
   useEffect(() => {
     const userDetail = initialCompletedByUserData?.userDetail;
@@ -136,6 +247,18 @@ function InquiryStatusEditSection({
       return;
     }
 
+    if (initialStatus === "CONTACTED" && initialContactPayload) {
+      if (!contactedAt) {
+        setContactedAt(toLocalDateTimeInputValueFromIso(initialContactPayload.contactedAt));
+      }
+
+      if (!contactedBy && initialContactedByUserData?.userDetail) {
+        setContactedBy(userToActiveSuperAdminOption(initialContactedByUserData.userDetail));
+      }
+
+      return;
+    }
+
     if (!contactedAt) {
       setContactedAt(createDefaultDateTimeValue());
     }
@@ -143,7 +266,15 @@ function InquiryStatusEditSection({
     if (!contactedBy && defaultSuperAdmin) {
       setContactedBy(defaultSuperAdmin);
     }
-  }, [contactedAt, contactedBy, defaultSuperAdmin, status]);
+  }, [
+    contactedAt,
+    contactedBy,
+    defaultSuperAdmin,
+    initialContactPayload,
+    initialContactedByUserData,
+    initialStatus,
+    status,
+  ]);
 
   useEffect(() => {
     if (status !== "SALE_COMPLETED") {
@@ -209,16 +340,42 @@ function InquiryStatusEditSection({
     contactedAtDate != null && !Number.isNaN(contactedAtDate.getTime());
   const hasValidCompletedAt =
     completedAtDate != null && !Number.isNaN(completedAtDate.getTime());
-  const canSubmit =
+  const isFormValid =
     !submitting &&
     (!isContactedStatus || (hasValidContactedAt && contactedBy != null)) &&
     (!isSaleCompletedStatus || (hasValidCompletedAt && completedBy != null));
+  const currentSnapshot = useMemo(
+    (): StatusEditFormSnapshot => ({
+      status,
+      description: trimmedDescription,
+      contactedAt: isContactedStatus ? contactedAt.trim() : "",
+      contactedById: isContactedStatus ? (contactedBy?.id ?? null) : null,
+      completedAt: isSaleCompletedStatus ? completedAt.trim() : "",
+      completedById: isSaleCompletedStatus ? (completedBy?.id ?? null) : null,
+    }),
+    [
+      completedAt,
+      completedBy,
+      contactedAt,
+      contactedBy,
+      isContactedStatus,
+      isSaleCompletedStatus,
+      status,
+      trimmedDescription,
+    ],
+  );
+  const hasChanges = !areSnapshotsEqual(currentSnapshot, baselineSnapshot);
+  const canSubmit = isFormValid && hasChanges;
 
   useEffect(() => {
     onSubmittingChange?.(submitting);
   }, [onSubmittingChange, submitting]);
 
-  const handleSubmit = (): void => {
+  useEffect(() => {
+    onCanSubmitChange?.(canSubmit);
+  }, [canSubmit, onCanSubmitChange]);
+
+  const handleSubmit = useCallback((): void => {
     if (!canSubmit) {
       return;
     }
@@ -248,10 +405,26 @@ function InquiryStatusEditSection({
         },
       },
     });
-  };
+  }, [
+    canSubmit,
+    completedAtDate,
+    completedBy,
+    contactedAtDate,
+    contactedBy,
+    hasValidCompletedAt,
+    hasValidContactedAt,
+    inquiryId,
+    isContactedStatus,
+    isSaleCompletedStatus,
+    status,
+    trimmedDescription,
+    updateStatus,
+  ]);
+
+  useImperativeHandle(ref, () => ({ submit: handleSubmit }), [handleSubmit]);
 
   return (
-    <Stack spacing={2} className={styles.root}>
+    <Stack spacing={2}>
       <TextField
         select
         fullWidth
@@ -320,14 +493,8 @@ function InquiryStatusEditSection({
         placeholder={t("pages.inquiries.statusEdit.descriptionPlaceholder")}
         onChange={(event) => setDescription(event.target.value)}
       />
-
-      <div className={styles.actions}>
-        <Button variant="contained" color="primary" disabled={!canSubmit} onClick={handleSubmit}>
-          {t("pages.inquiries.statusEdit.submit")}
-        </Button>
-      </div>
     </Stack>
   );
-}
+});
 
 export default InquiryStatusEditSection;

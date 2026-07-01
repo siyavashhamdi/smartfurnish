@@ -18,7 +18,12 @@ import {
   UserProductInquiryPreview,
   UserProductInquiryContact,
 } from "../../database/schemas";
-import { UserProductInquiryStatus, UserRole } from "../../enums";
+import {
+  BadgeCountTriggerAction,
+  BadgeCountTriggerSource,
+  UserProductInquiryStatus,
+  UserRole,
+} from "../../enums";
 import { SortingOrder } from "../../common/pagination/input/sorting-order.enum";
 import { buildSortOptions } from "../../common/pagination/utils";
 import {
@@ -26,6 +31,7 @@ import {
   normalizeAuthIdentityMobileForSubmit,
 } from "../../utils/contact-validation.util";
 import { AppSettingsService } from "../app-settings";
+import { BadgeService } from "../badge/badge.service";
 import { FileService } from "../file";
 import { ProductService } from "../product/product.service";
 import { ProductAiPreviewService } from "../product-ai-preview/services/product-ai-preview.service";
@@ -88,6 +94,7 @@ export class UserProductInquiryService {
     private readonly productService: ProductService,
     private readonly productAiPreviewService: ProductAiPreviewService,
     private readonly fileService: FileService,
+    private readonly badgeService: BadgeService,
   ) {}
 
   async submitPreview(
@@ -282,6 +289,11 @@ export class UserProductInquiryService {
 
       await existingInquiry.save();
 
+      await this.publishInquiryBadgeCountSignal({
+        inquiryId: existingInquiry._id,
+        action: BadgeCountTriggerAction.UPDATED,
+      });
+
       return this.toContactSubmitResponse(existingInquiry);
     }
 
@@ -313,6 +325,11 @@ export class UserProductInquiryService {
         },
       ],
       contact,
+    });
+
+    await this.publishInquiryBadgeCountSignal({
+      inquiryId: createdInquiry._id,
+      action: BadgeCountTriggerAction.CREATED,
     });
 
     return this.toContactSubmitResponse(createdInquiry);
@@ -558,6 +575,11 @@ export class UserProductInquiryService {
       );
     }
 
+    await this.publishInquiryBadgeCountSignal({
+      inquiryId: inquiry._id,
+      action: BadgeCountTriggerAction.UPDATED,
+    });
+
     return this.toDetailResponse(inquiry.toObject() as UserProductInquiryListRecord);
   }
 
@@ -659,6 +681,11 @@ export class UserProductInquiryService {
         error instanceof Error ? error.message : EXCEPTION_CONSTANT.UNKNOWN_ERROR_OCCURRED,
       );
     }
+
+    await this.publishInquiryBadgeCountSignal({
+      inquiryId: inquiry._id,
+      action: BadgeCountTriggerAction.UPDATED,
+    });
 
     return this.toDetailResponse(inquiry.toObject() as UserProductInquiryListRecord);
   }
@@ -1577,5 +1604,19 @@ export class UserProductInquiryService {
         label: previewResult.fabric.label,
       },
     };
+  }
+
+  private async publishInquiryBadgeCountSignal(params: {
+    inquiryId: Types.ObjectId;
+    action: BadgeCountTriggerAction;
+  }): Promise<void> {
+    await this.badgeService.publishCountSignal({
+      includeStaffUsers: true,
+      payload: {
+        source: BadgeCountTriggerSource.INQUIRY,
+        action: params.action,
+        inquiryId: params.inquiryId.toString(),
+      },
+    });
   }
 }

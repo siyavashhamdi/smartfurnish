@@ -1,6 +1,6 @@
 import { Transform, Type } from "class-transformer";
 import {
-  IsDateString,
+  IsDate,
   IsEnum,
   IsNotEmpty,
   IsObject,
@@ -24,8 +24,8 @@ export class UserProductInquiryStatusUpdatePayloadGqlInput {
     description: "When contact was made",
   })
   @IsOptional()
-  @IsDateString({}, { message: "Contacted at must be an ISO date" })
-  contactedAt?: string;
+  @IsDate({ message: "Contacted at must be an ISO date" })
+  contactedAt?: Date;
 
   @Field(() => ID, {
     nullable: true,
@@ -41,8 +41,8 @@ export class UserProductInquiryStatusUpdatePayloadGqlInput {
     description: "When the sale was completed",
   })
   @IsOptional()
-  @IsDateString({}, { message: "Completed at must be an ISO date" })
-  completedAt?: string;
+  @IsDate({ message: "Completed at must be an ISO date" })
+  completedAt?: Date;
 
   @Field(() => ID, {
     nullable: true,

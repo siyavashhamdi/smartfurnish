@@ -20,6 +20,7 @@ const BADGE_COLORS = {
   products: "primary",
   payments: "warning",
   notifications: "error",
+  inquiries: "primary",
 } as const;
 
 export function AppShellNavItemIcon({

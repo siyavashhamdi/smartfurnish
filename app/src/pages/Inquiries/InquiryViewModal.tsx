@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactElement, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
 import {
   Box,
   Chip,
@@ -21,10 +21,15 @@ import EntityModalShell from "../../shared/crud/EntityModalShell";
 import ModalFooterActions from "../../shared/crud/ModalFooterActions";
 import DateTimeValue from "../../shared/display/DateTimeValue";
 import InquiryStatusHistoryTimeline from "./InquiryStatusHistoryTimeline";
-import InquiryStatusEditSection from "./InquiryStatusEditSection";
+import InquiryStatusEditSection, {
+  type InquiryStatusEditSectionHandle,
+} from "./InquiryStatusEditSection";
 import InquiryPreviewImageCarousel from "./InquiryPreviewImageCarousel";
 import InquiryPreviewEntryPanel from "./InquiryPreviewEntryPanel";
-import { findLatestSaleCompletedPayload } from "./inquiry-sale-payload.util";
+import {
+  findLatestContactPayload,
+  findLatestSaleCompletedPayload,
+} from "./inquiry-sale-payload.util";
 import { toWesternDigits } from "../../utilities/persian-digits.util";
 import styles from "./styles/InquiryViewModal.module.scss";
 
@@ -214,7 +219,13 @@ function InquiryViewModal({
   onStatusEditSuccess,
 }: InquiryViewModalProps): ReactElement | null {
   const { t } = useTranslation();
+  const statusEditRef = useRef<InquiryStatusEditSectionHandle>(null);
   const [statusSubmitting, setStatusSubmitting] = useState(false);
+  const [statusCanSubmit, setStatusCanSubmit] = useState(false);
+  const initialContactPayload = useMemo(
+    () => (record ? findLatestContactPayload(record.statusHistory) : null),
+    [record],
+  );
   const initialSalePayload = useMemo(
     () => (record ? findLatestSaleCompletedPayload(record.statusHistory) : null),
     [record],
@@ -246,6 +257,18 @@ function InquiryViewModal({
               onClick: onClose,
               disabled: statusSubmitting,
             },
+            ...(record && !loading
+              ? [
+                  {
+                    key: "submit-status",
+                    label: t("pages.inquiries.statusEdit.submit"),
+                    onClick: (): void => {
+                      statusEditRef.current?.submit();
+                    },
+                    disabled: statusSubmitting || !statusCanSubmit,
+                  },
+                ]
+              : []),
           ]}
         />
       }
@@ -433,11 +456,14 @@ function InquiryViewModal({
 
           <DetailSection title={t("pages.inquiries.statusEdit.title")}>
             <InquiryStatusEditSection
+              ref={statusEditRef}
               inquiryId={record.id}
               initialStatus={record.status}
+              initialContactPayload={initialContactPayload}
               initialSalePayload={initialSalePayload}
               onSuccess={onStatusEditSuccess}
               onSubmittingChange={setStatusSubmitting}
+              onCanSubmitChange={setStatusCanSubmit}
             />
           </DetailSection>
         </Stack>

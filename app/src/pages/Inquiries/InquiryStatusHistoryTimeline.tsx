@@ -1,19 +1,34 @@
-import { useMemo, type CSSProperties, type ReactElement } from "react";
-import { Chip, Typography } from "@mui/material";
+import { useMemo, type CSSProperties, type ReactElement, type ReactNode } from "react";
+import { useQuery } from "@apollo/client/react";
+import { Box, Chip, Typography } from "@mui/material";
 
-import type { UserProductInquiryDetailStatusHistoryEntry } from "./inquiry-detail.api";
+import type {
+  UserProductInquiryDetailStatusHistoryEntry,
+  UserProductInquiryDetailStatusHistoryPayload,
+} from "./inquiry-detail.api";
 import type { UserProductInquiryStatus } from "./inquiries-list.api";
 import {
   INQUIRY_STATUS_COLOR,
   INQUIRY_STATUS_LABEL,
 } from "./inquiries-status.shared";
+import { USER_DETAIL_QUERY } from "../../graphql/queries/userDetail.query";
 import DateTimeValue from "../../shared/display/DateTimeValue";
 import { useTranslation } from "../../hooks/useTranslation";
+import type {
+  UserDetailQuery,
+  UserDetailQueryVariables,
+} from "../UsersManagement/users-management-list.api";
 import styles from "./styles/InquiryStatusHistoryTimeline.module.scss";
 
 type InquiryStatusHistoryTimelineProps = {
   readonly entries: readonly UserProductInquiryDetailStatusHistoryEntry[];
   readonly emptyLabel: string;
+};
+
+type PayloadField = {
+  readonly label: string;
+  readonly value: ReactNode;
+  readonly latin?: boolean;
 };
 
 const EMPTY_DISPLAY = "—";
@@ -40,6 +55,24 @@ function displayText(value: unknown): string {
   return normalized.length > 0 ? normalized : EMPTY_DISPLAY;
 }
 
+function formatUserDetailDisplayName(user: UserDetailQuery["userDetail"]): string {
+  const parts = [user.profile?.firstName?.trim(), user.profile?.lastName?.trim()].filter(
+    (part): part is string => Boolean(part),
+  );
+
+  return parts.length > 0 ? parts.join(" ") : user.username;
+}
+
+function hasContactPayload(
+  payload: UserProductInquiryDetailStatusHistoryPayload,
+): boolean {
+  return Boolean(payload.contactedAt?.trim() || payload.contactedBy?.trim());
+}
+
+function hasSalePayload(payload: UserProductInquiryDetailStatusHistoryPayload): boolean {
+  return Boolean(payload.completedAt?.trim() || payload.completedBy?.trim());
+}
+
 function StatusChip({ status }: { readonly status: UserProductInquiryStatus }): ReactElement {
   return (
     <Chip
@@ -49,6 +82,148 @@ function StatusChip({ status }: { readonly status: UserProductInquiryStatus }): 
       label={STATUS_CHIP_LABEL[status] ?? status}
     />
   );
+}
+
+function PayloadFieldValue({
+  value,
+  latin,
+}: {
+  readonly value: ReactNode;
+  readonly latin?: boolean;
+}): ReactElement {
+  if (typeof value === "string" || typeof value === "number") {
+    return (
+      <Typography
+        variant="body2"
+        fontWeight={600}
+        className={latin ? styles.latinValue : undefined}
+        sx={{ overflowWrap: "anywhere" }}
+      >
+        {String(value)}
+      </Typography>
+    );
+  }
+
+  return <Box sx={{ overflowWrap: "anywhere" }}>{value}</Box>;
+}
+
+function PayloadFieldGrid({ fields }: { readonly fields: readonly PayloadField[] }): ReactElement {
+  return (
+    <Box
+      sx={{
+        display: "grid",
+        gap: 1.25,
+        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+      }}
+    >
+      {fields.map((field) => (
+        <Box key={field.label}>
+          <Typography variant="caption" color="text.secondary" display="block">
+            {field.label}
+          </Typography>
+          <Box sx={{ mt: 0.25 }}>
+            <PayloadFieldValue value={field.value} latin={field.latin} />
+          </Box>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+function UserReferenceValue({ userId }: { readonly userId: string }): ReactElement {
+  const { data, loading } = useQuery<UserDetailQuery, UserDetailQueryVariables>(
+    USER_DETAIL_QUERY,
+    {
+      variables: { input: { id: userId } },
+      skip: !userId.trim(),
+      fetchPolicy: "cache-first",
+    },
+  );
+
+  if (loading && !data?.userDetail) {
+    return (
+      <Typography variant="body2" fontWeight={600} color="text.secondary">
+        {EMPTY_DISPLAY}
+      </Typography>
+    );
+  }
+
+  if (!data?.userDetail) {
+    return (
+      <Typography variant="body2" fontWeight={600} className={styles.latinValue} sx={{ overflowWrap: "anywhere" }}>
+        {displayText(userId)}
+      </Typography>
+    );
+  }
+
+  return (
+    <Typography variant="body2" fontWeight={600} sx={{ overflowWrap: "anywhere" }}>
+      {formatUserDetailDisplayName(data.userDetail)}
+    </Typography>
+  );
+}
+
+function StatusHistoryPayloadSection({
+  entry,
+}: {
+  readonly entry: UserProductInquiryDetailStatusHistoryEntry;
+}): ReactElement | null {
+  const { t } = useTranslation();
+  const payload = entry.payload;
+
+  if (!payload) {
+    return null;
+  }
+
+  if (entry.status === "CONTACTED" && hasContactPayload(payload)) {
+    const fields: PayloadField[] = [];
+
+    if (payload.contactedAt?.trim()) {
+      fields.push({
+        label: t("pages.inquiries.viewModal.history.contactedAt"),
+        value: <DateTimeValue value={payload.contactedAt} emphasizeDate inlineDateTime />,
+      });
+    }
+
+    if (payload.contactedBy?.trim()) {
+      fields.push({
+        label: t("pages.inquiries.viewModal.history.contactedBy"),
+        value: <UserReferenceValue userId={payload.contactedBy} />,
+      });
+    }
+
+    return (
+      <div className={styles.payloadBlock}>
+        <PayloadFieldGrid fields={fields} />
+      </div>
+    );
+  }
+
+  if (entry.status === "SALE_COMPLETED" && hasSalePayload(payload)) {
+    const fields: PayloadField[] = [];
+
+    if (payload.completedAt?.trim()) {
+      fields.push({
+        label: t("pages.inquiries.viewModal.history.completedAt"),
+        value: <DateTimeValue value={payload.completedAt} emphasizeDate inlineDateTime />,
+      });
+    }
+
+    if (payload.completedBy?.trim()) {
+      fields.push({
+        label: t("pages.inquiries.viewModal.history.completedBy"),
+        value: <UserReferenceValue userId={payload.completedBy} />,
+      });
+    }
+
+    return (
+      <div className={styles.payloadBlock}>
+        <PayloadFieldGrid fields={fields} />
+      </div>
+    );
+  }
+
+  return null;
 }
 
 function InquiryStatusHistoryTimeline({
@@ -96,6 +271,8 @@ function InquiryStatusHistoryTimeline({
                   {displayText(entry.description)}
                 </Typography>
               </div>
+
+              <StatusHistoryPayloadSection entry={entry} />
             </article>
           </li>
         );

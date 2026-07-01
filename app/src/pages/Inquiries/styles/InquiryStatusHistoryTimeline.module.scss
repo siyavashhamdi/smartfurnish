@@ -100,6 +100,22 @@
   box-sizing: border-box;
 }
 
+.payloadBlock {
+  margin-block-start: 0.25rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: variables.$border-radius-md;
+  background: color-mix(in srgb, var(--app-surface-bg) 78%, transparent);
+  inline-size: 100%;
+  box-sizing: border-box;
+}
+
+.latinValue {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+}
+
 .emptyState {
   padding: 2rem 1rem;
   text-align: center;

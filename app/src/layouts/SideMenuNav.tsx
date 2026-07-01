@@ -38,6 +38,7 @@ const DEFAULT_BADGE_COUNTS: AppShellNavBadgeCounts = {
   payments: 0,
   notifications: 0,
   support: 0,
+  inquiries: 0,
 };
 
 export function SideMenuNav({

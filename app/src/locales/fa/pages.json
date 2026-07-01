@@ -158,8 +158,12 @@
                     "description": "توضیح",
                     "changedAt": "زمان تغییر",
                     "changedBy": "تغییر توسط",
+                    "contactPayloadTitle": "جزئیات تماس",
+                    "salePayloadTitle": "جزئیات فروش",
                     "contactedAt": "زمان تماس",
-                    "contactedBy": "تماس توسط"
+                    "contactedBy": "تماس توسط",
+                    "completedAt": "تاریخ تکمیل فروش",
+                    "completedBy": "تکمیل‌شده توسط"
                 }
             },
             "statusFilters": {

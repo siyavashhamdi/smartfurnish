@@ -7,6 +7,7 @@ export const BADGE_COUNT_QUERY = gql`
       payments
       notifications
       tickets
+      inquiries
     }
   }
 `;

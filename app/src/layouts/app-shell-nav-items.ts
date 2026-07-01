@@ -13,7 +13,12 @@ import { APP_SHELL_ROUTES } from "../routing/app-shell-routes";
 
 export type AppShellNavIcon = ComponentType<{ className?: string }>;
 
-export type AppShellNavBadgeKind = "products" | "payments" | "notifications" | "support";
+export type AppShellNavBadgeKind =
+  | "products"
+  | "payments"
+  | "notifications"
+  | "support"
+  | "inquiries";
 
 export type AppShellNavItemId =
   | "ourStory"
@@ -70,6 +75,7 @@ export const APP_SHELL_NAV_ITEMS: readonly AppShellNavItemDefinition[] = [
     path: APP_SHELL_ROUTES.inquiries,
     Icon: ContactPhoneRoundedIcon,
     requiredRoles: [UserRole.SUPER_ADMIN],
+    badge: "inquiries",
   },
   {
     id: "notifications",
@@ -111,6 +117,7 @@ export type AppShellNavBadgeCounts = {
   readonly payments: number;
   readonly notifications: number;
   readonly support: number;
+  readonly inquiries: number;
 };
 
 export function filterAppShellNavItems(
