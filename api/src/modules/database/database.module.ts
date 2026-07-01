@@ -23,6 +23,8 @@ import {
   TicketSchema,
   User,
   UserProduct,
+  UserProductInquiry,
+  UserProductInquirySchema,
   UserProductSchema,
   UserSchema,
 } from "../../database/schemas";
@@ -41,6 +43,7 @@ import {
       { name: Ticket.name, schema: TicketSchema },
       { name: User.name, schema: UserSchema },
       { name: UserProduct.name, schema: UserProductSchema },
+      { name: UserProductInquiry.name, schema: UserProductInquirySchema },
     ]),
   ],
   providers: [MigrationService],

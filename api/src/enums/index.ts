@@ -26,6 +26,7 @@ export * from "./session-status.enum";
 export * from "./user-product-payment-method.enum";
 export * from "./user-product-purchase-currency.enum";
 export * from "./user-product-purchase-status.enum";
+export * from "./user-product-inquiry-status.enum";
 export * from "./purchase-status-changed-by.enum";
 export * from "./media-compression-quality.enum";
 export * from "./video-output-extension.enum";

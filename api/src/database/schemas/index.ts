@@ -9,4 +9,5 @@ export * from "./session-client-context.schema";
 export * from "./stored-file.schema";
 export * from "./ticket.schema";
 export * from "./user-product.schema";
+export * from "./user-product-inquiry.schema";
 export * from "./user.schema";
