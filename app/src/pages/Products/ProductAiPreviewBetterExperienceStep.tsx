@@ -1,6 +1,6 @@
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import { Stack, Typography } from "@mui/material";
-import { memo, type ReactElement } from "react";
+import { forwardRef, memo, useImperativeHandle, useRef, type ReactElement, type Ref } from "react";
 
 import {
   PRODUCT_AI_PREVIEW_BETTER_EXPERIENCE_SIGNUP_LEAD,
@@ -8,7 +8,7 @@ import {
   PRODUCT_AI_PREVIEW_CONTACT_SUCCESS_CLOSING,
   PRODUCT_AI_PREVIEW_CONTACT_SUCCESS_TITLE,
 } from "./product-ai-preview.constants";
-import { SignupForm } from "../Login/SignupForm";
+import { SignupForm, type SignupFormHandle } from "../Login/SignupForm";
 import styles from "./styles/ProductAiPreviewBetterExperienceStep.module.scss";
 
 type ProductAiPreviewContactPrefill = {
@@ -17,21 +17,39 @@ type ProductAiPreviewContactPrefill = {
   readonly phone: string;
 };
 
+export type ProductAiPreviewBetterExperienceStepHandle = SignupFormHandle;
+
 type ProductAiPreviewBetterExperienceStepProps = {
   readonly showSignupForm: boolean;
   readonly contactPrefill: ProductAiPreviewContactPrefill | null;
   readonly inquiryId: string | null;
   readonly onSignupComplete?: () => void;
+  readonly onSubmittingChange?: (submitting: boolean) => void;
 };
 
-function ProductAiPreviewBetterExperienceStepInner({
-  showSignupForm,
-  contactPrefill,
-  inquiryId,
-  onSignupComplete,
-}: ProductAiPreviewBetterExperienceStepProps): ReactElement {
-  const trimmedPhone = contactPrefill?.phone.trim() ?? "";
-  const showSignup = showSignupForm && Boolean(inquiryId) && trimmedPhone.length > 0;
+function ProductAiPreviewBetterExperienceStepInner(
+  {
+    showSignupForm,
+    contactPrefill,
+    inquiryId,
+    onSignupComplete,
+    onSubmittingChange,
+  }: ProductAiPreviewBetterExperienceStepProps,
+  ref: Ref<ProductAiPreviewBetterExperienceStepHandle>,
+): ReactElement {
+  const signupFormRef = useRef<SignupFormHandle>(null);
+  const showSignup = showSignupForm && Boolean(inquiryId);
+  const prefillPhone = contactPrefill?.phone.trim() ?? "";
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      submit: () => {
+        signupFormRef.current?.submit();
+      },
+    }),
+    [],
+  );
 
   return (
     <Stack
@@ -53,19 +71,23 @@ function ProductAiPreviewBetterExperienceStepInner({
         </Typography>
       </div>
 
-      {showSignup && contactPrefill && inquiryId ? (
+      {showSignup && inquiryId ? (
         <>
           <Typography className={styles.signupLead} color="text.secondary" variant="body2">
             {PRODUCT_AI_PREVIEW_BETTER_EXPERIENCE_SIGNUP_LEAD}
           </Typography>
           <SignupForm
+            ref={signupFormRef}
             embedded
             hideCredentialHeader
             hideFormLead
-            identity={{ identity: trimmedPhone, identityKind: "mobile" }}
-            initialFirstName={contactPrefill.firstName}
-            initialLastName={contactPrefill.lastName}
+            hideSubmitButton
+            allowEditableMobile
+            identity={{ identity: prefillPhone, identityKind: "mobile" }}
+            initialFirstName={contactPrefill?.firstName ?? ""}
+            initialLastName={contactPrefill?.lastName ?? ""}
             onEditIdentity={() => undefined}
+            onSubmittingChange={onSubmittingChange}
             embeddedInquiryFlow={{
               inquiryId,
               onSignupComplete,
@@ -77,4 +99,7 @@ function ProductAiPreviewBetterExperienceStepInner({
   );
 }
 
-export const ProductAiPreviewBetterExperienceStep = memo(ProductAiPreviewBetterExperienceStepInner);
+export const ProductAiPreviewBetterExperienceStep = memo(
+  forwardRef(ProductAiPreviewBetterExperienceStepInner),
+);
+ProductAiPreviewBetterExperienceStep.displayName = "ProductAiPreviewBetterExperienceStep";

@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactElement } from "re
 import { useLocation } from "react-router-dom";
 
 import { GENERAL_SUBSCRIPTION_UPDATE_TYPES } from "../constants";
+import { useAuth } from "../contexts/AuthContext";
 import { NOTIFICATION_SNACKBAR_AUTO_HIDE_DURATION_MS } from "../constants/snackbar.constants";
 import snackbarStyles from "../contexts/styles/SnackbarContext.module.scss";
 import { useMobileSnackbarDismiss } from "../hooks/useMobileSnackbarDismiss";
@@ -43,6 +44,7 @@ const MODE_ICONS: Record<AlertColor, typeof InfoOutlinedIcon> = {
 
 export function NotificationLiveBanner(): ReactElement | null {
   const theme = useTheme();
+  const { user } = useAuth();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"), { noSsr: true });
   const location = useLocation();
   const [banner, setBanner] = useState<NotificationLiveBannerState | null>(null);
@@ -65,6 +67,11 @@ export function NotificationLiveBanner(): ReactElement | null {
     open,
     dismiss
   );
+
+  useEffect(() => {
+    setOpen(false);
+    setBanner(null);
+  }, [user?.id]);
 
   useEffect(() => {
     return subscribeGeneralUpdates((event) => {

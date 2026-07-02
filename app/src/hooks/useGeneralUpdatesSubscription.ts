@@ -13,6 +13,10 @@ import {
   waitForSubscriptionRetryDelayMs,
 } from "../lib/subscription-retry.util";
 import { isRecoverableSubscriptionError } from "../lib/subscription-error.util";
+import {
+  isAuthSessionHandoffInProgress,
+  subscribeAuthSessionHandoffEnd,
+} from "../utils/authSessionHandoff.util";
 
 export interface GeneralUpdateEvent {
   readonly updateType: GeneralSubscriptionUpdateType;
@@ -31,6 +35,7 @@ interface GeneralUpdatesSubscriptionVariables {
 
 interface UseGeneralUpdatesSubscriptionProps {
   readonly enabled: boolean;
+  readonly subscriberUserId?: string | null;
   readonly updateTypes?: readonly GeneralSubscriptionUpdateType[];
   readonly onNotification?: (event: GeneralUpdateEvent) => void;
   readonly onBadgeCounts?: (event: GeneralUpdateEvent) => void;
@@ -49,6 +54,7 @@ const INITIAL_SUBSCRIPTION_ONLINE_TIMEOUT_MS = 3000;
 
 export const useGeneralUpdatesSubscription = ({
   enabled,
+  subscriberUserId = null,
   updateTypes,
   onNotification,
   onBadgeCounts,
@@ -161,8 +167,56 @@ export const useGeneralUpdatesSubscription = ({
     }
   }, [clearScheduledRestart]);
 
+  const reconnectSubscription = useCallback(() => {
+    if (!enabledRef.current) {
+      return;
+    }
+
+    restartAttemptRef.current = 0;
+    clearScheduledRestart();
+    setSubscriptionBroken(false);
+    subscriptionAliveRef.current = false;
+    restartRef.current?.();
+  }, [clearScheduledRestart]);
+
+  const previousSubscriberUserIdRef = useRef<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    if (!subscriptionActive) {
+      previousSubscriberUserIdRef.current = subscriberUserId;
+      return;
+    }
+
+    if (previousSubscriberUserIdRef.current === undefined) {
+      previousSubscriberUserIdRef.current = subscriberUserId;
+      return;
+    }
+
+    if (previousSubscriberUserIdRef.current === subscriberUserId) {
+      return;
+    }
+
+    previousSubscriberUserIdRef.current = subscriberUserId;
+
+    if (isAuthSessionHandoffInProgress()) {
+      return;
+    }
+
+    reconnectSubscription();
+  }, [subscriberUserId, subscriptionActive, reconnectSubscription]);
+
+  useEffect(() => {
+    return subscribeAuthSessionHandoffEnd(() => {
+      if (!enabledRef.current) {
+        return;
+      }
+
+      reconnectSubscription();
+    });
+  }, [reconnectSubscription]);
+
   const scheduleSubscriptionRestart = useCallback(() => {
-    if (!enabledRef.current || subscriptionAliveRef.current) {
+    if (!enabledRef.current || subscriptionAliveRef.current || isAuthSessionHandoffInProgress()) {
       return;
     }
 
@@ -237,7 +291,11 @@ export const useGeneralUpdatesSubscription = ({
       subscriptionAliveRef.current = false;
       setSubscriptionBroken(true);
 
-      if (!enabledRef.current || !isRecoverableSubscriptionError(error)) {
+      if (
+        !enabledRef.current ||
+        isAuthSessionHandoffInProgress() ||
+        !isRecoverableSubscriptionError(error)
+      ) {
         return;
       }
 
@@ -247,9 +305,11 @@ export const useGeneralUpdatesSubscription = ({
       subscriptionAliveRef.current = false;
       setSubscriptionBroken(true);
 
-      if (enabledRef.current) {
-        scheduleSubscriptionRestart();
+      if (!enabledRef.current || isAuthSessionHandoffInProgress()) {
+        return;
       }
+
+      scheduleSubscriptionRestart();
     },
   });
 

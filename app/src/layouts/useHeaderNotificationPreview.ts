@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from "@apollo/client/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
 import { USER_NOTIFICATION_UPDATE_MUTATION } from "../graphql/mutations/userNotificationUpdate.mutation";
 import { USER_NOTIFICATION_LIST_QUERY } from "../graphql/queries/userNotificationList.query";
 import { useSnackbar } from "../hooks/useSnackbar";
@@ -66,9 +67,14 @@ function mapPreviewItem(
 }
 
 export function useHeaderNotificationPreview(enabled: boolean): UseHeaderNotificationPreviewResult {
+  const { user } = useAuth();
   const { t } = useTranslation();
   const { showError, showSuccess } = useSnackbar();
   const [liveItems, setLiveItems] = useState<readonly HeaderNotificationPreviewItem[]>([]);
+
+  useEffect(() => {
+    setLiveItems([]);
+  }, [user?.id]);
 
   const listVariables = useMemo(
     () => buildNotificationListQueryVariables("unread", HEADER_NOTIFICATION_PREVIEW_LIMIT, null),

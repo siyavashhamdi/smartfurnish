@@ -364,6 +364,7 @@ export function MainLayout({
     }
 
     setLiveCounts({});
+    setGeneralUpdatePopup(null);
     void refetchBadgeCount();
   }, [authUser?.id, refetchBadgeCount]);
 

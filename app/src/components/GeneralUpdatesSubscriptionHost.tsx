@@ -34,6 +34,7 @@ export function GeneralUpdatesSubscriptionHost(): ReactElement | null {
 
   useGeneralUpdatesSubscription({
     enabled: true,
+    subscriberUserId: user?.id ?? null,
     updateTypes,
     onAnyUpdate: handleGeneralUpdate,
   });

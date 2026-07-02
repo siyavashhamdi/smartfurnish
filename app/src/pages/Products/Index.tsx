@@ -48,6 +48,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { UserRole } from "../../lib/graphql/generated";
 import { API_CONFIG } from "../../config";
 import { useMutationWithSnackbar } from "../../hooks/useMutationWithSnackbar";
+import { useSnackbar } from "../../hooks/useSnackbar";
 import { useTranslation } from "../../hooks/useTranslation";
 import { PRODUCT_LIST_QUERY } from "../../graphql/queries/productList.query";
 import { USER_PRODUCT_LIST_QUERY } from "../../graphql/queries/userProductList.query";
@@ -79,6 +80,7 @@ import type {
 import { APP_SHELL_ROUTES } from "../../routing/app-shell-routes";
 import { PRODUCTS_EDIT_PATH_REGEX } from "../../routing/product-route-path";
 import { resolveQueryFetchPolicy } from "../../lib/offline-fetch-policy.util";
+import { consumePostSignupSuccess } from "../../utils/post-signup-success.util";
 import { useAfterLogoutCacheCleanup } from "../../hooks/useAfterLogoutCacheCleanup";
 import { getIsBrowserOffline, getIsOfflineMode } from "../../lib/offline-state";
 import { stripOverlayRoutePathname } from "../../routing/max-route.util";
@@ -125,6 +127,7 @@ const SORT_ORDER_LABEL: Record<"ASC" | "DESC", string> = {
 
 const ProductsIndex = (): ReactElement => {
   const { t } = useTranslation();
+  const { showSuccess } = useSnackbar();
   const { user: authUser, isRegisteredUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -230,6 +233,14 @@ const ProductsIndex = (): ReactElement => {
   const openDeleteDialogForProductId = (productId: string): void => {
     navigate(`${APP_SHELL_ROUTES.products}/delete/${productId}`);
   };
+
+  useEffect(() => {
+    if (!consumePostSignupSuccess()) {
+      return;
+    }
+
+    showSuccess(t("auth.login.success.signupSuccessful"));
+  }, [showSuccess, t]);
 
   useEffect(() => {
     if (!location.pathname.startsWith(`${APP_SHELL_ROUTES.products}/delete/`)) {

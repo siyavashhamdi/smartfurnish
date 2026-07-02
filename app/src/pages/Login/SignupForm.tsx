@@ -1,4 +1,15 @@
-import { useCallback, useMemo, useRef, useState, type ReactElement } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactElement,
+  type Ref,
+} from "react";
 import {
   Box,
   Button,
@@ -76,6 +87,10 @@ type SignupFormEmbeddedInquiryFlow = {
   readonly onSignupComplete?: () => void;
 };
 
+export type SignupFormHandle = {
+  readonly submit: () => void;
+};
+
 interface SignupFormProps {
   readonly embedded?: boolean;
   readonly identity: LoginNavState;
@@ -84,25 +99,35 @@ interface SignupFormProps {
   readonly initialLastName?: string;
   readonly hideCredentialHeader?: boolean;
   readonly hideFormLead?: boolean;
+  readonly hideSubmitButton?: boolean;
+  readonly allowEditableMobile?: boolean;
+  readonly onSubmittingChange?: (submitting: boolean) => void;
   readonly embeddedInquiryFlow?: SignupFormEmbeddedInquiryFlow;
 }
 
-export const SignupForm = ({
-  embedded = false,
-  identity,
-  onEditIdentity,
-  initialFirstName = "",
-  initialLastName = "",
-  hideCredentialHeader = false,
-  hideFormLead = false,
-  embeddedInquiryFlow,
-}: SignupFormProps): ReactElement => {
+function SignupFormInner(
+  {
+    embedded = false,
+    identity,
+    onEditIdentity,
+    initialFirstName = "",
+    initialLastName = "",
+    hideCredentialHeader = false,
+    hideFormLead = false,
+    hideSubmitButton = false,
+    allowEditableMobile = false,
+    onSubmittingChange,
+    embeddedInquiryFlow,
+  }: SignupFormProps,
+  ref: Ref<SignupFormHandle>,
+): ReactElement {
   const { t } = useTranslation();
   const { showError } = useSnackbar();
   const { accessToken: anonymousAccessToken } = useAuth();
   const { signup, requestSignupCode, loading } = useLogin();
 
-  const supportsOtp = SIGNUP_OTP_ENABLED && identity.identityKind === "mobile";
+  const supportsOtp =
+    SIGNUP_OTP_ENABLED && (identity.identityKind === "mobile" || allowEditableMobile);
   const [mode, setMode] = useState<SignupCredentialMode>("password");
   const [firstName, setFirstName] = useState(initialFirstName);
   const [lastName, setLastName] = useState(initialLastName);
@@ -126,7 +151,17 @@ export const SignupForm = ({
 
   const verificationCode = verificationDigits.join("");
   const captchaEnabled = API_CONFIG.CAPTCHA_ENABLED;
-  const lockedIdentityKind = identity.identity.trim() ? identity.identityKind : null;
+  const lockedIdentityKind = useMemo(() => {
+    if (!identity.identity.trim()) {
+      return null;
+    }
+
+    if (allowEditableMobile && identity.identityKind === "mobile") {
+      return null;
+    }
+
+    return identity.identityKind;
+  }, [allowEditableMobile, identity.identity, identity.identityKind]);
   const hasAnyIdentity = useMemo(
     () => Boolean(username.trim() || email.trim() || mobile.trim()),
     [email, mobile, username]
@@ -135,14 +170,28 @@ export const SignupForm = ({
   const passwordsMatch = confirmPassword.trim().length > 0 && password === confirmPassword;
   const passwordReady = password.trim().length > 0 && confirmPassword.trim().length > 0;
   const mobileInvalid = Boolean(mobile.trim()) && !isValidMobilePhone(mobile);
+  const mobileRequired = allowEditableMobile || Boolean(embeddedInquiryFlow);
   const otpReady = signupCodeRequested && VERIFICATION_CODE_REGEX.test(verificationCode.trim());
   const formReady =
     firstName.trim().length > 0 &&
     hasAnyIdentity &&
     (mode === "password" ? passwordReady : otpReady) &&
     (!captchaEnabled || captchaValid);
+  const showFirstNameError = hasError && !firstName.trim();
+  const showMobileRequiredError = hasError && mobileRequired && !mobile.trim();
+  const showMobileInvalidError = hasError && Boolean(mobile.trim()) && mobileInvalid;
+  const showPasswordRequiredError = hasError && mode === "password" && !password.trim();
+  const showConfirmPasswordRequiredError =
+    hasError && mode === "password" && !confirmPassword.trim();
+
+  useEffect(() => {
+    onSubmittingChange?.(loading);
+  }, [loading, onSubmittingChange]);
 
   const isIdentityFieldRequired = (kind: NonNullable<LoginNavState["identityKind"]>): boolean => {
+    if (kind === "mobile" && mobileRequired) {
+      return true;
+    }
     if (lockedIdentityKind === kind) {
       return true;
     }
@@ -251,12 +300,16 @@ export const SignupForm = ({
     }
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
-    event.preventDefault();
-
+  const runSubmit = useCallback(async (): Promise<void> => {
     if (!firstName.trim()) {
       setHasError(true);
       showError(t("auth.login.errors.signupFirstNameRequired"));
+      return;
+    }
+
+    if (mobileRequired && !mobile.trim()) {
+      setHasError(true);
+      showError(t("auth.login.errors.mobileRequiredForOtpSignup"));
       return;
     }
 
@@ -300,6 +353,12 @@ export const SignupForm = ({
       if (!passwordRulesPassed) {
         setHasError(true);
         showError(t("auth.login.errors.passwordPolicy"));
+        return;
+      }
+
+      if (!confirmPassword.trim()) {
+        setHasError(true);
+        showError(t("auth.login.errors.passwordRequired"));
         return;
       }
 
@@ -389,7 +448,49 @@ export const SignupForm = ({
       setCaptchaValid(false);
       setCaptchaVersion((previous) => previous + 1);
     }
-  };
+  }, [
+    anonymousAccessToken,
+    captchaEnabled,
+    captchaId,
+    captchaValid,
+    captchaValue,
+    confirmPassword,
+    email,
+    embeddedInquiryFlow,
+    firstName,
+    hasAnyIdentity,
+    lastName,
+    mobile,
+    mobileRequired,
+    mode,
+    password,
+    passwordRulesPassed,
+    rememberMe,
+    showError,
+    signup,
+    signupCodeRequested,
+    t,
+    username,
+    verificationCode,
+  ]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      submit: () => {
+        void runSubmit();
+      },
+    }),
+    [runSubmit],
+  );
+
+  const handleSubmit = useCallback(
+    (event: FormEvent<HTMLFormElement>): void => {
+      event.preventDefault();
+      void runSubmit();
+    },
+    [runSubmit],
+  );
 
   const handleCaptchaChange = useCallback(
     ({
@@ -455,7 +556,10 @@ export const SignupForm = ({
           inputProps={persianFieldInputProps}
           disabled={loading}
           required
-          error={hasError && !firstName.trim()}
+          error={showFirstNameError}
+          helperText={
+            showFirstNameError ? t("auth.login.errors.signupFirstNameRequired") : undefined
+          }
         />
 
         <TextField
@@ -518,9 +622,15 @@ export const SignupForm = ({
               </InputAdornment>
             ),
           }}
-          disabled={loading || lockedIdentityKind === "mobile"}
-          error={hasError && mobileInvalid}
-          helperText={hasError && mobileInvalid ? t("auth.login.errors.invalidMobile") : undefined}
+          disabled={loading || (lockedIdentityKind === "mobile" && !allowEditableMobile)}
+          error={showMobileRequiredError || showMobileInvalidError}
+          helperText={
+            showMobileRequiredError
+              ? t("auth.login.errors.mobileRequiredForOtpSignup")
+              : showMobileInvalidError
+                ? t("auth.login.errors.invalidMobile")
+                : undefined
+          }
           required={isIdentityFieldRequired("mobile")}
         />
 
@@ -556,7 +666,14 @@ export const SignupForm = ({
               }}
               autoComplete="new-password"
               disabled={loading}
-              error={hasError && !passwordRulesPassed}
+              error={showPasswordRequiredError || (hasError && !passwordRulesPassed)}
+              helperText={
+                showPasswordRequiredError
+                  ? t("auth.login.errors.passwordRequired")
+                  : hasError && !passwordRulesPassed
+                    ? t("auth.login.errors.passwordPolicy")
+                    : undefined
+              }
               required
             />
 
@@ -578,11 +695,16 @@ export const SignupForm = ({
               }}
               autoComplete="new-password"
               disabled={loading}
-              error={hasError && Boolean(confirmPassword) && !passwordsMatch}
+              error={
+                showConfirmPasswordRequiredError ||
+                (hasError && Boolean(confirmPassword) && !passwordsMatch)
+              }
               helperText={
-                confirmPassword && !passwordsMatch
-                  ? t("auth.login.errors.passwordMismatch")
-                  : undefined
+                showConfirmPasswordRequiredError
+                  ? t("auth.login.errors.passwordRequired")
+                  : confirmPassword && !passwordsMatch
+                    ? t("auth.login.errors.passwordMismatch")
+                    : undefined
               }
               required
             />
@@ -672,22 +794,27 @@ export const SignupForm = ({
           />
         </Box>
 
-        <Button
-          type="submit"
-          fullWidth
-          variant="contained"
-          size="large"
-          className={formStyles.loginButton}
-          disabled={loading || !formReady}
-          startIcon={
-            loading ? (
-              <CircularProgress className={formStyles.loginButtonSpinner} color="inherit" />
-            ) : null
-          }
-        >
-          {loading ? t("auth.login.creatingAccount") : t("auth.login.signUp")}
-        </Button>
+        {hideSubmitButton ? null : (
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            size="large"
+            className={formStyles.loginButton}
+            disabled={loading || !formReady}
+            startIcon={
+              loading ? (
+                <CircularProgress className={formStyles.loginButtonSpinner} color="inherit" />
+              ) : null
+            }
+          >
+            {loading ? t("auth.login.creatingAccount") : t("auth.login.signUp")}
+          </Button>
+        )}
       </form>
     </LoginShell>
   );
-};
+}
+
+export const SignupForm = forwardRef(SignupFormInner);
+SignupForm.displayName = "SignupForm";

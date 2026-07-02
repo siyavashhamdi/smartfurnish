@@ -88,6 +88,10 @@
 
 .cardAccentSuccess {
   color: #10b981;
+
+  .cardTitleRow h3 {
+    color: currentColor;
+  }
 }
 
 .cardAccentWarning {

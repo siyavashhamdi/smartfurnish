@@ -15,6 +15,11 @@ import { useAuth, type User } from "../contexts/AuthContext";
 import { useSnackbar } from "./useSnackbar";
 import { collectSessionClientContextInput } from "../utils/sessionClientContext.util";
 import { applyUserPreferences } from "../utils/userPreferences.util";
+import {
+  beginAuthSessionHandoff,
+  captureAuthSessionHandoffContext,
+  finalizeAuthIdentityChange,
+} from "../utils/authSessionHandoff.util";
 import { mapMeToUser } from "../utils/storedUser.util";
 import {
   normalizeAuthIdentityForSubmit,
@@ -155,6 +160,9 @@ async function establishSession(
   failureMessage: string,
   options?: { readonly skipRedirect?: boolean },
 ): Promise<boolean> {
+  const handoffContext = captureAuthSessionHandoffContext();
+  beginAuthSessionHandoff();
+
   localStorage.setItem(LOCAL_STORAGE_KEYS.ACCESS_TOKEN, accessToken);
 
   const meResult = await apolloClient.query<UserMeResponse>({
@@ -172,13 +180,21 @@ async function establishSession(
     return false;
   }
 
+  const nextUser = mapMeToUser(meResult.data.me);
   applyUserPreferences(meResult.data.me.preferences);
   if (options?.skipRedirect) {
-    setAuthSession(accessToken, mapMeToUser(meResult.data.me));
+    setAuthSession(accessToken, nextUser);
   } else {
-    login(accessToken, mapMeToUser(meResult.data.me));
+    login(accessToken, nextUser);
   }
   showSuccess(successMessage);
+
+  void finalizeAuthIdentityChange({
+    previousUserId: handoffContext.previousUserId,
+    previousToken: handoffContext.previousToken,
+    newUserId: nextUser.id,
+  });
+
   return true;
 }
 

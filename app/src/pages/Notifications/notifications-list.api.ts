@@ -1,4 +1,5 @@
 import type { SortOrder } from "../Products/product-list.api";
+import { resolveNotificationDisplayMode } from "../../utilities/resolve-notification-display-mode.util";
 
 export type NotificationMode = "INFO" | "SUCCESS" | "WARNING" | "ERROR";
 export type NotificationSource =
@@ -142,22 +143,26 @@ export const buildNotificationListQueryVariables = (
 
 export const mapNotificationListRowToRecord = (
   item: NotificationListItemRow
-): NotificationRecord => ({
-  id: item.id,
-  userId: item.userId ?? null,
-  source: item.source,
-  mode: item.mode,
-  title: item.title?.trim() || item.message,
-  message: item.message,
-  payload: item.payload && typeof item.payload === "object" ? item.payload : null,
-  isRead: item.isRead,
-  readAt: item.readAt ?? null,
-  archivedAt: item.archivedAt ?? null,
-  visibleUntil: item.visibleUntil ?? null,
-  createdAt: item.createdAt ?? null,
-  updatedAt: item.updatedAt ?? null,
-  isActionable: true,
-});
+): NotificationRecord => {
+  const payload = item.payload && typeof item.payload === "object" ? item.payload : null;
+
+  return {
+    id: item.id,
+    userId: item.userId ?? null,
+    source: item.source,
+    mode: resolveNotificationDisplayMode(item.mode, payload),
+    title: item.title?.trim() || item.message,
+    message: item.message,
+    payload,
+    isRead: item.isRead,
+    readAt: item.readAt ?? null,
+    archivedAt: item.archivedAt ?? null,
+    visibleUntil: item.visibleUntil ?? null,
+    createdAt: item.createdAt ?? null,
+    updatedAt: item.updatedAt ?? null,
+    isActionable: true,
+  };
+};
 
 export const mergeUpdatedNotificationRecords = (
   current: NotificationRecord[],

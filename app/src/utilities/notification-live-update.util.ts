@@ -7,6 +7,7 @@ import {
 import type { GeneralUpdateEvent } from "../hooks/useGeneralUpdatesSubscription";
 import type { NotificationSource } from "../pages/Notifications/notifications-list.api";
 import { inferNotificationSourceFromPayload } from "./infer-notification-source.util";
+import { resolveNotificationDisplayMode } from "./resolve-notification-display-mode.util";
 
 export type NotificationLiveBannerState = {
   readonly id: string;
@@ -69,15 +70,18 @@ function resolveNotificationTitle(
   return description;
 }
 
-export function resolveNotificationBannerSeverity(value: unknown): AlertColor {
-  if (typeof value !== "string") {
-    return "info";
-  }
+export function resolveNotificationBannerSeverity(
+  value: unknown,
+  payload?: Record<string, unknown> | null,
+): AlertColor {
+  const resolvedMode =
+    typeof value === "string"
+      ? resolveNotificationDisplayMode(value as "INFO" | "SUCCESS" | "WARNING" | "ERROR", payload)
+      : "INFO";
 
-  switch (value.toUpperCase()) {
+  switch (resolvedMode) {
     case "SUCCESS":
       return "success";
-    case "WARN":
     case "WARNING":
       return "warning";
     case "ERROR":
@@ -104,7 +108,7 @@ export function parseNotificationLiveUpdate(
     id: event.targetId || `${event.updateType}-${event.createdAt}`,
     title,
     message,
-    severity: resolveNotificationBannerSeverity(payload?.mode),
+    severity: resolveNotificationBannerSeverity(payload?.mode, notificationPayloadRecord),
     payload: notificationPayloadRecord,
     source: inferNotificationSourceFromPayload(notificationPayloadRecord),
     messageType,

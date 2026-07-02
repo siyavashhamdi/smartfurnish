@@ -1805,6 +1805,7 @@ export class UserProductInquiryService {
       payload: {
         notificationKind: "INQUIRY_CONTACT_SUBMITTED",
       },
+      silent: true,
     });
   }
 
@@ -1822,7 +1823,7 @@ export class UserProductInquiryService {
         return {
           title: "درخواست بازدید در حال بررسی است",
           message: `درخواست بازدید حضوری شما برای محصول «${productTitle}» در حال بررسی است. شما را از وضعیت مطلع خواهیم کرد.`,
-          mode: NotificationMode.INFO,
+          mode: NotificationMode.SUCCESS,
           payload: {
             notificationKind: "INQUIRY_UNDER_REVIEW",
           },
@@ -1891,6 +1892,7 @@ export class UserProductInquiryService {
     message: string;
     mode: NotificationMode;
     payload: Record<string, unknown>;
+    silent?: boolean;
   }): Promise<void> {
     const inquiryId = params.inquiry._id.toString();
     const productId = params.inquiry.productId.toString();
@@ -1915,6 +1917,10 @@ export class UserProductInquiryService {
       message: params.message,
       payload: notificationPayload,
     });
+
+    if (params.silent === true) {
+      return;
+    }
 
     await this.userSubscriptionService.publishToUser({
       userId: params.inquiry.userId.toString(),

@@ -17,3 +17,7 @@ export function wasNotificationPresented(notificationId: string): boolean {
 
   return presentedNotificationIds.has(normalizedId);
 }
+
+export function clearPresentedNotificationIds(): void {
+  presentedNotificationIds.clear();
+}
