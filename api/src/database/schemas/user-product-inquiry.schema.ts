@@ -25,11 +25,15 @@ export type UserProductInquiryFabricSnapshot = {
   label: string;
 };
 
-export type UserProductInquiryStatusHistoryPayload = {
-  contactedAt?: Date;
-  contactedBy?: Types.ObjectId;
-  completedAt?: Date;
-  completedBy?: Types.ObjectId;
+export type UserProductInquiryStatusHistoryContacted = {
+  contactedAt: Date;
+  contactedBy: Types.ObjectId;
+};
+
+export type UserProductInquiryStatusHistorySaleCompleted = {
+  completedAt: Date;
+  completedBy: Types.ObjectId;
+  finalPriceIrt: number;
 };
 
 export type UserProductInquiryStatusHistoryEntry = {
@@ -38,7 +42,8 @@ export type UserProductInquiryStatusHistoryEntry = {
   description?: string;
   changedAt: Date;
   changedBy?: Types.ObjectId;
-  payload?: UserProductInquiryStatusHistoryPayload;
+  contacted?: UserProductInquiryStatusHistoryContacted;
+  saleCompleted?: UserProductInquiryStatusHistorySaleCompleted;
 };
 
 export type UserProductInquiryPreviewModel = {
@@ -103,15 +108,24 @@ export const UserProductInquiryFabricSnapshotSchema = new MongooseSchema(
   { _id: false },
 );
 
-export const UserProductInquiryStatusHistoryPayloadSchema = new MongooseSchema(
-  {
-    contactedAt: { type: Date },
-    contactedBy: { ref: "User", type: Types.ObjectId },
-    completedAt: { type: Date },
-    completedBy: { ref: "User", type: Types.ObjectId },
-  },
-  { _id: false },
-);
+export const UserProductInquiryStatusHistoryContactedSchema =
+  new MongooseSchema(
+    {
+      contactedAt: { required: true, type: Date },
+      contactedBy: { ref: "User", required: true, type: Types.ObjectId },
+    },
+    { _id: false },
+  );
+
+export const UserProductInquiryStatusHistorySaleCompletedSchema =
+  new MongooseSchema(
+    {
+      completedAt: { required: true, type: Date },
+      completedBy: { ref: "User", required: true, type: Types.ObjectId },
+      finalPriceIrt: { min: 0, required: true, type: Number },
+    },
+    { _id: false },
+  );
 
 export const UserProductInquiryStatusHistoryEntrySchema = new MongooseSchema(
   {
@@ -124,7 +138,8 @@ export const UserProductInquiryStatusHistoryEntrySchema = new MongooseSchema(
     description: { trim: true, type: String },
     changedAt: { required: true, type: Date },
     changedBy: { ref: "User", type: Types.ObjectId },
-    payload: { type: UserProductInquiryStatusHistoryPayloadSchema },
+    contacted: { type: UserProductInquiryStatusHistoryContactedSchema },
+    saleCompleted: { type: UserProductInquiryStatusHistorySaleCompletedSchema },
   },
   { _id: false },
 );
@@ -265,33 +280,45 @@ UserProductInquirySchema.pre(
       }
 
       if (entry.status === UserProductInquiryStatus.CONTACTED) {
-        if (!entry.payload?.contactedAt) {
+        if (!entry.contacted?.contactedAt) {
           this.invalidate(
-            `statusHistory.${index}.payload.contactedAt`,
+            `statusHistory.${index}.contacted.contactedAt`,
             "contactedAt is required when status is CONTACTED",
           );
         }
 
-        if (!entry.payload?.contactedBy) {
+        if (!entry.contacted?.contactedBy) {
           this.invalidate(
-            `statusHistory.${index}.payload.contactedBy`,
+            `statusHistory.${index}.contacted.contactedBy`,
             "contactedBy is required when status is CONTACTED",
           );
         }
       }
 
       if (entry.status === UserProductInquiryStatus.SALE_COMPLETED) {
-        if (!entry.payload?.completedAt) {
+        if (!entry.saleCompleted?.completedAt) {
           this.invalidate(
-            `statusHistory.${index}.payload.completedAt`,
+            `statusHistory.${index}.saleCompleted.completedAt`,
             "completedAt is required when status is SALE_COMPLETED",
           );
         }
 
-        if (!entry.payload?.completedBy) {
+        if (!entry.saleCompleted?.completedBy) {
           this.invalidate(
-            `statusHistory.${index}.payload.completedBy`,
+            `statusHistory.${index}.saleCompleted.completedBy`,
             "completedBy is required when status is SALE_COMPLETED",
+          );
+        }
+
+        if (entry.saleCompleted?.finalPriceIrt == null) {
+          this.invalidate(
+            `statusHistory.${index}.saleCompleted.finalPriceIrt`,
+            "finalPriceIrt is required when status is SALE_COMPLETED",
+          );
+        } else if (entry.saleCompleted.finalPriceIrt < 0) {
+          this.invalidate(
+            `statusHistory.${index}.saleCompleted.finalPriceIrt`,
+            "finalPriceIrt must be greater than or equal to 0",
           );
         }
       }
@@ -415,12 +442,13 @@ UserProductInquirySchema.pre(
     if (requiresSale) {
       if (
         lastHistoryEntry.status !== UserProductInquiryStatus.SALE_COMPLETED ||
-        !lastHistoryEntry.payload?.completedAt ||
-        !lastHistoryEntry.payload?.completedBy
+        !lastHistoryEntry.saleCompleted?.completedAt ||
+        !lastHistoryEntry.saleCompleted?.completedBy ||
+        lastHistoryEntry.saleCompleted?.finalPriceIrt == null
       ) {
         this.invalidate(
           "statusHistory",
-          "SALE_COMPLETED status requires completedAt and completedBy in the last statusHistory entry payload",
+          "SALE_COMPLETED status requires completedAt, completedBy, and finalPriceIrt in the last statusHistory entry saleCompleted",
         );
       }
     }

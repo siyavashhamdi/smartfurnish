@@ -13,11 +13,15 @@ export type UserProductInquiryDetailProduct = {
   readonly coverImageAccessUrls: readonly FileAccessUrl[];
 };
 
-export type UserProductInquiryDetailStatusHistoryPayload = {
-  readonly contactedAt?: string | null;
-  readonly contactedBy?: string | null;
-  readonly completedAt?: string | null;
-  readonly completedBy?: string | null;
+export type UserProductInquiryDetailStatusHistoryContacted = {
+  readonly contactedAt: string;
+  readonly contactedBy: string;
+};
+
+export type UserProductInquiryDetailStatusHistorySaleCompleted = {
+  readonly completedAt: string;
+  readonly completedBy: string;
+  readonly finalPriceIrt: number;
 };
 
 export type UserProductInquiryDetailStatusHistoryEntry = {
@@ -26,7 +30,8 @@ export type UserProductInquiryDetailStatusHistoryEntry = {
   readonly description?: string | null;
   readonly changedAt: string;
   readonly changedBy?: string | null;
-  readonly payload?: UserProductInquiryDetailStatusHistoryPayload | null;
+  readonly contacted?: UserProductInquiryDetailStatusHistoryContacted | null;
+  readonly saleCompleted?: UserProductInquiryDetailStatusHistorySaleCompleted | null;
 };
 
 export type UserProductInquiryDetailPreviewModel = {

@@ -2,10 +2,7 @@ import { useMemo, type CSSProperties, type ReactElement, type ReactNode } from "
 import { useQuery } from "@apollo/client/react";
 import { Box, Chip, Typography } from "@mui/material";
 
-import type {
-  UserProductInquiryDetailStatusHistoryEntry,
-  UserProductInquiryDetailStatusHistoryPayload,
-} from "./inquiry-detail.api";
+import type { UserProductInquiryDetailStatusHistoryEntry } from "./inquiry-detail.api";
 import type { UserProductInquiryStatus } from "./inquiries-list.api";
 import {
   INQUIRY_STATUS_COLOR,
@@ -14,6 +11,7 @@ import {
 import { USER_DETAIL_QUERY } from "../../graphql/queries/userDetail.query";
 import DateTimeValue from "../../shared/display/DateTimeValue";
 import { useTranslation } from "../../hooks/useTranslation";
+import { formatProductPrice } from "../Products/product-detail.api";
 import type {
   UserDetailQuery,
   UserDetailQueryVariables,
@@ -61,16 +59,6 @@ function formatUserDetailDisplayName(user: UserDetailQuery["userDetail"]): strin
   );
 
   return parts.length > 0 ? parts.join(" ") : user.username;
-}
-
-function hasContactPayload(
-  payload: UserProductInquiryDetailStatusHistoryPayload,
-): boolean {
-  return Boolean(payload.contactedAt?.trim() || payload.contactedBy?.trim());
-}
-
-function hasSalePayload(payload: UserProductInquiryDetailStatusHistoryPayload): boolean {
-  return Boolean(payload.completedAt?.trim() || payload.completedBy?.trim());
 }
 
 function StatusChip({ status }: { readonly status: UserProductInquiryStatus }): ReactElement {
@@ -163,33 +151,32 @@ function UserReferenceValue({ userId }: { readonly userId: string }): ReactEleme
   );
 }
 
-function StatusHistoryPayloadSection({
+function StatusHistoryDetailsSection({
   entry,
 }: {
   readonly entry: UserProductInquiryDetailStatusHistoryEntry;
 }): ReactElement | null {
   const { t } = useTranslation();
-  const payload = entry.payload;
 
-  if (!payload) {
-    return null;
-  }
-
-  if (entry.status === "CONTACTED" && hasContactPayload(payload)) {
+  if (entry.status === "CONTACTED" && entry.contacted) {
     const fields: PayloadField[] = [];
 
-    if (payload.contactedAt?.trim()) {
+    if (entry.contacted.contactedAt?.trim()) {
       fields.push({
         label: t("pages.inquiries.viewModal.history.contactedAt"),
-        value: <DateTimeValue value={payload.contactedAt} emphasizeDate inlineDateTime />,
+        value: <DateTimeValue value={entry.contacted.contactedAt} emphasizeDate inlineDateTime />,
       });
     }
 
-    if (payload.contactedBy?.trim()) {
+    if (entry.contacted.contactedBy?.trim()) {
       fields.push({
         label: t("pages.inquiries.viewModal.history.contactedBy"),
-        value: <UserReferenceValue userId={payload.contactedBy} />,
+        value: <UserReferenceValue userId={entry.contacted.contactedBy} />,
       });
+    }
+
+    if (fields.length === 0) {
+      return null;
     }
 
     return (
@@ -199,21 +186,34 @@ function StatusHistoryPayloadSection({
     );
   }
 
-  if (entry.status === "SALE_COMPLETED" && hasSalePayload(payload)) {
+  if (entry.status === "SALE_COMPLETED" && entry.saleCompleted) {
     const fields: PayloadField[] = [];
 
-    if (payload.completedAt?.trim()) {
+    if (entry.saleCompleted.completedAt?.trim()) {
       fields.push({
         label: t("pages.inquiries.viewModal.history.completedAt"),
-        value: <DateTimeValue value={payload.completedAt} emphasizeDate inlineDateTime />,
+        value: (
+          <DateTimeValue value={entry.saleCompleted.completedAt} emphasizeDate inlineDateTime />
+        ),
       });
     }
 
-    if (payload.completedBy?.trim()) {
+    if (entry.saleCompleted.completedBy?.trim()) {
       fields.push({
         label: t("pages.inquiries.viewModal.history.completedBy"),
-        value: <UserReferenceValue userId={payload.completedBy} />,
+        value: <UserReferenceValue userId={entry.saleCompleted.completedBy} />,
       });
+    }
+
+    if (entry.saleCompleted.finalPriceIrt != null) {
+      fields.push({
+        label: t("pages.inquiries.viewModal.history.finalPriceIrt"),
+        value: formatProductPrice(entry.saleCompleted.finalPriceIrt),
+      });
+    }
+
+    if (fields.length === 0) {
+      return null;
     }
 
     return (
@@ -250,8 +250,16 @@ function InquiryStatusHistoryTimeline({
         const itemStyle = { "--timeline-accent": accent } as CSSProperties;
 
         return (
-          <li key={`${entry.changedAt}-${entry.status}-${index}`} className={styles.item} style={itemStyle}>
-            <article className={[styles.card, isLatest ? styles.cardLatest : undefined].filter(Boolean).join(" ")}>
+          <li
+            key={`${entry.changedAt}-${entry.status}-${index}`}
+            className={styles.item}
+            style={itemStyle}
+          >
+            <article
+              className={[styles.card, isLatest ? styles.cardLatest : undefined]
+                .filter(Boolean)
+                .join(" ")}
+            >
               <span className={styles.cardAccent} aria-hidden="true" />
               <div className={styles.cardHeader}>
                 <div className={styles.cardHeaderStart}>
@@ -272,7 +280,7 @@ function InquiryStatusHistoryTimeline({
                 </Typography>
               </div>
 
-              <StatusHistoryPayloadSection entry={entry} />
+              <StatusHistoryDetailsSection entry={entry} />
             </article>
           </li>
         );

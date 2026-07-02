@@ -27,8 +27,8 @@ import InquiryStatusEditSection, {
 import InquiryPreviewImageCarousel from "./InquiryPreviewImageCarousel";
 import InquiryPreviewEntryPanel from "./InquiryPreviewEntryPanel";
 import {
-  findLatestContactPayload,
-  findLatestSaleCompletedPayload,
+  findLatestContactedDetails,
+  findLatestSaleCompletedDetails,
 } from "./inquiry-sale-payload.util";
 import { toWesternDigits } from "../../utilities/persian-digits.util";
 import styles from "./styles/InquiryViewModal.module.scss";
@@ -222,12 +222,12 @@ function InquiryViewModal({
   const statusEditRef = useRef<InquiryStatusEditSectionHandle>(null);
   const [statusSubmitting, setStatusSubmitting] = useState(false);
   const [statusCanSubmit, setStatusCanSubmit] = useState(false);
-  const initialContactPayload = useMemo(
-    () => (record ? findLatestContactPayload(record.statusHistory) : null),
+  const initialContacted = useMemo(
+    () => (record ? findLatestContactedDetails(record.statusHistory) : null),
     [record],
   );
-  const initialSalePayload = useMemo(
-    () => (record ? findLatestSaleCompletedPayload(record.statusHistory) : null),
+  const initialSaleCompleted = useMemo(
+    () => (record ? findLatestSaleCompletedDetails(record.statusHistory) : null),
     [record],
   );
 
@@ -459,8 +459,8 @@ function InquiryViewModal({
               ref={statusEditRef}
               inquiryId={record.id}
               initialStatus={record.status}
-              initialContactPayload={initialContactPayload}
-              initialSalePayload={initialSalePayload}
+              initialContacted={initialContacted}
+              initialSaleCompleted={initialSaleCompleted}
               onSuccess={onStatusEditSuccess}
               onSubmittingChange={setStatusSubmitting}
               onCanSubmitChange={setStatusCanSubmit}

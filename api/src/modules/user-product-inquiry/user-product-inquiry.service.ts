@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { FilterQuery, Model, Types } from "mongoose";
 
@@ -14,7 +19,8 @@ import {
   UserProductInquiryFabricSnapshot,
   UserProductInquiryUserSnapshot,
   UserProductInquiryStatusHistoryEntry,
-  UserProductInquiryStatusHistoryPayload,
+  UserProductInquiryStatusHistoryContacted,
+  UserProductInquiryStatusHistorySaleCompleted,
   UserProductInquiryPreview,
   UserProductInquiryContact,
 } from "../../database/schemas";
@@ -57,7 +63,8 @@ import {
   UserProductInquiryUpdatePreviewGqlInput,
   UserProductInquiryUpdateProductSnapshotGqlInput,
   UserProductInquiryUpdateStatusHistoryEntryGqlInput,
-  UserProductInquiryUpdateStatusHistoryPayloadGqlInput,
+  UserProductInquiryUpdateStatusHistoryContactedGqlInput,
+  UserProductInquiryUpdateStatusHistorySaleCompletedGqlInput,
   UserProductInquiryUpdateUserSnapshotGqlInput,
   UserProductInquiryPreviewSubmitGqlInput,
   UserProductInquiryContactSubmitGqlInput,
@@ -289,7 +296,9 @@ export class UserProductInquiryService {
         );
       }
 
-      if (existingInquiry.status !== UserProductInquiryStatus.PREVIEW_GENERATED) {
+      if (
+        existingInquiry.status !== UserProductInquiryStatus.PREVIEW_GENERATED
+      ) {
         throw new BadRequestException(
           EXCEPTION_CONSTANT.USER_PRODUCT_INQUIRY_CONTACT_ALREADY_SUBMITTED,
         );
@@ -367,9 +376,10 @@ export class UserProductInquiryService {
     anonymousUserId: Types.ObjectId,
     anonymousSessionId: string,
   ): Promise<UserProductInquiryClaimGqlResponse> {
-    const registeredUser = await this.userService.resolveActiveUserFromAccessToken(
-      input.accessToken,
-    );
+    const registeredUser =
+      await this.userService.resolveActiveUserFromAccessToken(
+        input.accessToken,
+      );
 
     if (
       !registeredUser ||
@@ -413,7 +423,8 @@ export class UserProductInquiryService {
     }
 
     inquiry.userId = registeredUser._id;
-    inquiry.userSnapshot = this.toUserProductInquiryUserSnapshot(registeredUser);
+    inquiry.userSnapshot =
+      this.toUserProductInquiryUserSnapshot(registeredUser);
     await inquiry.save();
 
     await this.userService.completeAnonymousSessionHandoff({
@@ -600,7 +611,9 @@ export class UserProductInquiryService {
       await inquiry.save();
     } catch (error) {
       throw new BadRequestException(
-        error instanceof Error ? error.message : EXCEPTION_CONSTANT.UNKNOWN_ERROR_OCCURRED,
+        error instanceof Error
+          ? error.message
+          : EXCEPTION_CONSTANT.UNKNOWN_ERROR_OCCURRED,
       );
     }
 
@@ -614,7 +627,9 @@ export class UserProductInquiryService {
       changedByAdmin: true,
     });
 
-    return this.toDetailResponse(inquiry.toObject() as UserProductInquiryListRecord);
+    return this.toDetailResponse(
+      inquiry.toObject() as UserProductInquiryListRecord,
+    );
   }
 
   async updateStatus(
@@ -650,32 +665,37 @@ export class UserProductInquiryService {
     };
 
     if (input.status === UserProductInquiryStatus.CONTACTED) {
-      if (!input.payload?.contactedAt || !input.payload?.contactedBy) {
+      if (!input.contacted?.contactedAt || !input.contacted?.contactedBy) {
         throw new BadRequestException(
-          "Contact payload is required when status is CONTACTED",
+          "Contact details are required when status is CONTACTED",
         );
       }
 
-      await this.assertSuperAdminUserExists(input.payload.contactedBy);
+      await this.assertSuperAdminUserExists(input.contacted.contactedBy);
 
-      historyEntry.payload = {
-        contactedAt: new Date(input.payload.contactedAt),
-        contactedBy: input.payload.contactedBy,
+      historyEntry.contacted = {
+        contactedAt: new Date(input.contacted.contactedAt),
+        contactedBy: input.contacted.contactedBy,
       };
     }
 
     if (input.status === UserProductInquiryStatus.SALE_COMPLETED) {
-      if (!input.payload?.completedAt || !input.payload?.completedBy) {
+      if (
+        !input.saleCompleted?.completedAt ||
+        !input.saleCompleted?.completedBy ||
+        input.saleCompleted?.finalPriceIrt == null
+      ) {
         throw new BadRequestException(
-          "Sale completion payload is required when status is SALE_COMPLETED",
+          "Sale completion details are required when status is SALE_COMPLETED",
         );
       }
 
-      await this.assertSuperAdminUserExists(input.payload.completedBy);
+      await this.assertSuperAdminUserExists(input.saleCompleted.completedBy);
 
-      const salePayload = {
-        completedAt: new Date(input.payload.completedAt),
-        completedBy: input.payload.completedBy,
+      const saleCompleted: UserProductInquiryStatusHistorySaleCompleted = {
+        completedAt: new Date(input.saleCompleted.completedAt),
+        completedBy: input.saleCompleted.completedBy,
+        finalPriceIrt: input.saleCompleted.finalPriceIrt,
       };
 
       isSalePayloadCorrection =
@@ -687,11 +707,11 @@ export class UserProductInquiryService {
 
         if (lastEntry.status !== UserProductInquiryStatus.SALE_COMPLETED) {
           throw new BadRequestException(
-            "Cannot update sale completion payload when the last status history entry is not SALE_COMPLETED",
+            "Cannot update sale completion details when the last status history entry is not SALE_COMPLETED",
           );
         }
 
-        lastEntry.payload = salePayload;
+        lastEntry.saleCompleted = saleCompleted;
 
         if (description) {
           lastEntry.description = description;
@@ -699,7 +719,7 @@ export class UserProductInquiryService {
 
         inquiry.markModified("statusHistory");
       } else {
-        historyEntry.payload = salePayload;
+        historyEntry.saleCompleted = saleCompleted;
         inquiry.status = input.status;
         inquiry.statusHistory.push(historyEntry);
         inquiry.markModified("statusHistory");
@@ -714,7 +734,9 @@ export class UserProductInquiryService {
       await inquiry.save();
     } catch (error) {
       throw new BadRequestException(
-        error instanceof Error ? error.message : EXCEPTION_CONSTANT.UNKNOWN_ERROR_OCCURRED,
+        error instanceof Error
+          ? error.message
+          : EXCEPTION_CONSTANT.UNKNOWN_ERROR_OCCURRED,
       );
     }
 
@@ -730,12 +752,12 @@ export class UserProductInquiryService {
       });
     }
 
-    return this.toDetailResponse(inquiry.toObject() as UserProductInquiryListRecord);
+    return this.toDetailResponse(
+      inquiry.toObject() as UserProductInquiryListRecord,
+    );
   }
 
-  private resolveStatusUpdateReason(
-    status: UserProductInquiryStatus,
-  ): string {
+  private resolveStatusUpdateReason(status: UserProductInquiryStatus): string {
     switch (status) {
       case UserProductInquiryStatus.PREVIEW_GENERATED:
         return "Smart preview generated";
@@ -757,10 +779,7 @@ export class UserProductInquiryService {
   }
 
   private assertFullUpdateInput(input: UserProductInquiryUpdateGqlInput): void {
-    const requiredNullableKeys = [
-      "preview",
-      "contact",
-    ] as const;
+    const requiredNullableKeys = ["preview", "contact"] as const;
 
     for (const key of requiredNullableKeys) {
       if (input[key] === undefined) {
@@ -776,7 +795,11 @@ export class UserProductInquiryService {
   ): Promise<void> {
     const [ownerUser, product] = await Promise.all([
       this.userService.findById(input.userId),
-      this.productModel.findById(input.productId).select({ _id: 1 }).lean().exec(),
+      this.productModel
+        .findById(input.productId)
+        .select({ _id: 1 })
+        .lean()
+        .exec(),
     ]);
 
     if (!ownerUser) {
@@ -796,27 +819,24 @@ export class UserProductInquiryService {
         referencedUserIds.push(entry.changedBy);
       }
 
-      if (entry.payload?.contactedBy) {
-        referencedUserIds.push(entry.payload.contactedBy);
+      if (entry.contacted?.contactedBy) {
+        referencedUserIds.push(entry.contacted.contactedBy);
         superAdminChecks.push(
-          this.assertSuperAdminUserExists(entry.payload.contactedBy),
+          this.assertSuperAdminUserExists(entry.contacted.contactedBy),
         );
       }
 
-      if (entry.payload?.completedBy) {
-        referencedUserIds.push(entry.payload.completedBy);
+      if (entry.saleCompleted?.completedBy) {
+        referencedUserIds.push(entry.saleCompleted.completedBy);
         superAdminChecks.push(
-          this.assertSuperAdminUserExists(entry.payload.completedBy),
+          this.assertSuperAdminUserExists(entry.saleCompleted.completedBy),
         );
       }
     }
 
     if (input.preview?.length) {
       for (const preview of input.preview) {
-        referencedFileIds.push(
-          preview.environmentFileId,
-          preview.resultFileId,
-        );
+        referencedFileIds.push(preview.environmentFileId, preview.resultFileId);
 
         if (preview.sourceProductImageFileId) {
           referencedFileIds.push(preview.sourceProductImageFileId);
@@ -834,13 +854,13 @@ export class UserProductInquiryService {
   private async assertUsersExist(
     userIds: readonly Types.ObjectId[],
   ): Promise<void> {
-    const uniqueIds = [
-      ...new Set(userIds.map((userId) => userId.toString())),
-    ];
+    const uniqueIds = [...new Set(userIds.map((userId) => userId.toString()))];
 
     await Promise.all(
       uniqueIds.map(async (userId) => {
-        const user = await this.userService.findById(new Types.ObjectId(userId));
+        const user = await this.userService.findById(
+          new Types.ObjectId(userId),
+        );
 
         if (!user) {
           throw new NotFoundException(EXCEPTION_CONSTANT.USER_NOT_FOUND);
@@ -868,9 +888,7 @@ export class UserProductInquiryService {
   private async assertStoredFilesExist(
     fileIds: readonly Types.ObjectId[],
   ): Promise<void> {
-    const uniqueIds = [
-      ...new Set(fileIds.map((fileId) => fileId.toString())),
-    ];
+    const uniqueIds = [...new Set(fileIds.map((fileId) => fileId.toString()))];
 
     if (uniqueIds.length === 0) {
       return;
@@ -929,54 +947,72 @@ export class UserProductInquiryService {
       changedAt: new Date(input.changedAt),
       ...(description ? { description } : {}),
       ...(input.changedBy ? { changedBy: input.changedBy } : {}),
-      ...(input.payload
-        ? { payload: this.mapStatusHistoryPayloadFromUpdateInput(input.payload) }
+      ...(input.contacted
+        ? {
+            contacted: this.mapStatusHistoryContactedFromUpdateInput(
+              input.contacted,
+            ),
+          }
+        : {}),
+      ...(input.saleCompleted
+        ? {
+            saleCompleted: this.mapStatusHistorySaleCompletedFromUpdateInput(
+              input.saleCompleted,
+            ),
+          }
         : {}),
     };
   }
 
-  private mapStatusHistoryPayloadFromUpdateInput(
-    input: UserProductInquiryUpdateStatusHistoryPayloadGqlInput,
-  ): UserProductInquiryStatusHistoryPayload {
-    const payload: UserProductInquiryStatusHistoryPayload = {};
-
-    if (input.contactedAt) {
-      payload.contactedAt = new Date(input.contactedAt);
-    }
-
-    if (input.contactedBy) {
-      payload.contactedBy = input.contactedBy;
-    }
-
-    if (input.completedAt) {
-      payload.completedAt = new Date(input.completedAt);
-    }
-
-    if (input.completedBy) {
-      payload.completedBy = input.completedBy;
-    }
-
-    return payload;
+  private mapStatusHistoryContactedFromUpdateInput(
+    input: UserProductInquiryUpdateStatusHistoryContactedGqlInput,
+  ): UserProductInquiryStatusHistoryContacted {
+    return {
+      contactedAt: new Date(input.contactedAt),
+      contactedBy: input.contactedBy,
+    };
   }
 
-  private mapStatusHistoryPayloadToResponse(
-    payload: UserProductInquiryStatusHistoryPayload,
+  private mapStatusHistorySaleCompletedFromUpdateInput(
+    input: UserProductInquiryUpdateStatusHistorySaleCompletedGqlInput,
+  ): UserProductInquiryStatusHistorySaleCompleted {
+    return {
+      completedAt: new Date(input.completedAt),
+      completedBy: input.completedBy,
+      finalPriceIrt: input.finalPriceIrt,
+    };
+  }
+
+  private mapStatusHistoryContactedToResponse(
+    contacted: UserProductInquiryStatusHistoryContacted,
   ) {
     return {
-      ...(payload.contactedAt ? { contactedAt: payload.contactedAt } : {}),
-      ...(payload.contactedBy ? { contactedBy: payload.contactedBy } : {}),
-      ...(payload.completedAt ? { completedAt: payload.completedAt } : {}),
-      ...(payload.completedBy ? { completedBy: payload.completedBy } : {}),
+      contactedAt: contacted.contactedAt,
+      contactedBy: contacted.contactedBy,
+    };
+  }
+
+  private mapStatusHistorySaleCompletedToResponse(
+    saleCompleted: UserProductInquiryStatusHistorySaleCompleted,
+  ) {
+    return {
+      completedAt: saleCompleted.completedAt,
+      completedBy: saleCompleted.completedBy,
+      finalPriceIrt: saleCompleted.finalPriceIrt,
     };
   }
 
   private mapUpdatePreview(
     input: UserProductInquiryUpdatePreviewGqlInput,
   ): UserProductInquiryPreview {
-    const placementPrompt = this.normalizeOptionalText(input.model.placementPrompt);
+    const placementPrompt = this.normalizeOptionalText(
+      input.model.placementPrompt,
+    );
     const aspectRatio = this.normalizeOptionalText(input.model.aspectRatio);
     const imageSize = this.normalizeOptionalText(input.model.imageSize);
-    const reasoningEffort = this.normalizeOptionalText(input.model.reasoningEffort);
+    const reasoningEffort = this.normalizeOptionalText(
+      input.model.reasoningEffort,
+    );
 
     return {
       environmentFileId: input.environmentFileId,
@@ -1086,8 +1122,19 @@ export class UserProductInquiryService {
         ...(entry.description ? { description: entry.description } : {}),
         changedAt: entry.changedAt,
         ...(entry.changedBy ? { changedBy: entry.changedBy } : {}),
-        ...(entry.payload
-          ? { payload: this.mapStatusHistoryPayloadToResponse(entry.payload) }
+        ...(entry.contacted
+          ? {
+              contacted: this.mapStatusHistoryContactedToResponse(
+                entry.contacted,
+              ),
+            }
+          : {}),
+        ...(entry.saleCompleted
+          ? {
+              saleCompleted: this.mapStatusHistorySaleCompletedToResponse(
+                entry.saleCompleted,
+              ),
+            }
           : {}),
       })),
       preview: previews.length
@@ -1108,8 +1155,12 @@ export class UserProductInquiryService {
         : undefined,
       createdAt: inquiry.audit?.createdAt,
       updatedAt: inquiry.audit?.updatedAt,
-      ...(inquiry.audit?.createdBy ? { createdBy: inquiry.audit.createdBy } : {}),
-      ...(inquiry.audit?.updatedBy ? { updatedBy: inquiry.audit.updatedBy } : {}),
+      ...(inquiry.audit?.createdBy
+        ? { createdBy: inquiry.audit.createdBy }
+        : {}),
+      ...(inquiry.audit?.updatedBy
+        ? { updatedBy: inquiry.audit.updatedBy }
+        : {}),
     };
   }
 
@@ -1469,7 +1520,9 @@ export class UserProductInquiryService {
       model: {
         provider: "openrouter",
         model: params.modelName,
-        ...(params.placementPrompt ? { placementPrompt: params.placementPrompt } : {}),
+        ...(params.placementPrompt
+          ? { placementPrompt: params.placementPrompt }
+          : {}),
         ...(params.aspectRatio ? { aspectRatio: params.aspectRatio } : {}),
         imageSize: params.imageSize,
         ...(params.isRiverflowModel ? { reasoningEffort: "high" } : {}),
@@ -1544,9 +1597,7 @@ export class UserProductInquiryService {
           : {}),
       },
       fabric: this.mapFabricSnapshotToDetailResponse(preview.fabricSnapshot),
-      environmentFileAccessUrl: resolveFileAccessUrl(
-        preview.environmentFileId,
-      ),
+      environmentFileAccessUrl: resolveFileAccessUrl(preview.environmentFileId),
       resultFileAccessUrl: resolveFileAccessUrl(preview.resultFileId),
       sourceProductImageFileAccessUrl: resolveFileAccessUrl(
         preview.sourceProductImageFileId,

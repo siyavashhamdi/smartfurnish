@@ -18,7 +18,7 @@ export class UserProductInquiryUpdateMutation {
   @Mutation(() => UserProductInquiryDetailGqlResponse, {
     name: "userProductInquiryUpdate",
     description:
-      "Replace all editable fields on a user product inquiry. SUPER_ADMIN only. Schema validation enforces status, preview, contact, and status-history payload consistency rules.",
+      "Replace all editable fields on a user product inquiry. SUPER_ADMIN only. Schema validation enforces status, preview, contact, and status-history contacted/saleCompleted consistency rules.",
   })
   async updateUserProductInquiry(
     @Args("input") input: UserProductInquiryUpdateGqlInput,

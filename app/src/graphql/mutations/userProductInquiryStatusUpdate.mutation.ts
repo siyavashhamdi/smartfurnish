@@ -11,11 +11,14 @@ export const USER_PRODUCT_INQUIRY_STATUS_UPDATE_MUTATION = gql`
         description
         changedAt
         changedBy
-        payload {
+        contacted {
           contactedAt
           contactedBy
+        }
+        saleCompleted {
           completedAt
           completedBy
+          finalPriceIrt
         }
       }
       updatedAt

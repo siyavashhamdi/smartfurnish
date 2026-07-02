@@ -20,10 +20,14 @@ import type {
   UserProductInquiryStatusUpdateMutationVariables,
 } from "./inquiry-status-update.api";
 import {
-  type InquiryContactPayload,
-  type InquirySalePayload,
+  type InquiryContactedDetails,
+  type InquirySaleCompletedDetails,
   toLocalDateTimeInputValueFromIso,
 } from "./inquiry-sale-payload.util";
+import {
+  formatIntegerWithThousands,
+  parseOptionalNumber,
+} from "../Products/product-form-dialog/product-form.state.util";
 import { USER_PRODUCT_INQUIRY_STATUS_UPDATE_MUTATION } from "../../graphql/mutations/userProductInquiryStatusUpdate.mutation";
 import { USER_DETAIL_QUERY } from "../../graphql/queries/userDetail.query";
 import { useAuth } from "../../contexts/AuthContext";
@@ -64,32 +68,37 @@ type StatusEditFormSnapshot = {
   readonly contactedById: string | null;
   readonly completedAt: string;
   readonly completedById: string | null;
+  readonly finalPriceIrt: string;
 };
 
 function buildBaselineSnapshot(params: {
   readonly initialStatus: UserProductInquiryStatus;
-  readonly initialContactPayload: InquiryContactPayload | null;
-  readonly initialSalePayload: InquirySalePayload | null;
+  readonly initialContacted: InquiryContactedDetails | null;
+  readonly initialSaleCompleted: InquirySaleCompletedDetails | null;
 }): StatusEditFormSnapshot {
   return {
     status: params.initialStatus,
     description: "",
     contactedAt:
-      params.initialStatus === "CONTACTED" && params.initialContactPayload
-        ? toLocalDateTimeInputValueFromIso(params.initialContactPayload.contactedAt)
+      params.initialStatus === "CONTACTED" && params.initialContacted
+        ? toLocalDateTimeInputValueFromIso(params.initialContacted.contactedAt)
         : "",
     contactedById:
-      params.initialStatus === "CONTACTED" && params.initialContactPayload?.contactedBy
-        ? params.initialContactPayload.contactedBy
+      params.initialStatus === "CONTACTED" && params.initialContacted?.contactedBy
+        ? params.initialContacted.contactedBy
         : null,
     completedAt:
-      params.initialStatus === "SALE_COMPLETED" && params.initialSalePayload
-        ? toLocalDateTimeInputValueFromIso(params.initialSalePayload.completedAt)
+      params.initialStatus === "SALE_COMPLETED" && params.initialSaleCompleted
+        ? toLocalDateTimeInputValueFromIso(params.initialSaleCompleted.completedAt)
         : "",
     completedById:
-      params.initialStatus === "SALE_COMPLETED" && params.initialSalePayload?.completedBy
-        ? params.initialSalePayload.completedBy
+      params.initialStatus === "SALE_COMPLETED" && params.initialSaleCompleted?.completedBy
+        ? params.initialSaleCompleted.completedBy
         : null,
+    finalPriceIrt:
+      params.initialStatus === "SALE_COMPLETED" && params.initialSaleCompleted
+        ? formatIntegerWithThousands(String(params.initialSaleCompleted.finalPriceIrt))
+        : "",
   };
 }
 
@@ -103,7 +112,8 @@ function areSnapshotsEqual(
     left.contactedAt === right.contactedAt &&
     left.contactedById === right.contactedById &&
     left.completedAt === right.completedAt &&
-    left.completedById === right.completedById
+    left.completedById === right.completedById &&
+    left.finalPriceIrt === right.finalPriceIrt
   );
 }
 
@@ -114,8 +124,8 @@ export type InquiryStatusEditSectionHandle = {
 type InquiryStatusEditSectionProps = {
   readonly inquiryId: string;
   readonly initialStatus: UserProductInquiryStatus;
-  readonly initialContactPayload?: InquiryContactPayload | null;
-  readonly initialSalePayload?: InquirySalePayload | null;
+  readonly initialContacted?: InquiryContactedDetails | null;
+  readonly initialSaleCompleted?: InquirySaleCompletedDetails | null;
   readonly onSuccess?: () => void;
   readonly onSubmittingChange?: (submitting: boolean) => void;
   readonly onCanSubmitChange?: (canSubmit: boolean) => void;
@@ -128,8 +138,8 @@ const InquiryStatusEditSection = forwardRef<
   {
     inquiryId,
     initialStatus,
-    initialContactPayload = null,
-    initialSalePayload = null,
+    initialContacted = null,
+    initialSaleCompleted = null,
     onSuccess,
     onSubmittingChange,
     onCanSubmitChange,
@@ -144,6 +154,7 @@ const InquiryStatusEditSection = forwardRef<
   const [contactedBy, setContactedBy] = useState<ActiveSuperAdminOption | null>(null);
   const [completedAt, setCompletedAt] = useState("");
   const [completedBy, setCompletedBy] = useState<ActiveSuperAdminOption | null>(null);
+  const [finalPriceIrt, setFinalPriceIrt] = useState("");
 
   const defaultSuperAdmin = useMemo((): ActiveSuperAdminOption | null => {
     if (!user) {
@@ -153,34 +164,38 @@ const InquiryStatusEditSection = forwardRef<
     return buildActiveSuperAdminOptionFromAuthUser(user);
   }, [user]);
 
-  const resetContactPayload = useCallback((): void => {
-    if (initialStatus === "CONTACTED" && initialContactPayload) {
-      setContactedAt(toLocalDateTimeInputValueFromIso(initialContactPayload.contactedAt));
+  const resetContactedDetails = useCallback((): void => {
+    if (initialStatus === "CONTACTED" && initialContacted) {
+      setContactedAt(toLocalDateTimeInputValueFromIso(initialContacted.contactedAt));
       setContactedBy(null);
       return;
     }
 
     setContactedAt(createDefaultDateTimeValue());
     setContactedBy(defaultSuperAdmin);
-  }, [defaultSuperAdmin, initialContactPayload, initialStatus]);
+  }, [defaultSuperAdmin, initialContacted, initialStatus]);
 
-  const resetSalePayload = useCallback((): void => {
-    if (initialStatus === "SALE_COMPLETED" && initialSalePayload) {
-      setCompletedAt(toLocalDateTimeInputValueFromIso(initialSalePayload.completedAt));
+  const resetSaleCompletedDetails = useCallback((): void => {
+    if (initialStatus === "SALE_COMPLETED" && initialSaleCompleted) {
+      setCompletedAt(toLocalDateTimeInputValueFromIso(initialSaleCompleted.completedAt));
       setCompletedBy(null);
+      setFinalPriceIrt(
+        formatIntegerWithThousands(String(initialSaleCompleted.finalPriceIrt)),
+      );
       return;
     }
 
     setCompletedAt(createDefaultDateTimeValue());
     setCompletedBy(defaultSuperAdmin);
-  }, [defaultSuperAdmin, initialSalePayload, initialStatus]);
+    setFinalPriceIrt("");
+  }, [defaultSuperAdmin, initialSaleCompleted, initialStatus]);
 
   const { data: initialCompletedByUserData } = useQuery<
     UserDetailQuery,
     UserDetailQueryVariables
   >(USER_DETAIL_QUERY, {
-    variables: { input: { id: initialSalePayload?.completedBy ?? "" } },
-    skip: initialStatus !== "SALE_COMPLETED" || !initialSalePayload?.completedBy,
+    variables: { input: { id: initialSaleCompleted?.completedBy ?? "" } },
+    skip: initialStatus !== "SALE_COMPLETED" || !initialSaleCompleted?.completedBy,
     fetchPolicy: "cache-first",
   });
 
@@ -188,8 +203,8 @@ const InquiryStatusEditSection = forwardRef<
     UserDetailQuery,
     UserDetailQueryVariables
   >(USER_DETAIL_QUERY, {
-    variables: { input: { id: initialContactPayload?.contactedBy ?? "" } },
-    skip: initialStatus !== "CONTACTED" || !initialContactPayload?.contactedBy,
+    variables: { input: { id: initialContacted?.contactedBy ?? "" } },
+    skip: initialStatus !== "CONTACTED" || !initialContacted?.contactedBy,
     fetchPolicy: "cache-first",
   });
 
@@ -197,10 +212,10 @@ const InquiryStatusEditSection = forwardRef<
     () =>
       buildBaselineSnapshot({
         initialStatus,
-        initialContactPayload,
-        initialSalePayload,
+        initialContacted,
+        initialSaleCompleted,
       }),
-    [initialContactPayload, initialSalePayload, initialStatus, inquiryId],
+    [initialContacted, initialSaleCompleted, initialStatus, inquiryId],
   );
 
   useEffect(() => {
@@ -210,15 +225,19 @@ const InquiryStatusEditSection = forwardRef<
     setContactedBy(null);
     setCompletedAt("");
     setCompletedBy(null);
+    setFinalPriceIrt("");
 
-    if (initialStatus === "CONTACTED" && initialContactPayload) {
-      setContactedAt(toLocalDateTimeInputValueFromIso(initialContactPayload.contactedAt));
+    if (initialStatus === "CONTACTED" && initialContacted) {
+      setContactedAt(toLocalDateTimeInputValueFromIso(initialContacted.contactedAt));
     }
 
-    if (initialStatus === "SALE_COMPLETED" && initialSalePayload) {
-      setCompletedAt(toLocalDateTimeInputValueFromIso(initialSalePayload.completedAt));
+    if (initialStatus === "SALE_COMPLETED" && initialSaleCompleted) {
+      setCompletedAt(toLocalDateTimeInputValueFromIso(initialSaleCompleted.completedAt));
+      setFinalPriceIrt(
+        formatIntegerWithThousands(String(initialSaleCompleted.finalPriceIrt)),
+      );
     }
-  }, [initialContactPayload, initialSalePayload, initialStatus, inquiryId]);
+  }, [initialContacted, initialSaleCompleted, initialStatus, inquiryId]);
 
   useEffect(() => {
     const userDetail = initialContactedByUserData?.userDetail;
@@ -247,9 +266,9 @@ const InquiryStatusEditSection = forwardRef<
       return;
     }
 
-    if (initialStatus === "CONTACTED" && initialContactPayload) {
+    if (initialStatus === "CONTACTED" && initialContacted) {
       if (!contactedAt) {
-        setContactedAt(toLocalDateTimeInputValueFromIso(initialContactPayload.contactedAt));
+        setContactedAt(toLocalDateTimeInputValueFromIso(initialContacted.contactedAt));
       }
 
       if (!contactedBy && initialContactedByUserData?.userDetail) {
@@ -270,7 +289,7 @@ const InquiryStatusEditSection = forwardRef<
     contactedAt,
     contactedBy,
     defaultSuperAdmin,
-    initialContactPayload,
+    initialContacted,
     initialContactedByUserData,
     initialStatus,
     status,
@@ -280,16 +299,23 @@ const InquiryStatusEditSection = forwardRef<
     if (status !== "SALE_COMPLETED") {
       setCompletedAt("");
       setCompletedBy(null);
+      setFinalPriceIrt("");
       return;
     }
 
-    if (initialStatus === "SALE_COMPLETED" && initialSalePayload) {
+    if (initialStatus === "SALE_COMPLETED" && initialSaleCompleted) {
       if (!completedAt) {
-        setCompletedAt(toLocalDateTimeInputValueFromIso(initialSalePayload.completedAt));
+        setCompletedAt(toLocalDateTimeInputValueFromIso(initialSaleCompleted.completedAt));
       }
 
       if (!completedBy && initialCompletedByUserData?.userDetail) {
         setCompletedBy(userToActiveSuperAdminOption(initialCompletedByUserData.userDetail));
+      }
+
+      if (!finalPriceIrt.trim()) {
+        setFinalPriceIrt(
+          formatIntegerWithThousands(String(initialSaleCompleted.finalPriceIrt)),
+        );
       }
 
       return;
@@ -306,8 +332,9 @@ const InquiryStatusEditSection = forwardRef<
     completedAt,
     completedBy,
     defaultSuperAdmin,
+    finalPriceIrt,
     initialCompletedByUserData,
-    initialSalePayload,
+    initialSaleCompleted,
     initialStatus,
     status,
   ]);
@@ -321,10 +348,10 @@ const InquiryStatusEditSection = forwardRef<
     onSuccess: () => {
       setDescription("");
       if (status === "CONTACTED") {
-        resetContactPayload();
+        resetContactedDetails();
       }
       if (status === "SALE_COMPLETED") {
-        resetSalePayload();
+        resetSaleCompletedDetails();
       }
       onSuccess?.();
     },
@@ -340,10 +367,16 @@ const InquiryStatusEditSection = forwardRef<
     contactedAtDate != null && !Number.isNaN(contactedAtDate.getTime());
   const hasValidCompletedAt =
     completedAtDate != null && !Number.isNaN(completedAtDate.getTime());
+  const parsedFinalPriceIrt = parseOptionalNumber(finalPriceIrt) ?? null;
+  const hasValidFinalPriceIrt =
+    parsedFinalPriceIrt != null &&
+    !Number.isNaN(parsedFinalPriceIrt) &&
+    parsedFinalPriceIrt >= 0;
   const isFormValid =
     !submitting &&
     (!isContactedStatus || (hasValidContactedAt && contactedBy != null)) &&
-    (!isSaleCompletedStatus || (hasValidCompletedAt && completedBy != null));
+    (!isSaleCompletedStatus ||
+      (hasValidCompletedAt && completedBy != null && hasValidFinalPriceIrt));
   const currentSnapshot = useMemo(
     (): StatusEditFormSnapshot => ({
       status,
@@ -352,12 +385,14 @@ const InquiryStatusEditSection = forwardRef<
       contactedById: isContactedStatus ? (contactedBy?.id ?? null) : null,
       completedAt: isSaleCompletedStatus ? completedAt.trim() : "",
       completedById: isSaleCompletedStatus ? (completedBy?.id ?? null) : null,
+      finalPriceIrt: isSaleCompletedStatus ? finalPriceIrt.trim() : "",
     }),
     [
       completedAt,
       completedBy,
       contactedAt,
       contactedBy,
+      finalPriceIrt,
       isContactedStatus,
       isSaleCompletedStatus,
       status,
@@ -388,19 +423,23 @@ const InquiryStatusEditSection = forwardRef<
           description: trimmedDescription || null,
           ...(isContactedStatus && contactedBy && hasValidContactedAt
             ? {
-                payload: {
-                  contactedAt: contactedAtDate!.toISOString(),
-                  contactedBy: contactedBy.id,
-                },
-              }
+              contacted: {
+                contactedAt: contactedAtDate!.toISOString(),
+                contactedBy: contactedBy.id,
+              },
+            }
             : {}),
-          ...(isSaleCompletedStatus && completedBy && hasValidCompletedAt
+          ...(isSaleCompletedStatus &&
+          completedBy &&
+          hasValidCompletedAt &&
+          hasValidFinalPriceIrt
             ? {
-                payload: {
-                  completedAt: completedAtDate!.toISOString(),
-                  completedBy: completedBy.id,
-                },
-              }
+              saleCompleted: {
+                completedAt: completedAtDate!.toISOString(),
+                completedBy: completedBy.id,
+                finalPriceIrt: parsedFinalPriceIrt!,
+              },
+            }
             : {}),
         },
       },
@@ -411,11 +450,14 @@ const InquiryStatusEditSection = forwardRef<
     completedBy,
     contactedAtDate,
     contactedBy,
+    finalPriceIrt,
     hasValidCompletedAt,
     hasValidContactedAt,
+    hasValidFinalPriceIrt,
     inquiryId,
     isContactedStatus,
     isSaleCompletedStatus,
+    parsedFinalPriceIrt,
     status,
     trimmedDescription,
     updateStatus,
@@ -477,6 +519,18 @@ const InquiryStatusEditSection = forwardRef<
             required
             disabled={submitting}
             label={t("pages.inquiries.statusEdit.completedByLabel")}
+          />
+          <TextField
+            fullWidth
+            size="small"
+            required
+            label={t("pages.inquiries.statusEdit.finalPriceIrtLabel")}
+            value={finalPriceIrt}
+            disabled={submitting}
+            inputProps={{ inputMode: "numeric" }}
+            onChange={(event) =>
+              setFinalPriceIrt(formatIntegerWithThousands(event.target.value))
+            }
           />
         </>
       ) : null}

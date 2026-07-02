@@ -1,4 +1,10 @@
-import { Field, Float, GraphQLISODateTime, ID, ObjectType } from "@nestjs/graphql";
+import {
+  Field,
+  Float,
+  GraphQLISODateTime,
+  ID,
+  ObjectType,
+} from "@nestjs/graphql";
 import { Types } from "mongoose";
 
 import { FileAccessUrlGqlResponse } from "../../../file/graphql/responses";
@@ -52,35 +58,35 @@ export class UserProductInquiryDetailFabricSnapshotGqlResponse {
 }
 
 @ObjectType()
-export class UserProductInquiryDetailStatusHistoryPayloadGqlResponse {
-  @Field(() => GraphQLISODateTime, {
-    nullable: true,
-    description: "When contact was made",
-  })
-  contactedAt?: Date;
+export class UserProductInquiryDetailStatusHistoryContactedGqlResponse {
+  @Field(() => GraphQLISODateTime, { description: "When contact was made" })
+  contactedAt: Date;
 
-  @Field(() => ID, {
-    nullable: true,
-    description: "User ID who marked the inquiry contacted",
-  })
-  contactedBy?: Types.ObjectId;
+  @Field(() => ID, { description: "User ID who marked the inquiry contacted" })
+  contactedBy: Types.ObjectId;
+}
 
+@ObjectType()
+export class UserProductInquiryDetailStatusHistorySaleCompletedGqlResponse {
   @Field(() => GraphQLISODateTime, {
-    nullable: true,
     description: "When the sale was completed",
   })
-  completedAt?: Date;
+  completedAt: Date;
 
   @Field(() => ID, {
-    nullable: true,
     description: "SUPER_ADMIN user ID who marked the sale completed",
   })
-  completedBy?: Types.ObjectId;
+  completedBy: Types.ObjectId;
+
+  @Field(() => Float, { description: "Final agreed sale price in IRT" })
+  finalPriceIrt: number;
 }
 
 @ObjectType()
 export class UserProductInquiryDetailStatusHistoryEntryGqlResponse {
-  @Field(() => UserProductInquiryStatus, { description: "Status after this change" })
+  @Field(() => UserProductInquiryStatus, {
+    description: "Status after this change",
+  })
   status: UserProductInquiryStatus;
 
   @Field({ description: "Reason for the status change" })
@@ -98,11 +104,17 @@ export class UserProductInquiryDetailStatusHistoryEntryGqlResponse {
   })
   changedBy?: Types.ObjectId;
 
-  @Field(() => UserProductInquiryDetailStatusHistoryPayloadGqlResponse, {
+  @Field(() => UserProductInquiryDetailStatusHistoryContactedGqlResponse, {
     nullable: true,
-    description: "Optional payload for status-specific metadata",
+    description: "Contact details when status is CONTACTED",
   })
-  payload?: UserProductInquiryDetailStatusHistoryPayloadGqlResponse;
+  contacted?: UserProductInquiryDetailStatusHistoryContactedGqlResponse;
+
+  @Field(() => UserProductInquiryDetailStatusHistorySaleCompletedGqlResponse, {
+    nullable: true,
+    description: "Sale completion details when status is SALE_COMPLETED",
+  })
+  saleCompleted?: UserProductInquiryDetailStatusHistorySaleCompletedGqlResponse;
 }
 
 @ObjectType()
@@ -113,7 +125,10 @@ export class UserProductInquiryDetailPreviewModelGqlResponse {
   @Field({ description: "AI model name" })
   model: string;
 
-  @Field({ nullable: true, description: "Placement prompt used for generation" })
+  @Field({
+    nullable: true,
+    description: "Placement prompt used for generation",
+  })
   placementPrompt?: string;
 
   @Field({ nullable: true, description: "Aspect ratio used for generation" })
@@ -122,7 +137,10 @@ export class UserProductInquiryDetailPreviewModelGqlResponse {
   @Field({ nullable: true, description: "Image size used for generation" })
   imageSize?: string;
 
-  @Field({ nullable: true, description: "Reasoning effort used for generation" })
+  @Field({
+    nullable: true,
+    description: "Reasoning effort used for generation",
+  })
   reasoningEffort?: string;
 }
 
@@ -140,7 +158,9 @@ export class UserProductInquiryDetailPreviewGqlResponse {
   })
   sourceProductImageFileId?: Types.ObjectId;
 
-  @Field(() => GraphQLISODateTime, { description: "When the preview was generated" })
+  @Field(() => GraphQLISODateTime, {
+    description: "When the preview was generated",
+  })
   generatedAt: Date;
 
   @Field(() => Float, {
@@ -189,7 +209,9 @@ export class UserProductInquiryDetailContactGqlResponse {
   @Field({ description: "Contact phone number" })
   phone: string;
 
-  @Field(() => GraphQLISODateTime, { description: "When contact was requested" })
+  @Field(() => GraphQLISODateTime, {
+    description: "When contact was requested",
+  })
   requestedAt: Date;
 
   @Field({ nullable: true, description: "Optional customer note" })
@@ -220,7 +242,9 @@ export class UserProductInquiryDetailGqlResponse {
   })
   product: UserProductInquiryDetailProductSnapshotGqlResponse;
 
-  @Field(() => UserProductInquiryStatus, { description: "Current inquiry status" })
+  @Field(() => UserProductInquiryStatus, {
+    description: "Current inquiry status",
+  })
   status: UserProductInquiryStatus;
 
   @Field(() => [UserProductInquiryDetailStatusHistoryEntryGqlResponse], {
@@ -240,10 +264,16 @@ export class UserProductInquiryDetailGqlResponse {
   })
   contact?: UserProductInquiryDetailContactGqlResponse;
 
-  @Field(() => GraphQLISODateTime, { nullable: true, description: "Inquiry created date" })
+  @Field(() => GraphQLISODateTime, {
+    nullable: true,
+    description: "Inquiry created date",
+  })
   createdAt?: Date;
 
-  @Field(() => GraphQLISODateTime, { nullable: true, description: "Inquiry last update date" })
+  @Field(() => GraphQLISODateTime, {
+    nullable: true,
+    description: "Inquiry last update date",
+  })
   updatedAt?: Date;
 
   @Field(() => ID, {

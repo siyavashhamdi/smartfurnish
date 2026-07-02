@@ -3,55 +3,60 @@ import {
   IsDate,
   IsEnum,
   IsNotEmpty,
+  IsNumber,
   IsObject,
   IsOptional,
   IsString,
   MaxLength,
+  Min,
   ValidateIf,
   ValidateNested,
 } from "class-validator";
-import { Field, GraphQLISODateTime, ID, InputType } from "@nestjs/graphql";
+import {
+  Field,
+  Float,
+  GraphQLISODateTime,
+  ID,
+  InputType,
+} from "@nestjs/graphql";
 import { Types } from "mongoose";
 
 import { UserProductInquiryStatus } from "../../../../enums";
-import { toObjectId, toObjectIdOptional } from "../../../../transforms/object-id.transform";
+import { toObjectId } from "../../../../transforms/object-id.transform";
 import { IsObjectId } from "../../../../validators/is-object-id.validator";
 
 @InputType()
-export class UserProductInquiryStatusUpdatePayloadGqlInput {
-  @Field(() => GraphQLISODateTime, {
-    nullable: true,
-    description: "When contact was made",
-  })
-  @IsOptional()
+export class UserProductInquiryStatusUpdateContactedGqlInput {
+  @Field(() => GraphQLISODateTime, { description: "When contact was made" })
   @IsDate({ message: "Contacted at must be an ISO date" })
-  contactedAt?: Date;
+  contactedAt: Date;
 
-  @Field(() => ID, {
-    nullable: true,
-    description: "SUPER_ADMIN user ID who made the contact",
-  })
-  @IsOptional()
+  @Field(() => ID, { description: "SUPER_ADMIN user ID who made the contact" })
   @IsObjectId({ message: "Contacted by must be a valid MongoDB ObjectId" })
-  @Transform(toObjectIdOptional)
-  contactedBy?: Types.ObjectId;
+  @Transform(toObjectId)
+  contactedBy: Types.ObjectId;
+}
 
+@InputType()
+export class UserProductInquiryStatusUpdateSaleCompletedGqlInput {
   @Field(() => GraphQLISODateTime, {
-    nullable: true,
     description: "When the sale was completed",
   })
-  @IsOptional()
   @IsDate({ message: "Completed at must be an ISO date" })
-  completedAt?: Date;
+  completedAt: Date;
 
   @Field(() => ID, {
-    nullable: true,
     description: "SUPER_ADMIN user ID who marked the sale completed",
   })
-  @IsOptional()
   @IsObjectId({ message: "Completed by must be a valid MongoDB ObjectId" })
-  @Transform(toObjectIdOptional)
-  completedBy?: Types.ObjectId;
+  @Transform(toObjectId)
+  completedBy: Types.ObjectId;
+
+  @Field(() => Float, { description: "Final agreed sale price in IRT" })
+  @Type(() => Number)
+  @IsNumber({}, { message: "Final price must be a number" })
+  @Min(0, { message: "Final price cannot be negative" })
+  finalPriceIrt: number;
 }
 
 @InputType()
@@ -71,7 +76,8 @@ export class UserProductInquiryStatusUpdateGqlInput {
 
   @Field({
     nullable: true,
-    description: "Optional status-change description stored on the new history entry",
+    description:
+      "Optional status-change description stored on the new history entry",
   })
   @IsOptional()
   @IsString({ message: "Description must be a string" })
@@ -80,20 +86,37 @@ export class UserProductInquiryStatusUpdateGqlInput {
   })
   description?: string | null;
 
-  @Field(() => UserProductInquiryStatusUpdatePayloadGqlInput, {
+  @Field(() => UserProductInquiryStatusUpdateContactedGqlInput, {
     nullable: true,
-    description: "Status payload required when status is CONTACTED or SALE_COMPLETED",
+    description: "Contact details required when status is CONTACTED",
   })
   @ValidateIf(
     (input: UserProductInquiryStatusUpdateGqlInput) =>
-      input.status === UserProductInquiryStatus.CONTACTED ||
+      input.status === UserProductInquiryStatus.CONTACTED,
+  )
+  @IsNotEmpty({
+    message: "Contact details are required when status is CONTACTED",
+  })
+  @IsObject({ message: "Contact details must be an object" })
+  @ValidateNested()
+  @Type(() => UserProductInquiryStatusUpdateContactedGqlInput)
+  contacted?: UserProductInquiryStatusUpdateContactedGqlInput | null;
+
+  @Field(() => UserProductInquiryStatusUpdateSaleCompletedGqlInput, {
+    nullable: true,
+    description:
+      "Sale completion details required when status is SALE_COMPLETED",
+  })
+  @ValidateIf(
+    (input: UserProductInquiryStatusUpdateGqlInput) =>
       input.status === UserProductInquiryStatus.SALE_COMPLETED,
   )
   @IsNotEmpty({
-    message: "Status payload is required when status is CONTACTED or SALE_COMPLETED",
+    message:
+      "Sale completion details are required when status is SALE_COMPLETED",
   })
-  @IsObject({ message: "Contact payload must be an object" })
+  @IsObject({ message: "Sale completion details must be an object" })
   @ValidateNested()
-  @Type(() => UserProductInquiryStatusUpdatePayloadGqlInput)
-  payload?: UserProductInquiryStatusUpdatePayloadGqlInput | null;
+  @Type(() => UserProductInquiryStatusUpdateSaleCompletedGqlInput)
+  saleCompleted?: UserProductInquiryStatusUpdateSaleCompletedGqlInput | null;
 }

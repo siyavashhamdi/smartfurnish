@@ -1152,8 +1152,8 @@ const Profile = (): ReactElement => {
       <section className={styles.page}>
         <LoginRequiredState
           eyebrow="پروفایل"
-          title="برای مدیریت حساب وارد شوید"
-          description="پس از ورود می‌توانید اطلاعات کاربری، تصویر پروفایل و تنظیمات امنیتی حساب خود را مدیریت کنید."
+          title="برای مدیریت حساب ثبت‌نام کنید یا وارد شوید."
+          description="پس از ثبت‌نام یا ورود می‌توانید اطلاعات کاربری و تنظیمات امنیتی حساب خود را مدیریت کنید."
           icon={<PersonRoundedIcon />}
           actionLabel="ورود به حساب"
         />

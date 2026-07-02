@@ -1,22 +1,23 @@
 import type { UserProductInquiryDetailStatusHistoryEntry } from "./inquiry-detail.api";
 
-export type InquirySalePayload = {
+export type InquirySaleCompletedDetails = {
   readonly completedAt: string;
   readonly completedBy: string;
+  readonly finalPriceIrt: number;
 };
 
-export type InquiryContactPayload = {
+export type InquiryContactedDetails = {
   readonly contactedAt: string;
   readonly contactedBy: string;
 };
 
-export function findLatestContactPayload(
+export function findLatestContactedDetails(
   statusHistory: readonly UserProductInquiryDetailStatusHistoryEntry[],
-): InquiryContactPayload | null {
+): InquiryContactedDetails | null {
   for (let index = statusHistory.length - 1; index >= 0; index -= 1) {
     const entry = statusHistory[index];
-    const contactedAt = entry.payload?.contactedAt?.trim();
-    const contactedBy = entry.payload?.contactedBy?.trim();
+    const contactedAt = entry.contacted?.contactedAt?.trim();
+    const contactedBy = entry.contacted?.contactedBy?.trim();
 
     if (entry.status === "CONTACTED" && contactedAt && contactedBy) {
       return { contactedAt, contactedBy };
@@ -26,16 +27,23 @@ export function findLatestContactPayload(
   return null;
 }
 
-export function findLatestSaleCompletedPayload(
+export function findLatestSaleCompletedDetails(
   statusHistory: readonly UserProductInquiryDetailStatusHistoryEntry[],
-): InquirySalePayload | null {
+): InquirySaleCompletedDetails | null {
   for (let index = statusHistory.length - 1; index >= 0; index -= 1) {
     const entry = statusHistory[index];
-    const completedAt = entry.payload?.completedAt?.trim();
-    const completedBy = entry.payload?.completedBy?.trim();
+    const completedAt = entry.saleCompleted?.completedAt?.trim();
+    const completedBy = entry.saleCompleted?.completedBy?.trim();
+    const finalPriceIrt = entry.saleCompleted?.finalPriceIrt;
 
-    if (entry.status === "SALE_COMPLETED" && completedAt && completedBy) {
-      return { completedAt, completedBy };
+    if (
+      entry.status === "SALE_COMPLETED" &&
+      completedAt &&
+      completedBy &&
+      finalPriceIrt != null &&
+      !Number.isNaN(finalPriceIrt)
+    ) {
+      return { completedAt, completedBy, finalPriceIrt };
     }
   }
 

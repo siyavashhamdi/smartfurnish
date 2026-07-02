@@ -28,11 +28,14 @@ export const USER_PRODUCT_INQUIRY_DETAIL_QUERY = gql`
         description
         changedAt
         changedBy
-        payload {
+        contacted {
           contactedAt
           contactedBy
+        }
+        saleCompleted {
           completedAt
           completedBy
+          finalPriceIrt
         }
       }
       preview {

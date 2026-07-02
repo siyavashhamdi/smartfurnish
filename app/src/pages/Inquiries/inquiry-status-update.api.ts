@@ -10,11 +10,14 @@ export type UserProductInquiryStatusUpdateMutationVariables = {
     readonly id: string;
     readonly status: UserProductInquiryStatus;
     readonly description?: string | null;
-    readonly payload?: {
-      readonly contactedAt?: string;
-      readonly contactedBy?: string;
-      readonly completedAt?: string;
-      readonly completedBy?: string;
+    readonly contacted?: {
+      readonly contactedAt: string;
+      readonly contactedBy: string;
+    } | null;
+    readonly saleCompleted?: {
+      readonly completedAt: string;
+      readonly completedBy: string;
+      readonly finalPriceIrt: number;
     } | null;
   };
 };

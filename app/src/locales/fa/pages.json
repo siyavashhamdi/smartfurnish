@@ -102,6 +102,7 @@
                 "contactedByLabel": "تماس توسط",
                 "completedAtLabel": "تاریخ تکمیل فروش",
                 "completedByLabel": "تکمیل‌شده توسط",
+                "finalPriceIrtLabel": "قیمت نهایی معامله (تومان)",
                 "success": "وضعیت استعلام با موفقیت ثبت شد.",
                 "error": "ثبت وضعیت استعلام انجام نشد."
             },
@@ -163,7 +164,8 @@
                     "contactedAt": "زمان تماس",
                     "contactedBy": "تماس توسط",
                     "completedAt": "تاریخ تکمیل فروش",
-                    "completedBy": "تکمیل‌شده توسط"
+                    "completedBy": "تکمیل‌شده توسط",
+                    "finalPriceIrt": "قیمت نهایی معامله"
                 }
             },
             "statusFilters": {

@@ -15,11 +15,20 @@ import {
   ValidateIf,
   ValidateNested,
 } from "class-validator";
-import { Field, Float, GraphQLISODateTime, ID, InputType } from "@nestjs/graphql";
+import {
+  Field,
+  Float,
+  GraphQLISODateTime,
+  ID,
+  InputType,
+} from "@nestjs/graphql";
 import { Types } from "mongoose";
 
 import { UserProductInquiryStatus } from "../../../../enums";
-import { toObjectId, toObjectIdOptional } from "../../../../transforms/object-id.transform";
+import {
+  toObjectId,
+  toObjectIdOptional,
+} from "../../../../transforms/object-id.transform";
 import { IsObjectId } from "../../../../validators/is-object-id.validator";
 
 @InputType()
@@ -39,7 +48,9 @@ export class UserProductInquiryUpdateUserSnapshotGqlInput {
   @Field({ nullable: true, description: "User phone number snapshot" })
   @IsOptional()
   @IsString({ message: "Phone number must be a string" })
-  @MaxLength(32, { message: "Phone number cannot be longer than 32 characters" })
+  @MaxLength(32, {
+    message: "Phone number cannot be longer than 32 characters",
+  })
   phoneNumber?: string | null;
 }
 
@@ -48,7 +59,9 @@ export class UserProductInquiryUpdateProductSnapshotGqlInput {
   @Field({ description: "Product title snapshot" })
   @IsString({ message: "Product title must be a string" })
   @IsNotEmpty({ message: "Product title is required" })
-  @MaxLength(256, { message: "Product title cannot be longer than 256 characters" })
+  @MaxLength(256, {
+    message: "Product title cannot be longer than 256 characters",
+  })
   title: string;
 }
 
@@ -57,7 +70,9 @@ export class UserProductInquiryUpdateFabricSnapshotGqlInput {
   @Field({ description: "Fabric key" })
   @IsString({ message: "Fabric key must be a string" })
   @IsNotEmpty({ message: "Fabric key is required" })
-  @MaxLength(128, { message: "Fabric key cannot be longer than 128 characters" })
+  @MaxLength(128, {
+    message: "Fabric key cannot be longer than 128 characters",
+  })
   fabricKey: string;
 
   @Field({ description: "Color key" })
@@ -69,13 +84,17 @@ export class UserProductInquiryUpdateFabricSnapshotGqlInput {
   @Field({ description: "Fabric pattern name" })
   @IsString({ message: "Pattern name must be a string" })
   @IsNotEmpty({ message: "Pattern name is required" })
-  @MaxLength(128, { message: "Pattern name cannot be longer than 128 characters" })
+  @MaxLength(128, {
+    message: "Pattern name cannot be longer than 128 characters",
+  })
   patternName: string;
 
   @Field({ description: "Selected fabric color name" })
   @IsString({ message: "Color name must be a string" })
   @IsNotEmpty({ message: "Color name is required" })
-  @MaxLength(128, { message: "Color name cannot be longer than 128 characters" })
+  @MaxLength(128, {
+    message: "Color name cannot be longer than 128 characters",
+  })
   colorName: string;
 
   @Field({ nullable: true, description: "Selected fabric color hex code" })
@@ -87,50 +106,51 @@ export class UserProductInquiryUpdateFabricSnapshotGqlInput {
   @Field({ description: "Combined fabric and color label" })
   @IsString({ message: "Fabric label must be a string" })
   @IsNotEmpty({ message: "Fabric label is required" })
-  @MaxLength(256, { message: "Fabric label cannot be longer than 256 characters" })
+  @MaxLength(256, {
+    message: "Fabric label cannot be longer than 256 characters",
+  })
   label: string;
 }
 
 @InputType()
-export class UserProductInquiryUpdateStatusHistoryPayloadGqlInput {
-  @Field(() => GraphQLISODateTime, {
-    nullable: true,
-    description: "When contact was made",
-  })
-  @IsOptional()
+export class UserProductInquiryUpdateStatusHistoryContactedGqlInput {
+  @Field(() => GraphQLISODateTime, { description: "When contact was made" })
   @IsDate({ message: "Contacted at must be an ISO date" })
-  contactedAt?: Date;
+  contactedAt: Date;
 
-  @Field(() => ID, {
-    nullable: true,
-    description: "User ID who marked the inquiry contacted",
-  })
-  @IsOptional()
+  @Field(() => ID, { description: "User ID who marked the inquiry contacted" })
   @IsObjectId({ message: "Contacted by must be a valid MongoDB ObjectId" })
-  @Transform(toObjectIdOptional)
-  contactedBy?: Types.ObjectId | null;
+  @Transform(toObjectId)
+  contactedBy: Types.ObjectId;
+}
 
+@InputType()
+export class UserProductInquiryUpdateStatusHistorySaleCompletedGqlInput {
   @Field(() => GraphQLISODateTime, {
-    nullable: true,
     description: "When the sale was completed",
   })
-  @IsOptional()
   @IsDate({ message: "Completed at must be an ISO date" })
-  completedAt?: Date;
+  completedAt: Date;
 
   @Field(() => ID, {
-    nullable: true,
     description: "SUPER_ADMIN user ID who marked the sale completed",
   })
-  @IsOptional()
   @IsObjectId({ message: "Completed by must be a valid MongoDB ObjectId" })
-  @Transform(toObjectIdOptional)
-  completedBy?: Types.ObjectId | null;
+  @Transform(toObjectId)
+  completedBy: Types.ObjectId;
+
+  @Field(() => Float, { description: "Final agreed sale price in IRT" })
+  @Type(() => Number)
+  @IsNumber({}, { message: "Final price must be a number" })
+  @Min(0, { message: "Final price cannot be negative" })
+  finalPriceIrt: number;
 }
 
 @InputType()
 export class UserProductInquiryUpdateStatusHistoryEntryGqlInput {
-  @Field(() => UserProductInquiryStatus, { description: "Status after this change" })
+  @Field(() => UserProductInquiryStatus, {
+    description: "Status after this change",
+  })
   @IsEnum(UserProductInquiryStatus, { message: "Status must be valid" })
   status: UserProductInquiryStatus;
 
@@ -143,7 +163,9 @@ export class UserProductInquiryUpdateStatusHistoryEntryGqlInput {
   @Field({ nullable: true, description: "Optional status change description" })
   @IsOptional()
   @IsString({ message: "Description must be a string" })
-  @MaxLength(2000, { message: "Description cannot be longer than 2000 characters" })
+  @MaxLength(2000, {
+    message: "Description cannot be longer than 2000 characters",
+  })
   description?: string | null;
 
   @Field(() => GraphQLISODateTime, { description: "When the status changed" })
@@ -159,18 +181,33 @@ export class UserProductInquiryUpdateStatusHistoryEntryGqlInput {
   @Transform(toObjectIdOptional)
   changedBy?: Types.ObjectId | null;
 
-  @Field(() => UserProductInquiryUpdateStatusHistoryPayloadGqlInput, {
+  @Field(() => UserProductInquiryUpdateStatusHistoryContactedGqlInput, {
     nullable: true,
-    description: "Optional payload for status-specific metadata",
+    description: "Contact details when status is CONTACTED",
   })
   @ValidateIf(
     (entry: UserProductInquiryUpdateStatusHistoryEntryGqlInput) =>
-      entry.payload !== null && entry.payload !== undefined,
+      entry.contacted !== null && entry.contacted !== undefined,
   )
-  @IsObject({ message: "Payload must be an object when provided" })
+  @IsObject({ message: "Contact details must be an object when provided" })
   @ValidateNested()
-  @Type(() => UserProductInquiryUpdateStatusHistoryPayloadGqlInput)
-  payload?: UserProductInquiryUpdateStatusHistoryPayloadGqlInput | null;
+  @Type(() => UserProductInquiryUpdateStatusHistoryContactedGqlInput)
+  contacted?: UserProductInquiryUpdateStatusHistoryContactedGqlInput | null;
+
+  @Field(() => UserProductInquiryUpdateStatusHistorySaleCompletedGqlInput, {
+    nullable: true,
+    description: "Sale completion details when status is SALE_COMPLETED",
+  })
+  @ValidateIf(
+    (entry: UserProductInquiryUpdateStatusHistoryEntryGqlInput) =>
+      entry.saleCompleted !== null && entry.saleCompleted !== undefined,
+  )
+  @IsObject({
+    message: "Sale completion details must be an object when provided",
+  })
+  @ValidateNested()
+  @Type(() => UserProductInquiryUpdateStatusHistorySaleCompletedGqlInput)
+  saleCompleted?: UserProductInquiryUpdateStatusHistorySaleCompletedGqlInput | null;
 }
 
 @InputType()
@@ -187,7 +224,10 @@ export class UserProductInquiryUpdatePreviewModelGqlInput {
   @MaxLength(256, { message: "Model cannot be longer than 256 characters" })
   model: string;
 
-  @Field({ nullable: true, description: "Placement prompt used for generation" })
+  @Field({
+    nullable: true,
+    description: "Placement prompt used for generation",
+  })
   @IsOptional()
   @IsString({ message: "Placement prompt must be a string" })
   @MaxLength(20000, {
@@ -198,7 +238,9 @@ export class UserProductInquiryUpdatePreviewModelGqlInput {
   @Field({ nullable: true, description: "Aspect ratio used for generation" })
   @IsOptional()
   @IsString({ message: "Aspect ratio must be a string" })
-  @MaxLength(32, { message: "Aspect ratio cannot be longer than 32 characters" })
+  @MaxLength(32, {
+    message: "Aspect ratio cannot be longer than 32 characters",
+  })
   aspectRatio?: string | null;
 
   @Field({ nullable: true, description: "Image size used for generation" })
@@ -207,17 +249,24 @@ export class UserProductInquiryUpdatePreviewModelGqlInput {
   @MaxLength(32, { message: "Image size cannot be longer than 32 characters" })
   imageSize?: string | null;
 
-  @Field({ nullable: true, description: "Reasoning effort used for generation" })
+  @Field({
+    nullable: true,
+    description: "Reasoning effort used for generation",
+  })
   @IsOptional()
   @IsString({ message: "Reasoning effort must be a string" })
-  @MaxLength(32, { message: "Reasoning effort cannot be longer than 32 characters" })
+  @MaxLength(32, {
+    message: "Reasoning effort cannot be longer than 32 characters",
+  })
   reasoningEffort?: string | null;
 }
 
 @InputType()
 export class UserProductInquiryUpdatePreviewGqlInput {
   @Field(() => ID, { description: "Uploaded room environment photo file ID" })
-  @IsObjectId({ message: "Environment file ID must be a valid MongoDB ObjectId" })
+  @IsObjectId({
+    message: "Environment file ID must be a valid MongoDB ObjectId",
+  })
   @Transform(toObjectId)
   environmentFileId: Types.ObjectId;
 
@@ -237,7 +286,9 @@ export class UserProductInquiryUpdatePreviewGqlInput {
   @Transform(toObjectIdOptional)
   sourceProductImageFileId?: Types.ObjectId | null;
 
-  @Field(() => GraphQLISODateTime, { description: "When the preview was generated" })
+  @Field(() => GraphQLISODateTime, {
+    description: "When the preview was generated",
+  })
   @IsDate({ message: "Generated at must be an ISO date" })
   generatedAt: Date;
 
@@ -288,14 +339,18 @@ export class UserProductInquiryUpdateContactGqlInput {
   @MaxLength(32, { message: "Phone cannot be longer than 32 characters" })
   phone: string;
 
-  @Field(() => GraphQLISODateTime, { description: "When contact was requested" })
+  @Field(() => GraphQLISODateTime, {
+    description: "When contact was requested",
+  })
   @IsDate({ message: "Requested at must be an ISO date" })
   requestedAt: Date;
 
   @Field({ nullable: true, description: "Optional customer note" })
   @IsOptional()
   @IsString({ message: "Customer note must be a string" })
-  @MaxLength(2000, { message: "Customer note cannot be longer than 2000 characters" })
+  @MaxLength(2000, {
+    message: "Customer note cannot be longer than 2000 characters",
+  })
   customerNote?: string | null;
 }
 
@@ -336,7 +391,9 @@ export class UserProductInquiryUpdateGqlInput {
   @Type(() => UserProductInquiryUpdateProductSnapshotGqlInput)
   product: UserProductInquiryUpdateProductSnapshotGqlInput;
 
-  @Field(() => UserProductInquiryStatus, { description: "Current inquiry status" })
+  @Field(() => UserProductInquiryStatus, {
+    description: "Current inquiry status",
+  })
   @IsEnum(UserProductInquiryStatus, { message: "Status must be valid" })
   status: UserProductInquiryStatus;
 
@@ -344,7 +401,9 @@ export class UserProductInquiryUpdateGqlInput {
     description: "Full status change history replacement",
   })
   @IsArray({ message: "Status history must be an array" })
-  @ArrayMinSize(1, { message: "Status history must contain at least one entry" })
+  @ArrayMinSize(1, {
+    message: "Status history must contain at least one entry",
+  })
   @ValidateNested({ each: true })
   @Type(() => UserProductInquiryUpdateStatusHistoryEntryGqlInput)
   statusHistory: UserProductInquiryUpdateStatusHistoryEntryGqlInput[];
@@ -353,7 +412,9 @@ export class UserProductInquiryUpdateGqlInput {
     nullable: true,
     description: "AI preview generations. Use null to clear them.",
   })
-  @ValidateIf((input: UserProductInquiryUpdateGqlInput) => input.preview !== null)
+  @ValidateIf(
+    (input: UserProductInquiryUpdateGqlInput) => input.preview !== null,
+  )
   @IsOptional()
   @IsArray({ message: "Preview must be an array when provided" })
   @ValidateNested({ each: true })
@@ -364,7 +425,9 @@ export class UserProductInquiryUpdateGqlInput {
     nullable: true,
     description: "Contact request details. Use null to clear it.",
   })
-  @ValidateIf((input: UserProductInquiryUpdateGqlInput) => input.contact !== null)
+  @ValidateIf(
+    (input: UserProductInquiryUpdateGqlInput) => input.contact !== null,
+  )
   @IsOptional()
   @IsObject({ message: "Contact must be an object when provided" })
   @ValidateNested()
