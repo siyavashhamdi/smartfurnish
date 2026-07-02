@@ -86,7 +86,7 @@ export function createDraftSetPiece(): DraftSetPiece {
     description: "",
     sortOrder: "",
     weightKg: "",
-    images: [],
+    images: [createDraftSetPieceImage()],
     dimensions: [],
     materialProfile: createEmptyMaterialProfile(),
   };
@@ -107,6 +107,52 @@ export function createDraftFabricColor(): DraftFabricColor {
   };
 }
 
+export function createEmptyFabricColorDefaults(): Pick<
+  DraftFabric,
+  | "defaultPriceIrt"
+  | "defaultDiscountEnabled"
+  | "defaultDiscountKind"
+  | "defaultDiscountValue"
+> {
+  return {
+    defaultPriceIrt: "",
+    defaultDiscountEnabled: false,
+    defaultDiscountKind: "PERCENTAGE",
+    defaultDiscountValue: "",
+  };
+}
+
+export function applyFabricColorDefaults(
+  color: DraftFabricColor,
+  fabric: Pick<
+    DraftFabric,
+    | "defaultPriceIrt"
+    | "defaultDiscountEnabled"
+    | "defaultDiscountKind"
+    | "defaultDiscountValue"
+  >
+): DraftFabricColor {
+  return {
+    ...color,
+    priceIrt: fabric.defaultPriceIrt,
+    discountEnabled: fabric.defaultDiscountEnabled,
+    discountKind: fabric.defaultDiscountKind,
+    discountValue: fabric.defaultDiscountValue,
+  };
+}
+
+export function createDraftFabricColorFromFabricDefaults(
+  fabric: Pick<
+    DraftFabric,
+    | "defaultPriceIrt"
+    | "defaultDiscountEnabled"
+    | "defaultDiscountKind"
+    | "defaultDiscountValue"
+  >
+): DraftFabricColor {
+  return applyFabricColorDefaults(createDraftFabricColor(), fabric);
+}
+
 export function createDraftFabric(): DraftFabric {
   return {
     id: createTempId("fabric"),
@@ -114,6 +160,7 @@ export function createDraftFabric(): DraftFabric {
     sortOrder: "",
     isActive: true,
     colors: [createDraftFabricColor()],
+    ...createEmptyFabricColorDefaults(),
   };
 }
 
@@ -204,7 +251,10 @@ export function createDraftsFromProduct(product: ProductEditRecord | null): {
       description: piece.description?.trim() || "",
       sortOrder: typeof piece.sortOrder === "number" ? String(piece.sortOrder) : "",
       weightKg: typeof piece.weightKg === "number" ? String(piece.weightKg) : "",
-      images: piece.imageAccessUrls.map((accessUrl) => createDraftSetPieceImage(accessUrl)),
+      images:
+        piece.imageAccessUrls.length > 0
+          ? piece.imageAccessUrls.map((accessUrl) => createDraftSetPieceImage(accessUrl))
+          : [createDraftSetPieceImage()],
       dimensions: piece.dimensions.map((dimension) => ({
         id: createTempId("dimension"),
         label: dimension.label?.trim() || "",
@@ -220,6 +270,7 @@ export function createDraftsFromProduct(product: ProductEditRecord | null): {
       patternName: fabric.patternName,
       sortOrder: typeof fabric.sortOrder === "number" ? String(fabric.sortOrder) : "",
       isActive: fabric.isActive,
+      ...createEmptyFabricColorDefaults(),
       colors: fabric.colors.map((color) => ({
         id: createTempId("fabric-color"),
         name: color.name,

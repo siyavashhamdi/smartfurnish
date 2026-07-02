@@ -1,6 +1,7 @@
 import { type ReactElement, type ReactNode } from "react";
 import {
   ArchiveOutlined as ArchiveOutlinedIcon,
+  ContactPhoneOutlined as ContactPhoneOutlinedIcon,
   DeleteOutlineRounded as DeleteOutlineRoundedIcon,
   GroupsRounded as GroupsRoundedIcon,
   LocalOfferOutlined as LocalOfferOutlinedIcon,
@@ -32,6 +33,7 @@ const formatCount = (value: number): string =>
 const GROUP_ICON_BY_KEY: Record<string, ReactElement> = {
   enrollments: <GroupsRoundedIcon />,
   reviews: <RateReviewOutlinedIcon />,
+  inquiries: <ContactPhoneOutlinedIcon />,
   coupons: <LocalOfferOutlinedIcon />,
   notifications: <NotificationsNoneRoundedIcon />,
   files: <PermMediaOutlinedIcon />,
@@ -272,7 +274,13 @@ const DependencyGroupCard = ({
               className={styles.sampleRow}
             >
               <span className={styles.sampleLabel}>{sample.label}</span>
-              {sample.meta ? <span className={styles.sampleMeta}>{sample.meta}</span> : null}
+              {sample.meta ? (
+                <span className={styles.sampleMeta}>
+                  {group.key === "inquiries"
+                    ? translateBreakdownLabel(group.key, sample.meta)
+                    : sample.meta}
+                </span>
+              ) : null}
             </div>
           ))}
         </div>

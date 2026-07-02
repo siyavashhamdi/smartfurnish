@@ -86,6 +86,8 @@ interface FileUploadFieldProps {
   dropHint: string;
   mobileDropHint?: string;
   removeLabel: string;
+  /** When set, remove uses this callback instead of clearing the selected or existing file. */
+  onRemove?: () => void;
   maximizeLabel?: string;
   minimizeLabel?: string;
   playLabel?: string;
@@ -173,6 +175,7 @@ const FileUploadField = ({
   dropHint,
   mobileDropHint,
   removeLabel,
+  onRemove,
   maximizeLabel = "بزرگ‌نمایی",
   minimizeLabel = "کوچک‌نمایی",
   playLabel = "پخش",
@@ -578,6 +581,10 @@ const FileUploadField = ({
     setIsPlayingInline(false);
     setHasPickError(false);
     setPickErrorMessage(null);
+    if (onRemove) {
+      onRemove();
+      return;
+    }
     if (file != null) {
       handlePick(null);
       return;
@@ -821,6 +828,17 @@ const FileUploadField = ({
                 {maxSizeLabel}
               </Typography>
             </Box>
+            {onRemove && !uploading ? (
+              <IconButton
+                size="small"
+                color="error"
+                className={styles.emptyRemoveAction}
+                aria-label={removeLabel}
+                onClick={handleRemove}
+              >
+                <DeleteOutline fontSize="small" />
+              </IconButton>
+            ) : null}
           </>
         ) : (
           <Box className={styles.filePreview}>

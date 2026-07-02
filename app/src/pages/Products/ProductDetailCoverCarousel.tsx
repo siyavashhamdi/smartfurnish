@@ -3,12 +3,17 @@ import {
   useEffect,
   useRef,
   useState,
-  type CSSProperties,
   type PointerEvent as ReactPointerEvent,
   type ReactElement,
   type ReactNode,
 } from "react";
 
+import {
+  CAROUSEL_SWIPE_COMMIT_PX,
+  getCarouselSlideStyle,
+  getCarouselTrackOffsetPx,
+  getCarouselTrackStyle,
+} from "./carousel-track.util";
 import { CachedFileImage } from "../../shared/display/CachedFileImage";
 import { ProgressiveCachedFileImage } from "../../shared/display/ProgressiveCachedFileImage";
 import {
@@ -18,40 +23,7 @@ import {
 } from "../../utils/fileAccessUrl.util";
 import styles from "./styles/ProductDetail.module.scss";
 
-const SWIPE_COMMIT_PX = 52;
 const SWIPE_CANCEL_CLICK_PX = 8;
-
-function getTrackOffsetPx(activeIndex: number, imageCount: number, slideWidthPx: number): number {
-  if (imageCount <= 1 || slideWidthPx <= 0) {
-    return 0;
-  }
-
-  return -(imageCount - 1 - activeIndex) * slideWidthPx;
-}
-
-function getSlideStyle(slideWidthPx: number): CSSProperties | undefined {
-  if (slideWidthPx <= 0) {
-    return undefined;
-  }
-
-  const width = `${slideWidthPx}px`;
-  return {
-    flex: `0 0 ${width}`,
-    inlineSize: width,
-    minInlineSize: width,
-    maxInlineSize: width,
-  };
-}
-
-function getTrackStyle(slideWidthPx: number, imageCount: number, transform: string): CSSProperties {
-  const style: CSSProperties = { transform };
-
-  if (slideWidthPx > 0 && imageCount > 1) {
-    style.inlineSize = `${slideWidthPx * imageCount}px`;
-  }
-
-  return style;
-}
 
 type DragState = {
   pointerId: number;
@@ -108,7 +80,7 @@ function ProductDetailCoverSlide({
 }): ReactElement {
   if (!accessUrl) {
     return (
-      <div className={slideClassName} style={getSlideStyle(slideWidthPx)}>
+      <div className={slideClassName} style={getCarouselSlideStyle(slideWidthPx)}>
         <div className={placeholderClassName} aria-hidden="true">
           {placeholderIcon}
         </div>
@@ -119,7 +91,7 @@ function ProductDetailCoverSlide({
   const slideAlt = `${title} — تصویر ${(slideIndex + 1).toLocaleString("fa-IR")}`;
 
   return (
-    <div className={slideClassName} style={getSlideStyle(slideWidthPx)}>
+    <div className={slideClassName} style={getCarouselSlideStyle(slideWidthPx)}>
       {useProgressiveFullLoad ? (
         <ProgressiveCachedFileImage
           accessUrl={accessUrl}
@@ -351,7 +323,7 @@ export function ProductDetailCoverCarousel({
 
     viewportRef.current?.releasePointerCapture(event.pointerId);
 
-    if (dragState.isHorizontal && Math.abs(dragState.offsetX) >= SWIPE_COMMIT_PX) {
+    if (dragState.isHorizontal && Math.abs(dragState.offsetX) >= CAROUSEL_SWIPE_COMMIT_PX) {
       if (dragState.offsetX > 0) {
         goToNext();
       } else {
@@ -374,7 +346,7 @@ export function ProductDetailCoverCarousel({
     resetDrag();
   };
 
-  const baseOffsetPx = getTrackOffsetPx(safeIndex, imageCount, slideWidthPx);
+  const baseOffsetPx = getCarouselTrackOffsetPx(safeIndex, imageCount, slideWidthPx);
   const trackTransform = `translate3d(${Math.round(baseOffsetPx + dragOffsetX)}px, 0, 0)`;
 
   if (imageCount === 0) {
@@ -443,7 +415,7 @@ export function ProductDetailCoverCarousel({
         className={`${trackClassName}${
           isDragging || !enableTrackTransition ? ` ${trackDraggingClassName}` : ""
         }`}
-        style={getTrackStyle(slideWidthPx, imageCount, trackTransform)}
+        style={getCarouselTrackStyle(slideWidthPx, imageCount, trackTransform)}
       >
         {[...coverImageAccessUrls].reverse().map((accessUrl, reverseIndex) => {
           const slideIndex = imageCount - 1 - reverseIndex;

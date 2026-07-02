@@ -47,6 +47,23 @@ export function productDetailPath(productId: string): string {
   return productsRoutePath(productId);
 }
 
+export function productEditPath(
+  productId: string,
+  searchParams?: URLSearchParams | Readonly<Record<string, string>>,
+): string {
+  const basePath = productsRoutePath("edit", productId);
+  if (!searchParams) {
+    return basePath;
+  }
+
+  const params =
+    searchParams instanceof URLSearchParams
+      ? searchParams
+      : new URLSearchParams(searchParams);
+  const query = params.toString();
+  return query ? `${basePath}?${query}` : basePath;
+}
+
 export function isProductAiPreviewRoutePathname(pathname: string): boolean {
   return pathname.endsWith(PRODUCT_AI_PREVIEW_ROUTE_SUFFIX);
 }

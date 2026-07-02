@@ -16,6 +16,45 @@ export function normalizeFabricHexColor(hexCode?: string | null): string | null 
   return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/.test(withHash) ? withHash : null;
 }
 
+export function expandFabricHexToSixDigits(hexCode?: string | null): string | null {
+  const normalized = normalizeFabricHexColor(hexCode);
+  if (!normalized) {
+    return null;
+  }
+
+  if (/^#[0-9A-Fa-f]{6}$/.test(normalized)) {
+    return normalized.toUpperCase();
+  }
+
+  if (/^#[0-9A-Fa-f]{3}$/.test(normalized)) {
+    const [, red, green, blue] = normalized;
+    return `#${red}${red}${green}${green}${blue}${blue}`.toUpperCase();
+  }
+
+  if (/^#[0-9A-Fa-f]{8}$/.test(normalized)) {
+    return normalized.slice(0, 7).toUpperCase();
+  }
+
+  return null;
+}
+
+export function formatFabricHexForColorInput(
+  hexCode: string,
+  fallback = "#94A3B8",
+): string {
+  return expandFabricHexToSixDigits(hexCode) ?? fallback;
+}
+
+export function sanitizeFabricHexDraft(value: string): string {
+  const withoutInvalid = value.replace(/[^#0-9A-Fa-f]/g, "");
+  const hashIndex = withoutInvalid.indexOf("#");
+  if (hashIndex === -1) {
+    return withoutInvalid;
+  }
+
+  return `#${withoutInvalid.slice(hashIndex + 1).replace(/#/g, "")}`;
+}
+
 export function getActiveFabrics(fabrics: readonly ProductFabricRow[]): ProductFabricRow[] {
   return [...fabrics]
     .filter((fabric) => fabric.isActive)

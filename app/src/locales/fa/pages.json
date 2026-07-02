@@ -11,7 +11,7 @@
                 "noDependenciesMessage": "این محصول وابستگی فعال دیگری ندارد. فقط خود محصول و فایل‌های اختصاصی آن حذف می‌شوند.",
                 "retainedSectionTitle": "باقی می‌ماند و به این محصول لینک می‌ماند",
                 "removedSectionTitle": "همراه محصول حذف می‌شود",
-                "footnote": "ثبت‌نام‌ها، نظرات و کدهای تخفیف برای سوابق مالی و پشتیبانی حفظ می‌شوند. اعلان‌های مرتبط با این محصول حذف می‌شوند.",
+                "footnote": "ثبت‌نام‌ها، نظرات، استعلام‌ها و کدهای تخفیف برای سوابق مالی و پشتیبانی حفظ می‌شوند. اعلان‌های مرتبط با این محصول حذف می‌شوند.",
                 "groups": {
                     "enrollments": {
                         "title": "ثبت‌نام و پرداخت",
@@ -19,6 +19,7 @@
                         "breakdown": {
                             "PAID": "پرداخت‌شده",
                             "PENDING": "در انتظار",
+                            "PENDING_GATEWAY": "در انتظار درگاه",
                             "FAILED": "ناموفق",
                             "REFUNDED": "عودت‌داده‌شده",
                             "CANCELLED": "لغوشده"
@@ -33,6 +34,20 @@
                             "messages": "پیام"
                         }
                     },
+                    "inquiries": {
+                        "title": "استعلام‌های محصول",
+                        "description": "استعلام‌های پیش‌نمایش هوشمند و پیگیری فروش مرتبط با این محصول حفظ می‌شوند.",
+                        "breakdown": {
+                            "SALE_COMPLETED": "فروش تکمیل‌شده",
+                            "CONTACTED": "تماس گرفته‌شده",
+                            "CALL_REQUESTED": "درخواست تماس",
+                            "PREVIEW_GENERATED": "پیش‌نمایش تولیدشده",
+                            "PENDING": "در انتظار",
+                            "CLOSED": "بسته‌شده",
+                            "CANCELLED": "لغوشده"
+                        },
+                        "hiddenSamples": "{{count}} استعلام دیگر"
+                    },
                     "coupons": {
                         "title": "کدهای تخفیف",
                         "description": "کوپن‌هایی که این محصول را در محدوده خود دارند همچنان فعال می‌مانند.",
@@ -45,6 +60,7 @@
                             "PAYMENT": "پرداخت",
                             "PRODUCT_CHAPTER": "بخش جدید",
                             "PRODUCT": "محصول",
+                            "INQUIRY": "استعلام",
                             "USER": "کاربر",
                             "TICKET": "تیکت",
                             "OTHER": "سایر"
@@ -66,6 +82,28 @@
                 },
                 "edit": {
                     "subtitle": "اطلاعات محصول، کاتالوگ و مشخصات آن را ویرایش کنید."
+                },
+                "imageGallery": {
+                    "addButton": "افزودن عکس",
+                    "dropHint": "هنگام ذخیره آپلود می‌شود",
+                    "mobileDropHint": "هنگام ذخیره آپلود می‌شود",
+                    "thumbnailsHint": "برای تغییر ترتیب، تصویر کوچک را بکشید",
+                    "cover": {
+                        "defaultTitle": "محصول",
+                        "slideLabel": "کاور {{index}}",
+                        "removeLabel": "حذف کاور",
+                        "dropTitle": "انتخاب یا رها کردن کاور",
+                        "mobileDropTitle": "انتخاب کاور",
+                        "thumbnailsAriaLabel": "تصاویر کاور محصول"
+                    },
+                    "setPiece": {
+                        "defaultTitle": "قطعه",
+                        "slideLabel": "تصویر {{index}}",
+                        "removeLabel": "حذف تصویر",
+                        "dropTitle": "انتخاب یا رها کردن تصویر",
+                        "mobileDropTitle": "انتخاب تصویر",
+                        "thumbnailsAriaLabel": "تصاویر قطعه"
+                    }
                 }
             }
         },

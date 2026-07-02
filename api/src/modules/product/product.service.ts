@@ -27,6 +27,7 @@ import {
   UserProductPaymentMethod,
   UserProductPurchaseCurrency,
   UserProductPurchaseStatus,
+  UserProductInquiryStatus,
   PurchaseStatusChangedBy,
   ProductReviewVisibility,
   UserStatus,
@@ -53,6 +54,8 @@ import {
   User,
   UserProduct,
   UserProductDocument,
+  UserProductInquiry,
+  UserProductInquiryDocument,
   UserDocument,
 } from "../../database/schemas";
 import {
@@ -236,6 +239,11 @@ type ProductDeleteDependencyCounts = {
   >;
   notificationTotal: number;
   notificationsBySource: Map<NotificationSource, number>;
+  inquiryTotal: number;
+  inquiriesByStatus: Map<UserProductInquiryStatus, number>;
+  inquirySamples: Array<
+    Pick<UserProductInquiry, "status" | "userSnapshot"> & { _id: Types.ObjectId }
+  >;
   attachedFileCount: number;
   deletableFileCount: number;
 };
@@ -261,6 +269,8 @@ export class ProductService {
     private readonly userModel: Model<UserDocument>,
     @InjectModel(Notification.name)
     private readonly notificationModel: Model<NotificationDocument>,
+    @InjectModel(UserProductInquiry.name)
+    private readonly userProductInquiryModel: Model<UserProductInquiryDocument>,
     private readonly fileService: FileService,
     private readonly appSettingsService: AppSettingsService,
     private readonly badgeService: BadgeService,
@@ -1698,15 +1708,15 @@ export class ProductService {
     productId: Types.ObjectId,
     product: ProductDocument,
   ): Promise<ProductDeleteDependencyCounts> {
-    const productIdString = productId.toString();
     const attachedFileIds = this.collectReferencedFileIds(product);
     const [
       enrollmentStatusRows,
       reviewAggregation,
       couponTotal,
       couponSamples,
-      notificationTotal,
-      notificationSourceRows,
+      inquiryStatusRows,
+      inquirySamples,
+      inquiryIds,
       deletableFileIds,
     ] = await Promise.all([
       this.userProductModel
@@ -1751,19 +1761,41 @@ export class ProductService {
         .select({ code: 1, title: 1, isActive: 1 })
         .lean()
         .exec(),
-      this.notificationModel
-        .countDocuments({ "payload.productId": productIdString })
+      this.userProductInquiryModel
+        .aggregate<{
+          _id: UserProductInquiryStatus;
+          count: number;
+        }>([
+          { $match: { productId } },
+          { $group: { _id: "$status", count: { $sum: 1 } } },
+        ])
         .exec(),
+      this.userProductInquiryModel
+        .find({ productId })
+        .sort({ "audit.createdAt": -1 })
+        .limit(PRODUCT_DELETE_DEPENDENCY_SAMPLE_LIMIT)
+        .select({ status: 1, userSnapshot: 1 })
+        .lean()
+        .exec(),
+      this.userProductInquiryModel.distinct("_id", { productId }).exec(),
+      this.findDeletableProductFileIds(productId, attachedFileIds),
+    ]);
+
+    const notificationFilter = this.buildProductRelatedNotificationFilter(
+      productId,
+      inquiryIds,
+    );
+    const [notificationTotal, notificationSourceRows] = await Promise.all([
+      this.notificationModel.countDocuments(notificationFilter).exec(),
       this.notificationModel
         .aggregate<{
           _id: NotificationSource;
           count: number;
         }>([
-          { $match: { "payload.productId": productIdString } },
+          { $match: notificationFilter },
           { $group: { _id: "$source", count: { $sum: 1 } } },
         ])
         .exec(),
-      this.findDeletableProductFileIds(productId, attachedFileIds),
     ]);
 
     const enrollmentsByStatus = new Map<UserProductPurchaseStatus, number>();
@@ -1779,6 +1811,16 @@ export class ProductService {
       reviewRatingCount: 0,
       reviewMessageCount: 0,
     };
+
+    const inquiriesByStatus = new Map<UserProductInquiryStatus, number>();
+    let inquiryTotal = 0;
+    for (const row of inquiryStatusRows) {
+      if (!row?._id) {
+        continue;
+      }
+      inquiriesByStatus.set(row._id, row.count);
+      inquiryTotal += row.count;
+    }
 
     const notificationsBySource = new Map<NotificationSource, number>();
     for (const row of notificationSourceRows) {
@@ -1799,6 +1841,13 @@ export class ProductService {
       >,
       notificationTotal,
       notificationsBySource,
+      inquiryTotal,
+      inquiriesByStatus,
+      inquirySamples: inquirySamples as Array<
+        Pick<UserProductInquiry, "status" | "userSnapshot"> & {
+          _id: Types.ObjectId;
+        }
+      >,
       attachedFileCount: attachedFileIds.length,
       deletableFileCount: deletableFileIds.length,
     };
@@ -1835,6 +1884,10 @@ export class ProductService {
       { key: "deletable", count: counts.deletableFileCount },
     ].filter((item) => item.count > 0);
 
+    const inquiryBreakdown = this.buildInquiryStatusBreakdown(
+      counts.inquiriesByStatus,
+    );
+
     const groups: ProductDeleteDependencyGroupGqlResponse[] = [
       {
         key: "enrollments",
@@ -1851,6 +1904,24 @@ export class ProductService {
         breakdown: reviewBreakdown,
         samples: [],
         hiddenSampleCount: 0,
+      },
+      {
+        key: "inquiries",
+        impact: ProductDeleteDependencyImpact.RETAINED,
+        totalCount: counts.inquiryTotal,
+        breakdown: inquiryBreakdown,
+        samples: counts.inquirySamples.map((inquiry) => ({
+          id: inquiry._id,
+          label:
+            inquiry.userSnapshot.fullName?.trim() ||
+            inquiry.userSnapshot.username?.trim() ||
+            "استعلام",
+          meta: inquiry.status,
+        })),
+        hiddenSampleCount: Math.max(
+          0,
+          counts.inquiryTotal - counts.inquirySamples.length,
+        ),
       },
       {
         key: "coupons",
@@ -1908,6 +1979,44 @@ export class ProductService {
       .filter((item) => item.count > 0);
   }
 
+  private buildInquiryStatusBreakdown(
+    inquiriesByStatus: Map<UserProductInquiryStatus, number>,
+  ): ProductDeleteDependencyBreakdownGqlResponse[] {
+    const orderedStatuses: UserProductInquiryStatus[] = [
+      UserProductInquiryStatus.SALE_COMPLETED,
+      UserProductInquiryStatus.CONTACTED,
+      UserProductInquiryStatus.CALL_REQUESTED,
+      UserProductInquiryStatus.PREVIEW_GENERATED,
+      UserProductInquiryStatus.PENDING,
+      UserProductInquiryStatus.CLOSED,
+      UserProductInquiryStatus.CANCELLED,
+    ];
+
+    return orderedStatuses
+      .map((status) => ({
+        key: status,
+        count: inquiriesByStatus.get(status) ?? 0,
+      }))
+      .filter((item) => item.count > 0);
+  }
+
+  private buildProductRelatedNotificationFilter(
+    productId: Types.ObjectId,
+    inquiryIds: Types.ObjectId[],
+  ): FilterQuery<NotificationDocument> {
+    const productIdString = productId.toString();
+    const inquiryIdStrings = inquiryIds.map((inquiryId) => inquiryId.toString());
+    const conditions: FilterQuery<NotificationDocument>[] = [
+      { "payload.productId": productIdString },
+    ];
+
+    if (inquiryIdStrings.length > 0) {
+      conditions.push({ "payload.inquiryId": { $in: inquiryIdStrings } });
+    }
+
+    return { $or: conditions };
+  }
+
   private async findDeletableProductFileIds(
     productId: Types.ObjectId,
     attachedFileIds: Types.ObjectId[],
@@ -1933,9 +2042,13 @@ export class ProductService {
   private async deleteProductRelatedNotifications(
     productId: Types.ObjectId,
   ): Promise<void> {
-    await this.notificationModel.deleteMany({
-      "payload.productId": productId.toString(),
-    });
+    const inquiryIds = await this.userProductInquiryModel
+      .distinct("_id", { productId })
+      .exec();
+
+    await this.notificationModel.deleteMany(
+      this.buildProductRelatedNotificationFilter(productId, inquiryIds),
+    );
   }
 
   private async deleteDetachedFiles(

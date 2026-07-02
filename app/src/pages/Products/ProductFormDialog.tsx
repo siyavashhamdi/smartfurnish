@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { NetworkStatus } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
+import { useSearchParams } from "react-router-dom";
 import {
   Box,
   CircularProgress,
@@ -27,6 +28,11 @@ import ProductFormSectionTabs from "./ProductFormSectionTabs";
 import ProductReviewsAdminSection from "./ProductReviewsAdminSection";
 import { canUseAdminProductReviewList } from "./product-reviews.api";
 import type { ProductSectionTab } from "./product-section-tabs.shared";
+import {
+  buildProductEditSectionSearchParams,
+  PRODUCT_FORM_SECTION_SEARCH_PARAM,
+  resolveProductFormSectionFromSearchParam,
+} from "./product-section-tabs.shared";
 import formSectionStyles from "./product-form-dialog/styles/ProductFormSections.module.scss";
 import { useProductReviewList } from "./useProductReviewList";
 import type {
@@ -58,6 +64,7 @@ import {
 } from "../../utils/uploadProgress.util";
 import ModalFooterActions from "../../shared/crud/ModalFooterActions";
 import { validateProductForm } from "./product-form-validation.util";
+import { scrollToProductFormSection } from "./product-form-section-scroll.util";
 
 type ProductFormDialogProps = {
   readonly open: boolean;
@@ -168,6 +175,7 @@ const ProductFormDialog = ({
 }: ProductFormDialogProps): ReactElement => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { showError, updateUploadProgress, hideUploadProgress } = useSnackbar();
   const isEditMode = Boolean(productId);
   const isSuperAdmin = user?.roles?.includes(UserRole.SUPER_ADMIN) === true;
@@ -175,6 +183,7 @@ const ProductFormDialog = ({
   const canUseAdminReviews = canUseAdminProductReviewList(user?.roles);
   const [activeFormSectionTab, setActiveFormSectionTab] = useState<ProductSectionTab>("intro");
   const [reviewsRefreshToken, setReviewsRefreshToken] = useState(0);
+  const dialogContentRef = useRef<HTMLDivElement>(null);
   const isIntroFormTabActive = !useEditSectionTabs || activeFormSectionTab === "intro";
   const isReviewsFormTabActive = useEditSectionTabs && activeFormSectionTab === "reviews";
   const showIntroFormSection = !useEditSectionTabs || activeFormSectionTab === "intro";
@@ -395,18 +404,69 @@ const ProductFormDialog = ({
     updateUploadProgress(calculateBatchUploadPercent(uploadProgressByFieldId));
   }, [hideUploadProgress, updateUploadProgress, uploadProgressByFieldId]);
 
+  const syncSectionSearchParam = useCallback(
+    (tab: ProductSectionTab, replace = true): void => {
+      if (!useEditSectionTabs || !productId) {
+        return;
+      }
+
+      if (searchParams.get(PRODUCT_FORM_SECTION_SEARCH_PARAM) === tab) {
+        return;
+      }
+
+      const nextParams = buildProductEditSectionSearchParams(tab);
+      setSearchParams(nextParams, { replace });
+    },
+    [productId, searchParams, setSearchParams, useEditSectionTabs]
+  );
+
   useEffect(() => {
-    if (open) {
-      setActiveFormSectionTab("intro");
-      setReviewsRefreshToken(0);
+    if (!open) {
+      return;
     }
-  }, [open, productId]);
+
+    setReviewsRefreshToken(0);
+
+    if (useEditSectionTabs && productId) {
+      const tabFromUrl = resolveProductFormSectionFromSearchParam(searchParams);
+      setActiveFormSectionTab(tabFromUrl);
+      if (!searchParams.has(PRODUCT_FORM_SECTION_SEARCH_PARAM)) {
+        syncSectionSearchParam(tabFromUrl);
+      }
+      return;
+    }
+
+    setActiveFormSectionTab("intro");
+  }, [open, productId, syncSectionSearchParam, useEditSectionTabs]);
+
+  useEffect(() => {
+    if (!open || !useEditSectionTabs || !productId) {
+      return;
+    }
+
+    const tabFromUrl = resolveProductFormSectionFromSearchParam(searchParams);
+    setActiveFormSectionTab((current) => (current === tabFromUrl ? current : tabFromUrl));
+  }, [open, productId, searchParams, useEditSectionTabs]);
+
+  const scrollFormSectionToTop = useCallback(
+    (tab: ProductSectionTab): void => {
+      scrollToProductFormSection(tab, dialogContentRef.current);
+    },
+    []
+  );
 
   const handleFormSectionTabChange = (tab: ProductSectionTab): void => {
     if (tab === activeFormSectionTab) {
+      if (useEditSectionTabs) {
+        scrollFormSectionToTop(tab);
+      }
       return;
     }
     setActiveFormSectionTab(tab);
+    syncSectionSearchParam(tab);
+    if (useEditSectionTabs) {
+      scrollFormSectionToTop(tab);
+    }
     if (!isEditMode || !productId) {
       return;
     }
@@ -419,6 +479,7 @@ const ProductFormDialog = ({
           }
           applyFormState(mapProductDetailRowToRecord(row));
           appliedFormKeyRef.current = productId;
+          scrollFormSectionToTop(tab);
         }
       );
       return;
@@ -427,6 +488,14 @@ const ProductFormDialog = ({
       setReviewsRefreshToken((previous) => previous + 1);
     }
   };
+
+  useLayoutEffect(() => {
+    if (!open || !useEditSectionTabs || isInitialEditFormLoading) {
+      return;
+    }
+
+    scrollFormSectionToTop(activeFormSectionTab);
+  }, [activeFormSectionTab, isInitialEditFormLoading, open, scrollFormSectionToTop, useEditSectionTabs]);
 
   const uploadAndGetFileId = async (file: File, fieldId: string): Promise<string | null> => {
     const uploadPolicy = FILE_UPLOAD_POLICY.PRODUCT_COVER;
@@ -571,6 +640,7 @@ const ProductFormDialog = ({
     if (!validationResult.valid) {
       if (useEditSectionTabs) {
         setActiveFormSectionTab(validationResult.section);
+        syncSectionSearchParam(validationResult.section);
       }
       showError(validationResult.message);
       return;
@@ -627,6 +697,7 @@ const ProductFormDialog = ({
         onClose={closeDialog}
         disableClose={isSubmitting}
         hasUnsavedChanges={hasUnsavedChanges}
+        dialogContentRef={dialogContentRef}
         title={isEditMode ? "ویرایش محصول" : "محصول جدید"}
         subtitle={
           isEditMode
@@ -723,6 +794,7 @@ const ProductFormDialog = ({
                         showAdminNotes={isSuperAdmin}
                         coverImages={coverImages}
                         onCoverImagesChange={setCoverImages}
+                        coverGalleryResetKey={productId ?? "new-product"}
                         tags={tags}
                         onTagsChange={setTags}
                         isActive={isActive}
@@ -739,6 +811,7 @@ const ProductFormDialog = ({
                         getFieldUploadPercent={(fieldId) =>
                           getFieldUploadPercent(uploadProgressByFieldId[fieldId])
                         }
+                        hideSectionTitle={useEditSectionTabs}
                       />
                     </div>
                   ) : null}
@@ -762,6 +835,9 @@ const ProductFormDialog = ({
                         fabrics={fabrics}
                         onFabricsChange={setFabrics}
                         uploadProgressByFieldId={uploadProgressByFieldId}
+                        getSetPieceImageUploadFieldId={getSetPieceImageUploadFieldId}
+                        uploadingFieldIds={uploadingFieldIds}
+                        hideSectionTitle={useEditSectionTabs}
                       />
                     </div>
                   ) : null}
@@ -771,14 +847,16 @@ const ProductFormDialog = ({
                       id="product-form-reviews"
                       className={`${formSectionStyles.reviewsSection} ${formSectionStyles.reviewsSectionPanel}`}
                     >
-                      <div className={formSectionStyles.reviewsHeader}>
-                        <Typography component="h3" variant="h6">
-                          امتیاز و نظرات
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          مدیریت و بررسی نظرات ثبت‌شده برای این محصول
-                        </Typography>
-                      </div>
+                      {useEditSectionTabs ? null : (
+                        <div className={formSectionStyles.reviewsHeader}>
+                          <Typography component="h3" variant="h6">
+                            امتیاز و نظرات
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            مدیریت و بررسی نظرات ثبت‌شده برای این محصول
+                          </Typography>
+                        </div>
+                      )}
                       <ProductReviewsAdminSection
                         productId={productId!}
                         refreshToken={reviewsRefreshToken}

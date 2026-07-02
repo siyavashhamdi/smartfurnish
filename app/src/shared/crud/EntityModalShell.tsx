@@ -2,6 +2,7 @@ import {
   type FormEventHandler,
   type ReactElement,
   type ReactNode,
+  type Ref,
   useCallback,
   useRef,
   useState,
@@ -61,6 +62,21 @@ export interface EntityModalShellProps {
   headerAccessory?: ReactNode;
   titleClassName?: string;
   contentClassName?: string;
+  /** Optional ref to the scrollable dialog content container. */
+  dialogContentRef?: Ref<HTMLDivElement>;
+}
+
+function assignRef<T>(ref: Ref<T> | undefined, value: T | null): void {
+  if (!ref) {
+    return;
+  }
+
+  if (typeof ref === "function") {
+    ref(value);
+    return;
+  }
+
+  ref.current = value;
 }
 
 const EntityModalShell = ({
@@ -87,6 +103,7 @@ const EntityModalShell = ({
   headerAccessory,
   titleClassName,
   contentClassName,
+  dialogContentRef,
 }: EntityModalShellProps): ReactElement => {
   const theme = useTheme();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -94,6 +111,14 @@ const EntityModalShell = ({
   const { isCompact, useMaximizedMobileLayout, dialogProps, getPaperProps, getContentProps } =
     useMobileDialogProps({ disableMobileMaximize });
   const { onEntered } = useScrollContainerToTopOnOpen(open, contentRef, resetKey);
+
+  const handleContentRef = useCallback(
+    (node: HTMLDivElement | null): void => {
+      contentRef.current = node;
+      assignRef(dialogContentRef, node);
+    },
+    [dialogContentRef]
+  );
 
   const handleDialogEnter = useCallback((): void => {
     const active = document.activeElement;
@@ -184,7 +209,7 @@ const EntityModalShell = ({
   );
 
   const renderContent = (): ReactElement => (
-    <DialogContent ref={contentRef} {...getContentProps({ className: dialogContentClassName })}>
+    <DialogContent ref={handleContentRef} {...getContentProps({ className: dialogContentClassName })}>
       {children}
     </DialogContent>
   );

@@ -41,6 +41,31 @@ export const PRODUCT_FORM_SECTION_TARGETS: Record<ProductSectionTab, string> = {
   reviews: "product-form-reviews",
 };
 
+export const PRODUCT_FORM_SECTION_SEARCH_PARAM = "section";
+
+const PRODUCT_FORM_SECTION_TAB_SET = new Set<ProductSectionTab>([
+  "intro",
+  "content",
+  "reviews",
+]);
+
+export function isProductFormSectionTab(value: string | null | undefined): value is ProductSectionTab {
+  return value != null && PRODUCT_FORM_SECTION_TAB_SET.has(value as ProductSectionTab);
+}
+
+export function resolveProductFormSectionFromSearchParam(
+  searchParams: Pick<URLSearchParams, "get">,
+): ProductSectionTab {
+  const section = searchParams.get(PRODUCT_FORM_SECTION_SEARCH_PARAM);
+  return isProductFormSectionTab(section) ? section : "intro";
+}
+
+export function buildProductEditSectionSearchParams(
+  section: ProductSectionTab,
+): URLSearchParams {
+  return new URLSearchParams({ [PRODUCT_FORM_SECTION_SEARCH_PARAM]: section });
+}
+
 type ProductDetailTabVisibilityInput = {
   readonly fabricsCount: number;
   readonly setPiecesCount: number;

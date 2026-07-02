@@ -1,0 +1,178 @@
+@use "../../../../styles/variables" as variables;
+
+.gallery {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.galleryMain {
+  position: relative;
+  min-block-size: 18rem;
+  border-radius: 1.1rem;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.58), transparent 31%),
+    linear-gradient(
+      135deg,
+      variables.$color-gradient-start 0%,
+      variables.$color-gradient-mid 52%,
+      #10b981 100%
+    );
+}
+
+.galleryEmbedded {
+  .galleryMain {
+    min-block-size: 14rem;
+  }
+}
+
+.slideUploader {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  block-size: 100%;
+  padding: 1rem;
+
+  :global([class*="rootFullWidth"]) {
+    display: flex;
+    flex-direction: column;
+    inline-size: 100%;
+    block-size: 100%;
+    min-block-size: 0;
+  }
+
+  :global([class*="dropzoneFullWidth"]) {
+    flex: 1;
+    inline-size: 100% !important;
+    block-size: 100% !important;
+    min-block-size: 12rem;
+  }
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.65rem;
+}
+
+.thumbnailsSection {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.thumbnailsHint {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.thumbnails {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  overflow-x: auto;
+  padding-block: 0.2rem 0.35rem;
+  scrollbar-width: thin;
+}
+
+.thumbnailsDragging {
+  cursor: grabbing;
+}
+
+.thumbItem {
+  position: relative;
+  flex: 0 0 auto;
+  transition:
+    transform 0.18s ease,
+    opacity 0.18s ease;
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    inset-block: 0.15rem;
+    inline-size: 0.14rem;
+    border-radius: 999rem;
+    background: color-mix(in srgb, variables.$color-info-dark 82%, #ffffff);
+    opacity: 0;
+    transform: scaleY(0.45);
+    transition:
+      opacity 0.16s ease,
+      transform 0.16s ease;
+    pointer-events: none;
+  }
+
+  &::before {
+    inset-inline-start: -0.28rem;
+  }
+
+  &::after {
+    inset-inline-end: -0.28rem;
+  }
+}
+
+.thumbItemDragging {
+  opacity: 0.42;
+  transform: scale(0.94);
+}
+
+.thumbItemInsertBefore::before,
+.thumbItemInsertAfter::after {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.thumbButton {
+  position: relative;
+  inline-size: 2.35rem;
+  block-size: 2.35rem;
+  padding: 0;
+  border: 0.14rem solid transparent;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--app-surface-bg) 88%, #ffffff);
+  cursor: grab;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-0.08rem);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.thumbnailsDragging .thumbButton {
+  cursor: grabbing;
+}
+
+.thumbButtonActive {
+  border-color: color-mix(in srgb, variables.$color-info-dark 72%, #ffffff);
+  box-shadow: 0 0.35rem 0.9rem rgba(15, 23, 42, 0.14);
+}
+
+.thumbImage {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.thumbPlaceholder {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--app-surface-border) 42%, transparent),
+      color-mix(in srgb, var(--app-surface-border) 18%, transparent)
+    );
+}

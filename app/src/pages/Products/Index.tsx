@@ -139,7 +139,10 @@ const ProductsIndex = (): ReactElement => {
   const [filters, setFilters] = useState<ProductListFilters>(DEFAULT_PRODUCT_LIST_FILTERS);
   const [searchQuery, setSearchQuery] = useState(DEFAULT_PRODUCT_LIST_FILTERS.query);
   const [sort, setSort] = useState<ProductListSort>(DEFAULT_PRODUCT_LIST_SORT);
-  const [deleteTarget, setDeleteTarget] = useState<ProductListRecord | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Pick<
+    ProductListRecord,
+    "id" | "title"
+  > | null>(null);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [showFilterSections, setShowFilterSections] = useState(false);
   const [draggedProductId, setDraggedProductId] = useState<string | null>(null);
@@ -228,11 +231,21 @@ const ProductsIndex = (): ReactElement => {
   };
 
   const closeDeleteDialog = (): void => {
-    navigate(APP_SHELL_ROUTES.products);
+    setDeleteTarget(null);
+    if (location.pathname.startsWith(`${APP_SHELL_ROUTES.products}/delete/`)) {
+      navigate(APP_SHELL_ROUTES.products);
+    }
   };
 
-  const openDeleteDialogForProductId = (productId: string): void => {
-    navigate(`${APP_SHELL_ROUTES.products}/delete/${productId}`);
+  const openDeleteFromEditDialog = (): void => {
+    if (!editTargetId) {
+      return;
+    }
+
+    const target = items.find((item) => item.id === editTargetId);
+    setDeleteTarget(
+      target != null ? { id: target.id, title: target.title } : { id: editTargetId, title: "محصول" }
+    );
   };
 
   useEffect(() => {
@@ -254,7 +267,9 @@ const ProductsIndex = (): ReactElement => {
     }
 
     const target = items.find((item) => item.id === deleteId) ?? null;
-    setDeleteTarget(target);
+    setDeleteTarget(
+      target != null ? { id: target.id, title: target.title } : { id: deleteId, title: "محصول" }
+    );
   }, [items, location.pathname]);
 
   useEffect(() => {
@@ -543,6 +558,7 @@ const ProductsIndex = (): ReactElement => {
     errorMessage: "حذف محصول انجام نشد.",
     onSuccess: () => {
       closeDeleteDialog();
+      closeProductFormDialog();
       onRefresh();
     },
   });
@@ -1100,9 +1116,7 @@ const ProductsIndex = (): ReactElement => {
           productId={editTargetId}
           onClose={closeProductFormDialog}
           onSaved={onRefresh}
-          onDelete={
-            editTargetId != null ? () => openDeleteDialogForProductId(editTargetId) : undefined
-          }
+          onDelete={editTargetId != null ? openDeleteFromEditDialog : undefined}
         />
       ) : null}
     </section>

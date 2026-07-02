@@ -6,19 +6,14 @@ import {
   Switch,
   TextField,
   Typography,
-  Button,
 } from "@mui/material";
-import AddRoundedIcon from "@mui/icons-material/AddRounded";
-import FileUploadField from "../../../shared/forms/FileUploadField";
 import {
   MULTILINE_TEXTAREA_MIN_ROWS,
   MULTILINE_TEXTAREA_MAX_ROWS,
 } from "../../../constants/multilineTextarea.constants";
-import { FILE_UPLOAD_POLICY_MAX_SIZE_BYTES } from "../../../constants/fileUploadPolicies";
-import { buildExistingFilePreview } from "../../../utils/fileAccessUrl.util";
 import ProductTagInput from "../ProductTagInput";
 import type { DraftCoverImage } from "./types";
-import { createDraftCoverImage } from "./product-form.state.util";
+import ProductFormCoverGallery from "./ProductFormCoverGallery";
 import styles from "./styles/MainInfoSection.module.scss";
 
 type MainInfoSectionProps = {
@@ -33,6 +28,7 @@ type MainInfoSectionProps = {
   readonly showAdminNotes: boolean;
   readonly coverImages: DraftCoverImage[];
   readonly onCoverImagesChange: (images: DraftCoverImage[]) => void;
+  readonly coverGalleryResetKey: string;
   readonly tags: string[];
   readonly onTagsChange: (value: string[]) => void;
   readonly isActive: boolean;
@@ -47,6 +43,7 @@ type MainInfoSectionProps = {
   readonly getCoverUploadFieldId: (coverId: string) => string;
   readonly uploadingFieldIds: ReadonlySet<string>;
   readonly getFieldUploadPercent: (fieldId: string) => number | null;
+  readonly hideSectionTitle?: boolean;
 };
 
 const MainInfoSection = ({
@@ -61,6 +58,7 @@ const MainInfoSection = ({
   showAdminNotes,
   coverImages,
   onCoverImagesChange,
+  coverGalleryResetKey,
   tags,
   onTagsChange,
   isActive,
@@ -75,9 +73,12 @@ const MainInfoSection = ({
   getCoverUploadFieldId,
   uploadingFieldIds,
   getFieldUploadPercent,
+  hideSectionTitle = false,
 }: MainInfoSectionProps): ReactElement => (
   <section className={styles.section}>
-    <Typography className={styles.sectionTitle}>اطلاعات اصلی</Typography>
+    {hideSectionTitle ? null : (
+      <Typography className={styles.sectionTitle}>اطلاعات اصلی</Typography>
+    )}
     <Grid container spacing={1.25}>
       <Grid item xs={12} md={6}>
         <TextField
@@ -148,61 +149,15 @@ const MainInfoSection = ({
         <Typography variant="subtitle2" gutterBottom>
           تصاویر کاور (ترتیب نمایش مهم است)
         </Typography>
-        <div className={styles.coverGrid}>
-          {coverImages.map((cover, index) => {
-            const fieldId = getCoverUploadFieldId(cover.id);
-            const existingFile = buildExistingFilePreview(
-              cover.accessUrl,
-              title.trim() || `کاور ${index + 1}`,
-            );
-
-            return (
-              <div key={cover.id} className={styles.coverItem}>
-                <FileUploadField
-                  previewId={fieldId}
-                  label={`کاور ${index + 1}`}
-                  file={cover.file}
-                  onChange={(file) =>
-                    onCoverImagesChange(
-                      coverImages.map((entry) =>
-                        entry.id === cover.id
-                          ? { ...entry, file, accessUrl: file ? null : entry.accessUrl }
-                          : entry
-                      )
-                    )
-                  }
-                  existingFile={existingFile}
-                  onExistingFileClear={() =>
-                    onCoverImagesChange(
-                      coverImages.map((entry) =>
-                        entry.id === cover.id ? { ...entry, accessUrl: null } : entry
-                      )
-                    )
-                  }
-                  accept="image/*"
-                  allowedFormatsLabel="فرمت مجاز: تصویر"
-                  maxSizeLabel="حداکثر: ۲۰ مگابایت"
-                  maxSizeBytes={FILE_UPLOAD_POLICY_MAX_SIZE_BYTES.PRODUCT_COVER}
-                  dropTitle="انتخاب یا رها کردن کاور"
-                  mobileDropTitle="انتخاب کاور"
-                  dropHint="هنگام ذخیره آپلود می‌شود"
-                  mobileDropHint="هنگام ذخیره آپلود می‌شود"
-                  removeLabel="حذف فایل"
-                  invalidLabel="فایل انتخاب شده معتبر نیست"
-                  uploading={uploadingFieldIds.has(fieldId)}
-                  uploadProgress={getFieldUploadPercent(fieldId)}
-                />
-              </div>
-            );
-          })}
-          <Button
-            size="small"
-            startIcon={<AddRoundedIcon />}
-            onClick={() => onCoverImagesChange([...coverImages, createDraftCoverImage()])}
-          >
-            افزودن کاور
-          </Button>
-        </div>
+        <ProductFormCoverGallery
+          key={coverGalleryResetKey}
+          title={title}
+          coverImages={coverImages}
+          onCoverImagesChange={onCoverImagesChange}
+          getCoverUploadFieldId={getCoverUploadFieldId}
+          uploadingFieldIds={uploadingFieldIds}
+          getFieldUploadPercent={getFieldUploadPercent}
+        />
       </Grid>
       <Grid item xs={12}>
         <Paper variant="outlined" className={styles.settingsBox}>

@@ -1,10 +1,12 @@
 export type DiscountKind = "PERCENTAGE" | "FIXED_AMOUNT_IRT";
 
-export type DraftCoverImage = {
+export type DraftGalleryImage = {
   readonly id: string;
   readonly file: File | null;
   readonly accessUrl: import("../../utils/fileAccessUrl.util").FileAccessUrl | null;
 };
+
+export type DraftCoverImage = DraftGalleryImage;
 
 export type DraftMaterialProfile = {
   readonly texture: string;
@@ -28,11 +30,7 @@ export type DraftSetPieceDimension = {
   readonly depthCm: string;
 };
 
-export type DraftSetPieceImage = {
-  readonly id: string;
-  readonly file: File | null;
-  readonly accessUrl: import("../../utils/fileAccessUrl.util").FileAccessUrl | null;
-};
+export type DraftSetPieceImage = DraftGalleryImage;
 
 export type DraftSetPiece = {
   readonly id: string;
@@ -64,4 +62,9 @@ export type DraftFabric = {
   readonly sortOrder: string;
   readonly isActive: boolean;
   readonly colors: DraftFabricColor[];
+  /** UI-only defaults for new colors — never sent to the API. */
+  readonly defaultPriceIrt: string;
+  readonly defaultDiscountEnabled: boolean;
+  readonly defaultDiscountKind: DiscountKind;
+  readonly defaultDiscountValue: string;
 };

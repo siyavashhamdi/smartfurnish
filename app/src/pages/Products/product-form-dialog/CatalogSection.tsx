@@ -1,24 +1,13 @@
-import type { ReactElement } from "react";
+import { useCallback, useRef, useState, type ReactElement } from "react";
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
   Button,
-  FormControl,
   FormControlLabel,
   Grid,
-  IconButton,
-  InputLabel,
-  MenuItem,
-  Paper,
-  Select,
   Switch,
   TextField,
   Typography,
 } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
-import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
-import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import FileUploadField from "../../../shared/forms/FileUploadField";
 import {
   MULTILINE_TEXTAREA_MAX_ROWS,
@@ -27,32 +16,27 @@ import {
 import { FILE_UPLOAD_POLICY_MAX_SIZE_BYTES } from "../../../constants/fileUploadPolicies";
 import { buildExistingFilePreview } from "../../../utils/fileAccessUrl.util";
 import type { UploadProgressEntry } from "../../../utils/uploadProgress.util";
+import { getFieldUploadPercent } from "../../../utils/uploadProgress.util";
+import ProductFormCoverGallery from "./ProductFormCoverGallery";
+import { CatalogCollapsibleCard } from "./CatalogCollapsibleCard";
+import { CatalogColorTitleSwatch } from "./CatalogColorTitleSwatch";
+import FabricColorHexFieldCell from "./FabricColorHexFieldCell";
+import FabricColorPricingFields from "./FabricColorPricingFields";
 import type {
-  DiscountKind,
   DraftFabric,
   DraftFabricColor,
   DraftMaterialProfile,
   DraftSetPiece,
-  DraftSetPieceDimension,
-  DraftSetPieceImage,
   DraftVendor,
 } from "./types";
 import {
+  applyFabricColorDefaults,
   createDraftFabric,
-  createDraftFabricColor,
+  createDraftFabricColorFromFabricDefaults,
   createDraftSetPiece,
-  createDraftSetPieceDimension,
   createDraftSetPieceImage,
 } from "./product-form.state.util";
 import styles from "./styles/CatalogSection.module.scss";
-import { formatIntegerWithThousands, parseOptionalNumber } from "./product-form.state.util";
-
-function sanitizePercentageValue(value: string): string {
-  const normalized = value.replace(/[^\d.]/g, "");
-  const [whole, ...fractionParts] = normalized.split(".");
-  const fraction = fractionParts.join("");
-  return fraction ? `${whole}.${fraction}` : whole;
-}
 
 type CatalogSectionProps = {
   readonly vendor: DraftVendor;
@@ -64,6 +48,9 @@ type CatalogSectionProps = {
   readonly fabrics: DraftFabric[];
   readonly onFabricsChange: (fabrics: DraftFabric[]) => void;
   readonly uploadProgressByFieldId: Record<string, UploadProgressEntry>;
+  readonly getSetPieceImageUploadFieldId: (imageId: string) => string;
+  readonly uploadingFieldIds: ReadonlySet<string>;
+  readonly hideSectionTitle?: boolean;
 };
 
 function updateArrayItem<T extends { id: string }>(
@@ -84,7 +71,21 @@ const CatalogSection = ({
   fabrics,
   onFabricsChange,
   uploadProgressByFieldId,
+  getSetPieceImageUploadFieldId,
+  uploadingFieldIds,
+  hideSectionTitle = false,
 }: CatalogSectionProps): ReactElement => {
+  const [expandedCatalogCardIds, setExpandedCatalogCardIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+
+  const markCatalogCardExpanded = useCallback((id: string): void => {
+    setExpandedCatalogCardIds((previous) => new Set(previous).add(id));
+  }, []);
+
+  const fabricsRef = useRef(fabrics);
+  fabricsRef.current = fabrics;
+
   const updateSetPiece = (pieceId: string, patch: Partial<DraftSetPiece>): void => {
     onSetPiecesChange(updateArrayItem(setPieces, pieceId, patch));
   };
@@ -93,465 +94,418 @@ const CatalogSection = ({
     onFabricsChange(updateArrayItem(fabrics, fabricId, patch));
   };
 
-  const updateFabricColor = (
-    fabricId: string,
-    colorId: string,
-    patch: Partial<DraftFabricColor>
-  ): void => {
-    onFabricsChange(
-      fabrics.map((fabric) =>
-        fabric.id !== fabricId
-          ? fabric
-          : {
-              ...fabric,
-              colors: updateArrayItem(fabric.colors, colorId, patch),
-            }
-      )
-    );
+  const applyFabricDefaultsToAllColors = (fabric: DraftFabric): void => {
+    updateFabric(fabric.id, {
+      colors: fabric.colors.map((color) => applyFabricColorDefaults(color, fabric)),
+    });
   };
+
+  const updateFabricColor = useCallback(
+    (fabricId: string, colorId: string, patch: Partial<DraftFabricColor>): void => {
+      const currentFabrics = fabricsRef.current;
+      onFabricsChange(
+        currentFabrics.map((fabric) =>
+          fabric.id !== fabricId
+            ? fabric
+            : {
+                ...fabric,
+                colors: updateArrayItem(fabric.colors, colorId, patch),
+              }
+        )
+      );
+    },
+    [onFabricsChange]
+  );
+
+  const handleFabricColorHexChange = useCallback(
+    (fabricId: string, colorId: string, hexCode: string): void => {
+      updateFabricColor(fabricId, colorId, { hexCode });
+    },
+    [updateFabricColor]
+  );
 
   return (
     <section className={styles.section}>
-      <Typography className={styles.sectionTitle}>کاتالوگ محصول</Typography>
+      {hideSectionTitle ? null : (
+        <Typography className={styles.sectionTitle}>کاتالوگ محصول</Typography>
+      )}
 
-      <Accordion defaultExpanded disableGutters elevation={0} className={styles.accordion}>
-        <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
-          <Typography fontWeight={700}>فروشنده</Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-          <Grid container spacing={1.25}>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="نام فروشنده"
-                value={vendor.name}
-                onChange={(event) => onVendorChange({ ...vendor, name: event.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="تلفن"
-                value={vendor.phone}
-                onChange={(event) => onVendorChange({ ...vendor, phone: event.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="آدرس"
-                value={vendor.address}
-                onChange={(event) => onVendorChange({ ...vendor, address: event.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                multiline
-                minRows={2}
-                label="یادداشت داخلی فروشنده"
-                value={vendor.notes}
-                onChange={(event) => onVendorChange({ ...vendor, notes: event.target.value })}
-              />
-            </Grid>
+      <div className={styles.subsection}>
+        <Typography className={styles.subsectionTitle}>فروشنده</Typography>
+        <Grid container spacing={1.25}>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="نام فروشنده"
+              value={vendor.name}
+              onChange={(event) => onVendorChange({ ...vendor, name: event.target.value })}
+            />
           </Grid>
-        </AccordionDetails>
-      </Accordion>
-
-      <Accordion disableGutters elevation={0} className={styles.accordion}>
-        <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
-          <Typography fontWeight={700}>مشخصات مواد و بافت</Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-          <Grid container spacing={1.25}>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="بافت"
-                value={materialProfile.texture}
-                onChange={(event) =>
-                  onMaterialProfileChange({ ...materialProfile, texture: event.target.value })
-                }
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="جنس اصلی"
-                value={materialProfile.primaryMaterial}
-                onChange={(event) =>
-                  onMaterialProfileChange({
-                    ...materialProfile,
-                    primaryMaterial: event.target.value,
-                  })
-                }
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                multiline
-                minRows={MULTILINE_TEXTAREA_MIN_ROWS}
-                maxRows={MULTILINE_TEXTAREA_MAX_ROWS}
-                label="دستور نگهداری"
-                value={materialProfile.careInstructions}
-                onChange={(event) =>
-                  onMaterialProfileChange({
-                    ...materialProfile,
-                    careInstructions: event.target.value,
-                  })
-                }
-              />
-            </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="تلفن"
+              value={vendor.phone}
+              onChange={(event) => onVendorChange({ ...vendor, phone: event.target.value })}
+            />
           </Grid>
-        </AccordionDetails>
-      </Accordion>
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              label="آدرس"
+              value={vendor.address}
+              onChange={(event) => onVendorChange({ ...vendor, address: event.target.value })}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              multiline
+              minRows={2}
+              label="یادداشت داخلی فروشنده"
+              value={vendor.notes}
+              onChange={(event) => onVendorChange({ ...vendor, notes: event.target.value })}
+            />
+          </Grid>
+        </Grid>
+      </div>
 
-      <Accordion disableGutters elevation={0} className={styles.accordion}>
-        <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
-          <Typography fontWeight={700}>قطعات ست ({setPieces.length})</Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-          <div className={styles.stack}>
-            {setPieces.map((piece) => (
-              <Paper key={piece.id} variant="outlined" className={styles.card}>
-                <Grid container spacing={1.25}>
-                  <Grid item xs={12} md={4}>
-                    <TextField
-                      fullWidth
-                      required
-                      label="نام قطعه"
-                      value={piece.name}
-                      onChange={(event) =>
-                        updateSetPiece(piece.id, { name: event.target.value })
-                      }
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={8}>
-                    <TextField
-                      fullWidth
-                      label="توضیحات"
-                      value={piece.description}
-                      onChange={(event) =>
-                        updateSetPiece(piece.id, { description: event.target.value })
-                      }
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <div className={styles.imageRow}>
-                      {piece.images.map((image) => (
-                        <div key={image.id} className={styles.imageField}>
-                          <FileUploadField
-                            previewId={`set-piece-${piece.id}-${image.id}`}
-                            label="تصویر قطعه"
-                            file={image.file}
-                            onChange={(file) =>
-                              updateSetPiece(piece.id, {
-                                images: updateArrayItem(piece.images, image.id, {
-                                  file,
-                                  accessUrl: file ? null : image.accessUrl,
-                                }),
-                              })
-                            }
-                            existingFile={buildExistingFilePreview(
-                              image.accessUrl,
-                              piece.name || "تصویر",
-                            )}
-                            onExistingFileClear={() =>
-                              updateSetPiece(piece.id, {
-                                images: updateArrayItem(piece.images, image.id, {
-                                  accessUrl: null,
-                                }),
-                              })
-                            }
-                            accept="image/*"
-                            allowedFormatsLabel="تصویر"
-                            maxSizeLabel="حداکثر ۲۰ مگابایت"
-                            maxSizeBytes={FILE_UPLOAD_POLICY_MAX_SIZE_BYTES.PRODUCT_COVER}
-                            dropTitle="انتخاب تصویر"
-                            removeLabel="حذف"
-                            invalidLabel="فایل نامعتبر"
-                            uploading={Boolean(
-                              uploadProgressByFieldId[`set-piece-${piece.id}-${image.id}`]
-                            )}
-                          />
-                        </div>
-                      ))}
-                      <Button
-                        size="small"
-                        startIcon={<AddRoundedIcon />}
-                        onClick={() =>
-                          updateSetPiece(piece.id, {
-                            images: [...piece.images, createDraftSetPieceImage()],
-                          })
-                        }
-                      >
-                        افزودن تصویر
-                      </Button>
-                    </div>
-                  </Grid>
-                </Grid>
-                <div className={styles.cardActions}>
-                  <IconButton
-                    color="error"
-                    onClick={() =>
-                      onSetPiecesChange(setPieces.filter((entry) => entry.id !== piece.id))
-                    }
-                  >
-                    <DeleteRoundedIcon />
-                  </IconButton>
-                </div>
-              </Paper>
-            ))}
-            <Button
-              variant="outlined"
-              startIcon={<AddRoundedIcon />}
-              onClick={() => onSetPiecesChange([...setPieces, createDraftSetPiece()])}
+      <div className={styles.subsection}>
+        <Typography className={styles.subsectionTitle}>مشخصات مواد و بافت</Typography>
+        <Grid container spacing={1.25}>
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="بافت"
+              value={materialProfile.texture}
+              onChange={(event) =>
+                onMaterialProfileChange({ ...materialProfile, texture: event.target.value })
+              }
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="جنس اصلی"
+              value={materialProfile.primaryMaterial}
+              onChange={(event) =>
+                onMaterialProfileChange({
+                  ...materialProfile,
+                  primaryMaterial: event.target.value,
+                })
+              }
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              multiline
+              minRows={MULTILINE_TEXTAREA_MIN_ROWS}
+              maxRows={MULTILINE_TEXTAREA_MAX_ROWS}
+              label="دستور نگهداری"
+              value={materialProfile.careInstructions}
+              onChange={(event) =>
+                onMaterialProfileChange({
+                  ...materialProfile,
+                  careInstructions: event.target.value,
+                })
+              }
+            />
+          </Grid>
+        </Grid>
+      </div>
+
+      <div className={styles.subsection}>
+        <Typography className={styles.subsectionTitle}>
+          قطعات ست ({setPieces.length.toLocaleString("fa-IR")})
+        </Typography>
+        <div className={styles.stack}>
+          {setPieces.map((piece, pieceIndex) => (
+            <CatalogCollapsibleCard
+              key={piece.id}
+              defaultExpanded={expandedCatalogCardIds.has(piece.id)}
+              title={
+                piece.name.trim() ||
+                `قطعه ${(pieceIndex + 1).toLocaleString("fa-IR")}`
+              }
+              onDelete={() =>
+                onSetPiecesChange(setPieces.filter((entry) => entry.id !== piece.id))
+              }
             >
-              افزودن قطعه
-            </Button>
-          </div>
-        </AccordionDetails>
-      </Accordion>
+              <Grid container spacing={1.25} className={styles.cardFormGrid}>
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    required
+                    label="نام قطعه"
+                    value={piece.name}
+                    onChange={(event) => updateSetPiece(piece.id, { name: event.target.value })}
+                  />
+                </Grid>
+                <Grid item xs={12} md={8}>
+                  <TextField
+                    fullWidth
+                    label="توضیحات"
+                    value={piece.description}
+                    onChange={(event) =>
+                      updateSetPiece(piece.id, { description: event.target.value })
+                    }
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <ProductFormCoverGallery
+                    key={`set-piece-images-${piece.id}`}
+                    embedded
+                    title={piece.name}
+                    coverImages={piece.images}
+                    onCoverImagesChange={(images) => updateSetPiece(piece.id, { images })}
+                    getCoverUploadFieldId={getSetPieceImageUploadFieldId}
+                    uploadingFieldIds={uploadingFieldIds}
+                    getFieldUploadPercent={(fieldId) =>
+                      getFieldUploadPercent(uploadProgressByFieldId[fieldId])
+                    }
+                    imageGalleryVariant="setPiece"
+                    createEmptyImage={createDraftSetPieceImage}
+                  />
+                </Grid>
+              </Grid>
+            </CatalogCollapsibleCard>
+          ))}
+          <Button
+            variant="outlined"
+            startIcon={<AddRoundedIcon />}
+            onClick={() => {
+              const piece = createDraftSetPiece();
+              markCatalogCardExpanded(piece.id);
+              onSetPiecesChange([...setPieces, piece]);
+            }}
+          >
+            افزودن قطعه
+          </Button>
+        </div>
+      </div>
 
-      <Accordion disableGutters elevation={0} className={styles.accordion}>
-        <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
-          <Typography fontWeight={700}>پارچه‌ها و رنگ‌ها ({fabrics.length})</Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-          <div className={styles.stack}>
-            {fabrics.map((fabric) => (
-              <Paper key={fabric.id} variant="outlined" className={styles.card}>
-                <Grid container spacing={1.25}>
-                  <Grid item xs={12} md={5}>
-                    <TextField
-                      fullWidth
-                      required
-                      label="نام طرح پارچه"
-                      value={fabric.patternName}
-                      onChange={(event) =>
-                        updateFabric(fabric.id, { patternName: event.target.value })
-                      }
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={3}>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={fabric.isActive}
-                          onChange={(event) =>
-                            updateFabric(fabric.id, { isActive: event.target.checked })
-                          }
-                        />
-                      }
-                      label="فعال برای کاربر"
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle2" gutterBottom>
-                      رنگ‌ها
-                    </Typography>
-                    <div className={styles.colorStack}>
-                      {fabric.colors.map((color) => (
-                        <Paper key={color.id} variant="outlined" className={styles.colorCard}>
-                          <Grid container spacing={1}>
-                            <Grid item xs={12} md={3}>
-                              <TextField
-                                fullWidth
-                                label="نام رنگ"
-                                value={color.name}
-                                onChange={(event) =>
-                                  updateFabricColor(fabric.id, color.id, {
-                                    name: event.target.value,
-                                  })
-                                }
-                              />
-                            </Grid>
-                            <Grid item xs={12} md={2}>
-                              <TextField
-                                fullWidth
-                                label="کد رنگ"
-                                value={color.hexCode}
-                                onChange={(event) =>
-                                  updateFabricColor(fabric.id, color.id, {
-                                    hexCode: event.target.value,
-                                  })
-                                }
-                                placeholder="#8B4513"
-                              />
-                            </Grid>
-                            <Grid item xs={12} md={2}>
-                              <TextField
-                                fullWidth
-                                label="قیمت (تومان)"
-                                value={color.priceIrt}
-                                onChange={(event) =>
-                                  updateFabricColor(fabric.id, color.id, {
-                                    priceIrt: formatIntegerWithThousands(event.target.value),
-                                  })
-                                }
-                                inputProps={{ inputMode: "numeric" }}
-                              />
-                            </Grid>
-                            {(parseOptionalNumber(color.priceIrt) ?? 0) > 0 ? (
-                              <Grid item xs={12} md={2}>
-                                <FormControlLabel
-                                  control={
-                                    <Switch
-                                      checked={color.discountEnabled}
-                                      onChange={(event) =>
-                                        updateFabricColor(fabric.id, color.id, {
-                                          discountEnabled: event.target.checked,
-                                        })
-                                      }
-                                    />
-                                  }
-                                  label="تخفیف"
-                                />
-                              </Grid>
-                            ) : null}
-                            {color.discountEnabled &&
-                            (parseOptionalNumber(color.priceIrt) ?? 0) > 0 ? (
-                              <>
-                                <Grid item xs={12} md={2}>
-                                  <FormControl fullWidth required>
-                                    <InputLabel required>نوع تخفیف</InputLabel>
-                                    <Select
-                                      value={color.discountKind}
-                                      label="نوع تخفیف"
-                                      onChange={(event) =>
-                                        updateFabricColor(fabric.id, color.id, {
-                                          discountKind: event.target.value as DiscountKind,
-                                        })
-                                      }
-                                    >
-                                      <MenuItem value="PERCENTAGE">درصدی</MenuItem>
-                                      <MenuItem value="FIXED_AMOUNT_IRT">
-                                        مبلغ ثابت (تومان)
-                                      </MenuItem>
-                                    </Select>
-                                  </FormControl>
-                                </Grid>
-                                <Grid item xs={12} md={2}>
-                                  <TextField
-                                    fullWidth
-                                    required
-                                    label={
-                                      color.discountKind === "PERCENTAGE"
-                                        ? "مقدار درصد"
-                                        : "مقدار (تومان)"
-                                    }
-                                    value={color.discountValue}
-                                    onChange={(event) =>
-                                      updateFabricColor(fabric.id, color.id, {
-                                        discountValue:
-                                          color.discountKind === "PERCENTAGE"
-                                            ? sanitizePercentageValue(event.target.value)
-                                            : formatIntegerWithThousands(event.target.value),
-                                      })
-                                    }
-                                    inputProps={{ inputMode: "decimal" }}
-                                  />
-                                </Grid>
-                              </>
-                            ) : null}
-                            <Grid item xs={12} md={4}>
-                              <FileUploadField
-                                previewId={`fabric-color-${color.aiImage.id}`}
-                                label="تصویر AI محصول"
-                                file={color.aiImage.file}
-                                onChange={(file) =>
-                                  updateFabricColor(fabric.id, color.id, {
-                                    aiImage: {
-                                      ...color.aiImage,
-                                      file,
-                                      accessUrl: file ? null : color.aiImage.accessUrl,
-                                    },
-                                  })
-                                }
-                                existingFile={buildExistingFilePreview(
-                                  color.aiImage.accessUrl,
-                                  color.name || "تصویر",
-                                )}
-                                onExistingFileClear={() =>
-                                  updateFabricColor(fabric.id, color.id, {
-                                    aiImage: { ...color.aiImage, accessUrl: null },
-                                  })
-                                }
-                                accept="image/*"
-                                allowedFormatsLabel="تصویر"
-                                maxSizeLabel="حداکثر ۲۰ مگابایت"
-                                maxSizeBytes={FILE_UPLOAD_POLICY_MAX_SIZE_BYTES.PRODUCT_COVER}
-                                dropTitle="تصویر برای پیش‌نمایش"
-                                removeLabel="حذف"
-                                invalidLabel="فایل نامعتبر"
-                              />
-                            </Grid>
-                            <Grid item xs={12} md={2}>
-                              <FormControlLabel
-                                control={
-                                  <Switch
-                                    checked={color.isActive}
-                                    onChange={(event) =>
-                                      updateFabricColor(fabric.id, color.id, {
-                                        isActive: event.target.checked,
-                                      })
-                                    }
-                                  />
-                                }
-                                label="فعال"
-                              />
-                            </Grid>
-                          </Grid>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() =>
-                              updateFabric(fabric.id, {
-                                colors: fabric.colors.filter((entry) => entry.id !== color.id),
-                              })
-                            }
-                          >
-                            <DeleteRoundedIcon fontSize="small" />
-                          </IconButton>
-                        </Paper>
-                      ))}
-                      <Button
-                        size="small"
-                        startIcon={<AddRoundedIcon />}
-                        onClick={() =>
+      <div className={styles.subsection}>
+        <Typography className={styles.subsectionTitle}>
+          پارچه‌ها و رنگ‌ها ({fabrics.length.toLocaleString("fa-IR")})
+        </Typography>
+        <div className={styles.stack}>
+          {fabrics.map((fabric, fabricIndex) => (
+            <CatalogCollapsibleCard
+              key={fabric.id}
+              defaultExpanded={expandedCatalogCardIds.has(fabric.id)}
+              title={
+                fabric.patternName.trim() ||
+                `طرح پارچه ${(fabricIndex + 1).toLocaleString("fa-IR")}`
+              }
+              onDelete={() =>
+                onFabricsChange(fabrics.filter((entry) => entry.id !== fabric.id))
+              }
+            >
+              <Grid container spacing={1.25} className={styles.cardFormGrid}>
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    required
+                    label="نام طرح پارچه"
+                    value={fabric.patternName}
+                    onChange={(event) =>
+                      updateFabric(fabric.id, { patternName: event.target.value })
+                    }
+                  />
+                </Grid>
+                <FabricColorPricingFields
+                  priceLabel="قیمت پیش‌فرض (تومان)"
+                  applyDefaultsToColors={{
+                    label: "اعمال قیمت و تخفیف پیش‌فرض روی همه رنگ‌ها",
+                    hint: "این مقادیر برای رنگ‌های جدید پیش‌فرض هستند. برای به‌روزرسانی همه رنگ‌های این طرح، دکمه کنار فیلد را بزنید.",
+                    disabled: fabric.colors.length === 0,
+                    onClick: () => applyFabricDefaultsToAllColors(fabric),
+                  }}
+                  values={{
+                    priceIrt: fabric.defaultPriceIrt,
+                    discountEnabled: fabric.defaultDiscountEnabled,
+                    discountKind: fabric.defaultDiscountKind,
+                    discountValue: fabric.defaultDiscountValue,
+                  }}
+                  onChange={(patch) =>
+                    updateFabric(fabric.id, {
+                      ...(patch.priceIrt !== undefined
+                        ? { defaultPriceIrt: patch.priceIrt }
+                        : {}),
+                      ...(patch.discountEnabled !== undefined
+                        ? { defaultDiscountEnabled: patch.discountEnabled }
+                        : {}),
+                      ...(patch.discountKind !== undefined
+                        ? { defaultDiscountKind: patch.discountKind }
+                        : {}),
+                      ...(patch.discountValue !== undefined
+                        ? { defaultDiscountValue: patch.discountValue }
+                        : {}),
+                    })
+                  }
+                />
+                <Grid item xs={12} md={2}>
+                  <FormControlLabel
+                    className={styles.catalogSwitchField}
+                    control={
+                      <Switch
+                        checked={fabric.isActive}
+                        onChange={(event) =>
+                          updateFabric(fabric.id, { isActive: event.target.checked })
+                        }
+                      />
+                    }
+                    label="فعال برای کاربر"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    رنگ‌ها
+                  </Typography>
+                  <div className={styles.colorStack}>
+                    {fabric.colors.map((color, colorIndex) => (
+                      <CatalogCollapsibleCard
+                        key={color.id}
+                        compact
+                        defaultExpanded={expandedCatalogCardIds.has(color.id)}
+                        titleTrailing={<CatalogColorTitleSwatch hexCode={color.hexCode} />}
+                        title={
+                          color.name.trim() ||
+                          `رنگ ${(colorIndex + 1).toLocaleString("fa-IR")}`
+                        }
+                        onDelete={() =>
                           updateFabric(fabric.id, {
-                            colors: [...fabric.colors, createDraftFabricColor()],
+                            colors: fabric.colors.filter((entry) => entry.id !== color.id),
                           })
                         }
                       >
-                        افزودن رنگ
-                      </Button>
-                    </div>
-                  </Grid>
+                        <Grid container spacing={1.25} className={styles.cardFormGrid}>
+                          <Grid item xs={12} md={3}>
+                            <TextField
+                              fullWidth
+                              label="نام رنگ"
+                              value={color.name}
+                              onChange={(event) =>
+                                updateFabricColor(fabric.id, color.id, {
+                                  name: event.target.value,
+                                })
+                              }
+                            />
+                          </Grid>
+                          <Grid item xs={12} md={2}>
+                            <FabricColorHexFieldCell
+                              fabricId={fabric.id}
+                              colorId={color.id}
+                              hexCode={color.hexCode}
+                              onColorHexChange={handleFabricColorHexChange}
+                            />
+                          </Grid>
+                          <Grid item xs={12} md={4}>
+                            <FileUploadField
+                              previewId={`fabric-color-${color.aiImage.id}`}
+                              label="تصویر محصول برای ارایه به AI"
+                              file={color.aiImage.file}
+                              onChange={(file) =>
+                                updateFabricColor(fabric.id, color.id, {
+                                  aiImage: {
+                                    ...color.aiImage,
+                                    file,
+                                    accessUrl: file ? null : color.aiImage.accessUrl,
+                                  },
+                                })
+                              }
+                              existingFile={buildExistingFilePreview(
+                                color.aiImage.accessUrl,
+                                color.name || "تصویر"
+                              )}
+                              onExistingFileClear={() =>
+                                updateFabricColor(fabric.id, color.id, {
+                                  aiImage: { ...color.aiImage, accessUrl: null },
+                                })
+                              }
+                              accept="image/*"
+                              allowedFormatsLabel="تصویر"
+                              maxSizeLabel="حداکثر ۲۰ مگابایت"
+                              maxSizeBytes={FILE_UPLOAD_POLICY_MAX_SIZE_BYTES.PRODUCT_COVER}
+                              dropTitle="تصویر برای پیش‌نمایش"
+                              dropHint="هنگام ذخیره آپلود می‌شود"
+                              mobileDropHint="هنگام ذخیره آپلود می‌شود"
+                              removeLabel="حذف"
+                              invalidLabel="فایل نامعتبر"
+                            />
+                          </Grid>
+                          <FabricColorPricingFields
+                            showDiscount={false}
+                            values={{
+                              priceIrt: color.priceIrt,
+                              discountEnabled: color.discountEnabled,
+                              discountKind: color.discountKind,
+                              discountValue: color.discountValue,
+                            }}
+                            onChange={(patch) => updateFabricColor(fabric.id, color.id, patch)}
+                          />
+                          <FabricColorPricingFields
+                            showPrice={false}
+                            values={{
+                              priceIrt: color.priceIrt,
+                              discountEnabled: color.discountEnabled,
+                              discountKind: color.discountKind,
+                              discountValue: color.discountValue,
+                            }}
+                            onChange={(patch) => updateFabricColor(fabric.id, color.id, patch)}
+                          />
+                          <Grid item xs={12} md={2}>
+                            <FormControlLabel
+                              className={styles.catalogSwitchField}
+                              control={
+                                <Switch
+                                  checked={color.isActive}
+                                  onChange={(event) =>
+                                    updateFabricColor(fabric.id, color.id, {
+                                      isActive: event.target.checked,
+                                    })
+                                  }
+                                />
+                              }
+                              label="فعال"
+                            />
+                          </Grid>
+                        </Grid>
+                      </CatalogCollapsibleCard>
+                    ))}
+                    <Button
+                      size="small"
+                      startIcon={<AddRoundedIcon />}
+                      onClick={() => {
+                        const color = createDraftFabricColorFromFabricDefaults(fabric);
+                        markCatalogCardExpanded(color.id);
+                        updateFabric(fabric.id, {
+                          colors: [...fabric.colors, color],
+                        });
+                      }}
+                    >
+                      افزودن رنگ
+                    </Button>
+                  </div>
                 </Grid>
-                <div className={styles.cardActions}>
-                  <IconButton
-                    color="error"
-                    onClick={() =>
-                      onFabricsChange(fabrics.filter((entry) => entry.id !== fabric.id))
-                    }
-                  >
-                    <DeleteRoundedIcon />
-                  </IconButton>
-                </div>
-              </Paper>
-            ))}
-            <Button
-              variant="outlined"
-              startIcon={<AddRoundedIcon />}
-              onClick={() => onFabricsChange([...fabrics, createDraftFabric()])}
-            >
-              افزودن طرح پارچه
-            </Button>
-          </div>
-        </AccordionDetails>
-      </Accordion>
+              </Grid>
+            </CatalogCollapsibleCard>
+          ))}
+          <Button
+            variant="outlined"
+            startIcon={<AddRoundedIcon />}
+            onClick={() => {
+              const fabric = createDraftFabric();
+              markCatalogCardExpanded(fabric.id);
+              fabric.colors.forEach((color) => markCatalogCardExpanded(color.id));
+              onFabricsChange([...fabrics, fabric]);
+            }}
+          >
+            افزودن طرح پارچه
+          </Button>
+        </div>
+      </div>
     </section>
   );
 };
