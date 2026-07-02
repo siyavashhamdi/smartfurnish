@@ -245,6 +245,8 @@ export const BackupTarget = {
 export type BackupTarget = (typeof BackupTarget)[keyof typeof BackupTarget];
 export type BadgeCountGqlResponse = {
   __typename?: "BadgeCountGqlResponse";
+  /** Actionable inquiry badge count for staff users. Null for end users. */
+  inquiries?: Maybe<Scalars["Int"]["output"]>;
   /** Unread direct notification count for the current user. */
   notifications?: Maybe<Scalars["Int"]["output"]>;
   /** Pending payment badge count for staff users. Null for end users. */
@@ -1145,6 +1147,7 @@ export const NotificationMode = {
 export type NotificationMode = (typeof NotificationMode)[keyof typeof NotificationMode];
 /** Domain source that produced a notification */
 export const NotificationSource = {
+  INQUIRY: "INQUIRY",
   OTHER: "OTHER",
   PAYMENT: "PAYMENT",
   PRODUCT: "PRODUCT",
@@ -4465,6 +4468,7 @@ export type BadgeCountQuery = {
     payments?: number | null;
     notifications?: number | null;
     tickets?: number | null;
+    inquiries?: number | null;
   };
 };
 

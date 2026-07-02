@@ -5,6 +5,7 @@ export type NotificationSource =
   | "PRODUCT"
   | "PRODUCT_CHAPTER"
   | "PAYMENT"
+  | "INQUIRY"
   | "USER"
   | "TICKET"
   | "OTHER";
@@ -103,6 +104,7 @@ export const NOTIFICATION_SOURCE_LABEL: Record<NotificationSource, string> = {
   PRODUCT: "محصول",
   PRODUCT_CHAPTER: "بخش محصول",
   PAYMENT: "پرداخت",
+  INQUIRY: "استعلام",
   USER: "کاربر",
   TICKET: "پشتیبانی",
   OTHER: "سایر",

@@ -8,7 +8,6 @@ import {
   type ReactElement,
 } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import { useQuery } from "@apollo/client/react";
 import { Box, Chip, Stack, TextField, Typography, useMediaQuery } from "@mui/material";
 import type { Theme } from "@mui/material/styles";
 import {
@@ -21,10 +20,10 @@ import {
 } from "@tanstack/react-table";
 
 import { USER_PRODUCT_INQUIRY_LIST_QUERY } from "../../graphql/queries/userProductInquiryList.query";
-import { USER_PRODUCT_INQUIRY_DETAIL_QUERY } from "../../graphql/queries/userProductInquiryDetail.query";
 import { useAuth } from "../../contexts/AuthContext";
 import { UserRole } from "../../lib/graphql/generated";
 import { useDebounce } from "../../hooks/useDebounce";
+import { useBadgeCountFirstPageReload } from "../../hooks/useBadgeCountFirstPageReload";
 import {
   useServerPaginatedQuery,
   type ServerPageResult,
@@ -62,15 +61,10 @@ import {
   type UserProductInquiryStatus,
   type SortingOrder,
 } from "./inquiries-list.api";
-import {
-  mapUserProductInquiryDetailRowToRecord,
-  type UserProductInquiryDetailQuery,
-  type UserProductInquiryDetailQueryVariables,
-  type UserProductInquiryDetailRecord,
-} from "./inquiry-detail.api";
 import InquiriesStatusFilterTabs from "./InquiriesStatusFilterTabs";
 import InquiryHistoryModal from "./InquiryHistoryModal";
 import InquiryViewModal from "./InquiryViewModal";
+import { useUserProductInquiryDetailRecord } from "./useUserProductInquiryDetailRecord";
 import {
   INQUIRY_STATUS_COLOR,
   INQUIRY_STATUS_LABEL,
@@ -316,6 +310,7 @@ const InquiriesList = (): ReactElement => {
     error,
     onRefresh,
     pagination,
+    page,
   } = useServerPaginatedQuery<
     UserProductInquiryListQuery,
     UserProductInquiryListQueryVariables,
@@ -330,39 +325,20 @@ const InquiriesList = (): ReactElement => {
     skip: !isSuperAdmin,
   });
 
-  const { data: inquiryDetailData, loading: inquiryDetailLoading, refetch: refetchInquiryDetail } = useQuery<
-    UserProductInquiryDetailQuery,
-    UserProductInquiryDetailQueryVariables
-  >(USER_PRODUCT_INQUIRY_DETAIL_QUERY, {
-    variables: { input: { id: viewInquiryId ?? "" } },
-    skip: !viewInquiryId,
-    fetchPolicy: "network-only",
+  useBadgeCountFirstPageReload({
+    enabled: isSuperAdmin,
+    isOnFirstPage: page === 1,
+    reload: onRefresh,
   });
 
-  const { data: inquiryHistoryData, loading: inquiryHistoryLoading } = useQuery<UserProductInquiryDetailQuery, UserProductInquiryDetailQueryVariables>(
-    USER_PRODUCT_INQUIRY_DETAIL_QUERY,
-    {
-      variables: { input: { id: historyInquiryId ?? "" } },
-      skip: !historyInquiryId,
-      fetchPolicy: "network-only",
-    },
-  );
+  const {
+    record: viewInquiryRecord,
+    isInitialLoading: inquiryDetailLoading,
+    reload: reloadViewInquiryDetail,
+  } = useUserProductInquiryDetailRecord(viewInquiryId);
 
-  const viewInquiryRecord = useMemo((): UserProductInquiryDetailRecord | null => {
-    if (!viewInquiryId || inquiryDetailData?.userProductInquiryDetail?.id !== viewInquiryId) {
-      return null;
-    }
-
-    return mapUserProductInquiryDetailRowToRecord(inquiryDetailData.userProductInquiryDetail);
-  }, [inquiryDetailData, viewInquiryId]);
-
-  const historyInquiryRecord = useMemo((): UserProductInquiryDetailRecord | null => {
-    if (!historyInquiryId || inquiryHistoryData?.userProductInquiryDetail?.id !== historyInquiryId) {
-      return null;
-    }
-
-    return mapUserProductInquiryDetailRowToRecord(inquiryHistoryData.userProductInquiryDetail);
-  }, [historyInquiryId, inquiryHistoryData]);
+  const { record: historyInquiryRecord, isInitialLoading: inquiryHistoryLoading } =
+    useUserProductInquiryDetailRecord(historyInquiryId);
 
   const historyInquirySubtitle = useMemo((): string | undefined => {
     const titleFromRecord = historyInquiryRecord?.product.title?.trim();
@@ -416,10 +392,8 @@ const InquiriesList = (): ReactElement => {
 
   const handleViewStatusEditSuccess = useCallback((): void => {
     void onRefresh();
-    if (viewInquiryId) {
-      void refetchInquiryDetail();
-    }
-  }, [onRefresh, refetchInquiryDetail, viewInquiryId]);
+    reloadViewInquiryDetail();
+  }, [onRefresh, reloadViewInquiryDetail]);
 
   useEffect(() => {
     if (!error) {

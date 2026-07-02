@@ -4,8 +4,10 @@ import { AppSettingsModule } from "../app-settings";
 import { BadgeModule } from "../badge";
 import { DatabaseModule } from "../database";
 import { FileModule } from "../file";
+import { NotificationModule } from "../notification";
 import { ProductModule } from "../product";
 import { ProductAiPreviewModule } from "../product-ai-preview";
+import { PushNotificationModule } from "../push-notification";
 import { UserModule } from "../user";
 import {
   UserProductInquiryPreviewSubmitMutation,
@@ -25,6 +27,8 @@ import { UserProductInquiryService } from "./user-product-inquiry.service";
     DatabaseModule,
     BadgeModule,
     AppSettingsModule,
+    NotificationModule,
+    PushNotificationModule,
     UserModule,
     ProductModule,
     ProductAiPreviewModule,

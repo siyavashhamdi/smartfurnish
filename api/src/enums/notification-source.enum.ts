@@ -2,6 +2,7 @@ export enum NotificationSource {
   PRODUCT = "PRODUCT",
   PRODUCT_CHAPTER = "PRODUCT_CHAPTER",
   PAYMENT = "PAYMENT",
+  INQUIRY = "INQUIRY",
   USER = "USER",
   TICKET = "TICKET",
   OTHER = "OTHER",

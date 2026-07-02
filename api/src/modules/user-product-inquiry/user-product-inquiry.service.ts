@@ -21,6 +21,9 @@ import {
 import {
   BadgeCountTriggerAction,
   BadgeCountTriggerSource,
+  GeneralSubscriptionUpdateType,
+  NotificationMode,
+  NotificationSource,
   UserProductInquiryStatus,
   UserRole,
 } from "../../enums";
@@ -33,10 +36,16 @@ import {
 import { AppSettingsService } from "../app-settings";
 import { BadgeService } from "../badge/badge.service";
 import { FileService } from "../file";
+import { NotificationService } from "../notification/notification.service";
 import { ProductService } from "../product/product.service";
 import { ProductAiPreviewService } from "../product-ai-preview/services/product-ai-preview.service";
 import type { ProductAiPreviewResult } from "../product-ai-preview/services/product-ai-preview.service";
-import { UserService } from "../user/user.service";
+import {
+  resolveWebPushBody,
+  resolveWebPushTitle,
+} from "../push-notification/utils/resolve-web-push-content.util";
+import { PushNotificationService } from "../push-notification/push-notification.service";
+import { UserService, UserSubscriptionService } from "../user";
 import {
   UserProductInquiryListGqlInput,
   UserProductInquiryListSortOptionInput,
@@ -82,6 +91,12 @@ type UserProductInquiryListSortField =
   | "previewGeneratedAt"
   | "contactRequestedAt";
 
+const INQUIRY_BADGE_STATUSES = [
+  UserProductInquiryStatus.CALL_REQUESTED,
+  UserProductInquiryStatus.CONTACTED,
+  UserProductInquiryStatus.PENDING,
+] as const;
+
 @Injectable()
 export class UserProductInquiryService {
   constructor(
@@ -95,6 +110,9 @@ export class UserProductInquiryService {
     private readonly productAiPreviewService: ProductAiPreviewService,
     private readonly fileService: FileService,
     private readonly badgeService: BadgeService,
+    private readonly notificationService: NotificationService,
+    private readonly userSubscriptionService: UserSubscriptionService,
+    private readonly pushNotificationService: PushNotificationService,
   ) {}
 
   async submitPreview(
@@ -292,7 +310,12 @@ export class UserProductInquiryService {
       await this.publishInquiryBadgeCountSignal({
         inquiryId: existingInquiry._id,
         action: BadgeCountTriggerAction.UPDATED,
+        includeStaffUsersWhenActionableInquiriesExist: true,
+        previousStatus: UserProductInquiryStatus.PREVIEW_GENERATED,
+        nextStatus: UserProductInquiryStatus.CALL_REQUESTED,
       });
+
+      await this.notifyInquiryContactSubmitted(existingInquiry);
 
       return this.toContactSubmitResponse(existingInquiry);
     }
@@ -330,7 +353,11 @@ export class UserProductInquiryService {
     await this.publishInquiryBadgeCountSignal({
       inquiryId: createdInquiry._id,
       action: BadgeCountTriggerAction.CREATED,
+      includeStaffUsersWhenActionableInquiriesExist: true,
+      nextStatus: UserProductInquiryStatus.CALL_REQUESTED,
     });
+
+    await this.notifyInquiryContactSubmitted(createdInquiry);
 
     return this.toContactSubmitResponse(createdInquiry);
   }
@@ -538,6 +565,8 @@ export class UserProductInquiryService {
       );
     }
 
+    const previousStatus = inquiry.status;
+
     await this.assertUpdateReferencesExist(input);
     this.assertFullUpdateInput(input);
 
@@ -575,9 +604,14 @@ export class UserProductInquiryService {
       );
     }
 
-    await this.publishInquiryBadgeCountSignal({
+    await this.publishInquiryStatusChangeBadgeCountSignal({
       inquiryId: inquiry._id,
-      action: BadgeCountTriggerAction.UPDATED,
+      previousStatus,
+      nextStatus: inquiry.status,
+    });
+
+    await this.notifyInquiryStatusChanged(inquiry, previousStatus, {
+      changedByAdmin: true,
     });
 
     return this.toDetailResponse(inquiry.toObject() as UserProductInquiryListRecord);
@@ -603,8 +637,10 @@ export class UserProductInquiryService {
       );
     }
 
+    const previousStatus = inquiry.status;
     const changedAt = new Date();
     const description = this.normalizeOptionalText(input.description);
+    let isSalePayloadCorrection = false;
     const historyEntry: UserProductInquiryStatusHistoryEntry = {
       status: input.status,
       reason: this.resolveStatusUpdateReason(input.status),
@@ -642,7 +678,7 @@ export class UserProductInquiryService {
         completedBy: input.payload.completedBy,
       };
 
-      const isSalePayloadCorrection =
+      isSalePayloadCorrection =
         inquiry.status === UserProductInquiryStatus.SALE_COMPLETED;
 
       if (isSalePayloadCorrection) {
@@ -682,10 +718,17 @@ export class UserProductInquiryService {
       );
     }
 
-    await this.publishInquiryBadgeCountSignal({
-      inquiryId: inquiry._id,
-      action: BadgeCountTriggerAction.UPDATED,
-    });
+    if (!isSalePayloadCorrection) {
+      await this.publishInquiryStatusChangeBadgeCountSignal({
+        inquiryId: inquiry._id,
+        previousStatus,
+        nextStatus: inquiry.status,
+      });
+
+      await this.notifyInquiryStatusChanged(inquiry, previousStatus, {
+        changedByAdmin: true,
+      });
+    }
 
     return this.toDetailResponse(inquiry.toObject() as UserProductInquiryListRecord);
   }
@@ -1609,14 +1652,235 @@ export class UserProductInquiryService {
   private async publishInquiryBadgeCountSignal(params: {
     inquiryId: Types.ObjectId;
     action: BadgeCountTriggerAction;
+    includeStaffUsers?: boolean;
+    includeStaffUsersWhenActionableInquiriesExist?: boolean;
+    previousStatus?: UserProductInquiryStatus;
+    nextStatus?: UserProductInquiryStatus;
   }): Promise<void> {
+    let includeStaffUsers = params.includeStaffUsers ?? false;
+
+    if (params.includeStaffUsersWhenActionableInquiriesExist) {
+      includeStaffUsers = await this.shouldPublishStaffInquiryBadgeCountSignal(
+        params.previousStatus,
+        params.nextStatus,
+      );
+    }
+
+    if (!includeStaffUsers) {
+      return;
+    }
+
     await this.badgeService.publishCountSignal({
-      includeStaffUsers: true,
+      includeStaffUsers,
       payload: {
         source: BadgeCountTriggerSource.INQUIRY,
         action: params.action,
         inquiryId: params.inquiryId.toString(),
       },
     });
+  }
+
+  private async publishInquiryStatusChangeBadgeCountSignal(params: {
+    inquiryId: Types.ObjectId;
+    previousStatus: UserProductInquiryStatus;
+    nextStatus: UserProductInquiryStatus;
+  }): Promise<void> {
+    if (params.previousStatus === params.nextStatus) {
+      return;
+    }
+
+    await this.publishInquiryBadgeCountSignal({
+      inquiryId: params.inquiryId,
+      action: BadgeCountTriggerAction.UPDATED,
+      includeStaffUsersWhenActionableInquiriesExist: true,
+      previousStatus: params.previousStatus,
+      nextStatus: params.nextStatus,
+    });
+  }
+
+  private async shouldPublishStaffInquiryBadgeCountSignal(
+    previousStatus?: UserProductInquiryStatus,
+    nextStatus?: UserProductInquiryStatus,
+  ): Promise<boolean> {
+    if (
+      nextStatus &&
+      INQUIRY_BADGE_STATUSES.includes(
+        nextStatus as (typeof INQUIRY_BADGE_STATUSES)[number],
+      )
+    ) {
+      return true;
+    }
+
+    if (await this.hasAnyActionableInquiries()) {
+      return true;
+    }
+
+    return (
+      previousStatus != null &&
+      INQUIRY_BADGE_STATUSES.includes(
+        previousStatus as (typeof INQUIRY_BADGE_STATUSES)[number],
+      )
+    );
+  }
+
+  private async hasAnyActionableInquiries(): Promise<boolean> {
+    const actionableInquiry = await this.userProductInquiryModel
+      .findOne({
+        isArchived: false,
+        status: { $in: [...INQUIRY_BADGE_STATUSES] },
+        $or: [
+          { "audit.deletedAt": null },
+          { "audit.deletedAt": { $exists: false } },
+        ],
+      })
+      .select({ _id: 1 })
+      .lean<{ _id: Types.ObjectId }>()
+      .exec();
+
+    return actionableInquiry != null;
+  }
+
+  private async notifyInquiryContactSubmitted(
+    inquiry: UserProductInquiryDocument,
+  ): Promise<void> {
+    const productTitle =
+      this.normalizeOptionalText(inquiry.productSnapshot?.title) || "محصول";
+
+    await this.deliverInquiryEndUserNotification({
+      inquiry,
+      title: "درخواست بازدید ثبت شد",
+      message: `درخواست بازدید حضوری شما برای محصول «${productTitle}» با موفقیت ثبت شد. به‌زودی با شما تماس می‌گیریم.`,
+      mode: NotificationMode.SUCCESS,
+      payload: {
+        notificationKind: "INQUIRY_CONTACT_SUBMITTED",
+      },
+    });
+  }
+
+  private resolveInquiryStatusNotificationContent(
+    productTitle: string,
+    status: UserProductInquiryStatus,
+  ): {
+    title: string;
+    message: string;
+    mode: NotificationMode;
+    payload: Record<string, unknown>;
+  } | null {
+    switch (status) {
+      case UserProductInquiryStatus.PENDING:
+        return {
+          title: "درخواست بازدید در حال بررسی است",
+          message: `درخواست بازدید حضوری شما برای محصول «${productTitle}» در حال بررسی است. شما را از وضعیت مطلع خواهیم کرد.`,
+          mode: NotificationMode.INFO,
+          payload: {
+            notificationKind: "INQUIRY_UNDER_REVIEW",
+          },
+        };
+      case UserProductInquiryStatus.CANCELLED:
+        return {
+          title: "درخواست بازدید لغو شد",
+          message: `درخواست بازدید حضوری شما برای محصول «${productTitle}» لغو شد. در صورت تمایل می‌توانید درخواست جدید ثبت کنید.`,
+          mode: NotificationMode.WARNING,
+          payload: {
+            notificationKind: "INQUIRY_CANCELLED",
+          },
+        };
+      default:
+        return null;
+    }
+  }
+
+  private async notifyInquiryStatusChanged(
+    inquiry: UserProductInquiryDocument,
+    previousStatus: UserProductInquiryStatus,
+    options?: { changedByAdmin?: boolean },
+  ): Promise<void> {
+    const nextStatus = inquiry.status;
+
+    if (previousStatus === nextStatus) {
+      return;
+    }
+
+    if (
+      nextStatus !== UserProductInquiryStatus.PENDING &&
+      nextStatus !== UserProductInquiryStatus.CANCELLED
+    ) {
+      return;
+    }
+
+    if (options?.changedByAdmin !== true) {
+      return;
+    }
+
+    const productTitle =
+      this.normalizeOptionalText(inquiry.productSnapshot?.title) || "محصول";
+    const notificationContent = this.resolveInquiryStatusNotificationContent(
+      productTitle,
+      nextStatus,
+    );
+
+    if (!notificationContent) {
+      return;
+    }
+
+    const { title, message, mode, payload } = notificationContent;
+
+    await this.deliverInquiryEndUserNotification({
+      inquiry,
+      title,
+      message,
+      mode,
+      payload,
+    });
+  }
+
+  private async deliverInquiryEndUserNotification(params: {
+    inquiry: UserProductInquiryDocument;
+    title: string;
+    message: string;
+    mode: NotificationMode;
+    payload: Record<string, unknown>;
+  }): Promise<void> {
+    const inquiryId = params.inquiry._id.toString();
+    const productId = params.inquiry.productId.toString();
+    const notificationPayload: Record<string, unknown> = {
+      inquiryId,
+      productId,
+      ...params.payload,
+    };
+    const subscriptionPayload: Record<string, unknown> = {
+      ...notificationPayload,
+      title: params.title,
+      description: params.message,
+      mode: params.mode,
+      isPushNotification: true,
+    };
+
+    const notification = await this.notificationService.createForEndUser({
+      userId: params.inquiry.userId,
+      source: NotificationSource.INQUIRY,
+      mode: params.mode,
+      title: params.title,
+      message: params.message,
+      payload: notificationPayload,
+    });
+
+    await this.userSubscriptionService.publishToUser({
+      userId: params.inquiry.userId.toString(),
+      updateType: GeneralSubscriptionUpdateType.NOTIFICATION,
+      targetId: notification._id.toString(),
+      payload: subscriptionPayload,
+    });
+
+    void this.pushNotificationService.deliverToUser(
+      params.inquiry.userId.toString(),
+      {
+        title: resolveWebPushTitle(subscriptionPayload, params.title),
+        body: resolveWebPushBody(subscriptionPayload, params.message),
+        notificationId: notification._id.toString(),
+        payload: subscriptionPayload,
+        tag: notification._id.toString(),
+      },
+    );
   }
 }

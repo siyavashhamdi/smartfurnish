@@ -1,8 +1,8 @@
 import AccountBalanceWalletRoundedIcon from "@mui/icons-material/AccountBalanceWalletRounded";
 import AutoStoriesRoundedIcon from "@mui/icons-material/AutoStoriesRounded";
 import ConfirmationNumberRoundedIcon from "@mui/icons-material/ConfirmationNumberRounded";
-import ContactPhoneRoundedIcon from "@mui/icons-material/ContactPhoneRounded";
-import MenuBookRoundedIcon from "@mui/icons-material/MenuBookRounded";
+import PhoneEnabledIcon from "@mui/icons-material/PhoneEnabled";
+import ChairIcon from "@mui/icons-material/Chair";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneRounded";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
@@ -57,7 +57,7 @@ export const APP_SHELL_NAV_ITEMS: readonly AppShellNavItemDefinition[] = [
     id: "products",
     title: "شو روم",
     path: APP_SHELL_ROUTES.products,
-    Icon: MenuBookRoundedIcon,
+    Icon: ChairIcon,
     badge: "products",
     exactPathMatch: true,
   },
@@ -73,7 +73,7 @@ export const APP_SHELL_NAV_ITEMS: readonly AppShellNavItemDefinition[] = [
     id: "inquiries",
     title: "استعلام‌ها",
     path: APP_SHELL_ROUTES.inquiries,
-    Icon: ContactPhoneRoundedIcon,
+    Icon: PhoneEnabledIcon,
     requiredRoles: [UserRole.SUPER_ADMIN],
     badge: "inquiries",
   },
