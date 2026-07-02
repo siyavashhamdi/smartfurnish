@@ -1,9 +1,17 @@
 import type { ReactElement } from "react";
 import styles from "./styles/ProductCard.module.scss";
 
-const ProductCardWarrantyRibbon = (): ReactElement => (
+type ProductCardWarrantyRibbonProps = {
+  readonly months: number;
+};
+
+const ProductCardWarrantyRibbon = ({
+  months,
+}: ProductCardWarrantyRibbonProps): ReactElement => (
   <div className={styles.warrantyRibbon} aria-hidden="true">
-    <span className={styles.warrantyRibbonText}>گارانتی ۲۴ ماهه</span>
+    <span className={styles.warrantyRibbonText}>
+      گارانتی {months.toLocaleString("fa-IR")} ماهه
+    </span>
   </div>
 );
 

@@ -5,6 +5,8 @@ export const PRODUCT_AI_PREVIEW_RESULT_DISCLAIMER =
   "این پیش‌نمایش توسط هوش مصنوعی ساخته شده و ممکن است دقیق نباشد؛ ما با توجه به فضای شما تلاش کردیم پیش‌نمایش را تا حد امکان دقیق‌تر کنیم.";
 export const PRODUCT_AI_PREVIEW_CONTACT_DIALOG_LEAD =
   "برای ثبت درخواست، اطلاعات تماس خود را وارد کنید تا کارشناسان فروش در اسرع وقت با شما تماس گیرند.";
+export const PRODUCT_AI_PREVIEW_CONTACT_ACTIVE_REQUEST_BANNER =
+  "شما قبلاً برای این محصول درخواست بازدید حضوری ثبت کرده‌اید. در صورت نیاز می‌توانید درخواست جدیدی ثبت کنید یا منتظر تماس کارشناسان بمانید.";
 export const PRODUCT_AI_PREVIEW_CONTACT_SUBMITTED_LEAD =
   "درخواست بازدید حضوری شما با اطلاعات زیر ثبت شده است.";
 export const PRODUCT_AI_PREVIEW_CONTACT_ME_PREFILL_SLOW_MESSAGE =

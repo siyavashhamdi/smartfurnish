@@ -164,7 +164,9 @@ const ProductCard = ({
       onKeyDown={onKeyDown}
       aria-label={item.title}
     >
-      {!isManagement ? <ProductCardWarrantyRibbon /> : null}
+      {!isManagement && item.guaranteePeriodInMonths > 0 ? (
+        <ProductCardWarrantyRibbon months={item.guaranteePeriodInMonths} />
+      ) : null}
 
       <div className={styles.coverWrap}>
         <ProductCardCoverCarousel

@@ -17,10 +17,12 @@ import {
 } from "react";
 
 import {
+  PRODUCT_AI_PREVIEW_CONTACT_ACTIVE_REQUEST_BANNER,
   PRODUCT_AI_PREVIEW_CONTACT_DIALOG_LEAD,
   PRODUCT_AI_PREVIEW_CONTACT_SUBMITTED_LEAD,
 } from "./product-ai-preview.constants";
 import {
+  checkUserProductInquiryHasActiveRequest,
   getProductAiPreviewErrorMessage,
   submitUserProductInquiryContact,
 } from "./product-ai-preview.api";
@@ -55,6 +57,7 @@ type ProductAiPreviewContactStepProps = {
 };
 
 const ME_PREFILL_SLOW_BANNER_DELAY_MS = 2000;
+const ACTIVE_REQUEST_CHECK_DEBOUNCE_MS = 400;
 
 const persianFieldInputProps = {
   className: formStyles.persianInput,
@@ -155,6 +158,7 @@ function ProductAiPreviewContactStepInner(
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [prefilled, setPrefilled] = useState(false);
+  const [hasActiveRequest, setHasActiveRequest] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (isReadonly) {
@@ -203,8 +207,45 @@ function ProductAiPreviewContactStepInner(
   }, [isAnonymousUser, isReadonly, meLoading, onMePrefillSlowBannerChange, prefilled]);
 
   const phoneInvalid = Boolean(phone.trim()) && !isValidMobilePhone(phone);
+  const isPhoneValid = Boolean(phone.trim()) && !phoneInvalid;
   const isFormValid =
     Boolean(fullName.trim()) && Boolean(phone.trim()) && !phoneInvalid;
+
+  useEffect(() => {
+    if (isReadonly || !isPhoneValid) {
+      setHasActiveRequest(null);
+      return undefined;
+    }
+
+    const normalizedPhone = normalizeAuthIdentityMobileForSubmit(phone.trim());
+    if (!normalizedPhone) {
+      setHasActiveRequest(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void checkUserProductInquiryHasActiveRequest({
+        productId,
+        phone: normalizedPhone,
+      })
+        .then((active) => {
+          if (!cancelled) {
+            setHasActiveRequest(active);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setHasActiveRequest(false);
+          }
+        });
+    }, ACTIVE_REQUEST_CHECK_DEBOUNCE_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [isPhoneValid, isReadonly, phone, productId]);
 
   useEffect(() => {
     if (isReadonly) {
@@ -355,6 +396,11 @@ function ProductAiPreviewContactStepInner(
           inputProps={latinFieldInputProps}
           InputProps={phoneInputProps}
         />
+        {isPhoneValid && hasActiveRequest ? (
+          <Alert severity="info" variant="outlined">
+            {PRODUCT_AI_PREVIEW_CONTACT_ACTIVE_REQUEST_BANNER}
+          </Alert>
+        ) : null}
         {submitError ? <Alert severity="error">{submitError}</Alert> : null}
       </Stack>
     </form>

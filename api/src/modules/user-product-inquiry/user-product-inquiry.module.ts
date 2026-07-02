@@ -18,6 +18,7 @@ import {
 } from "./graphql/mutations";
 import {
   UserProductInquiryDetailQuery,
+  UserProductInquiryHasActiveRequestQuery,
   UserProductInquiryListQuery,
 } from "./graphql/queries";
 import { UserProductInquiryService } from "./user-product-inquiry.service";
@@ -43,6 +44,7 @@ import { UserProductInquiryService } from "./user-product-inquiry.service";
     UserProductInquiryUpdateMutation,
     UserProductInquiryListQuery,
     UserProductInquiryDetailQuery,
+    UserProductInquiryHasActiveRequestQuery,
   ],
   exports: [UserProductInquiryService],
 })

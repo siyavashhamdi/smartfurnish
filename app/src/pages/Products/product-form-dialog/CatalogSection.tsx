@@ -275,17 +275,6 @@ const CatalogSection = ({
                               uploadProgressByFieldId[`set-piece-${piece.id}-${image.id}`]
                             )}
                           />
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() =>
-                              updateSetPiece(piece.id, {
-                                images: piece.images.filter((entry) => entry.id !== image.id),
-                              })
-                            }
-                          >
-                            <DeleteRoundedIcon fontSize="small" />
-                          </IconButton>
                         </div>
                       ))}
                       <Button

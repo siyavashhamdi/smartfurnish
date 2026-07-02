@@ -2,7 +2,6 @@ import type { ReactElement } from "react";
 import {
   FormControlLabel,
   Grid,
-  IconButton,
   Paper,
   Switch,
   TextField,
@@ -10,7 +9,6 @@ import {
   Button,
 } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
-import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import FileUploadField from "../../../shared/forms/FileUploadField";
 import {
   MULTILINE_TEXTAREA_MIN_ROWS,
@@ -43,6 +41,8 @@ type MainInfoSectionProps = {
   readonly onIsReviewSubmissionEnabledChange: (value: boolean) => void;
   readonly isReviewsSectionVisible: boolean;
   readonly onIsReviewsSectionVisibleChange: (value: boolean) => void;
+  readonly guaranteePeriodInMonths: string;
+  readonly onGuaranteePeriodInMonthsChange: (value: string) => void;
   readonly formatIntegerWithThousands: (value: string) => string;
   readonly getCoverUploadFieldId: (coverId: string) => string;
   readonly uploadingFieldIds: ReadonlySet<string>;
@@ -69,6 +69,8 @@ const MainInfoSection = ({
   onIsReviewSubmissionEnabledChange,
   isReviewsSectionVisible,
   onIsReviewsSectionVisibleChange,
+  guaranteePeriodInMonths,
+  onGuaranteePeriodInMonthsChange,
   formatIntegerWithThousands,
   getCoverUploadFieldId,
   uploadingFieldIds,
@@ -84,6 +86,20 @@ const MainInfoSection = ({
           label="عنوان محصول"
           value={title}
           onChange={(event) => onTitleChange(event.target.value)}
+        />
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <TextField
+          fullWidth
+          label="مدت گارانتی (ماه)"
+          value={guaranteePeriodInMonths}
+          onChange={(event) =>
+            onGuaranteePeriodInMonthsChange(
+              formatIntegerWithThousands(event.target.value)
+            )
+          }
+          inputProps={{ inputMode: "numeric" }}
+          helperText="در صورت صفر بودن، گارانتی روی کارت محصول نمایش داده نمی‌شود."
         />
       </Grid>
       <Grid item xs={12}>
@@ -176,16 +192,6 @@ const MainInfoSection = ({
                   uploading={uploadingFieldIds.has(fieldId)}
                   uploadProgress={getFieldUploadPercent(fieldId)}
                 />
-                <IconButton
-                  size="small"
-                  color="error"
-                  disabled={coverImages.length <= 1}
-                  onClick={() =>
-                    onCoverImagesChange(coverImages.filter((entry) => entry.id !== cover.id))
-                  }
-                >
-                  <DeleteRoundedIcon fontSize="small" />
-                </IconButton>
               </div>
             );
           })}

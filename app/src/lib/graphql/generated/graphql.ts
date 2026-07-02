@@ -245,12 +245,14 @@ export const BackupTarget = {
 export type BackupTarget = (typeof BackupTarget)[keyof typeof BackupTarget];
 export type BadgeCountGqlResponse = {
   __typename?: "BadgeCountGqlResponse";
-  /** Actionable inquiry badge count for staff users. Null for end users. */
+  /** Actionable inquiry badge count for staff users in CALL_REQUESTED, CONTACTED, or PENDING status. */
   inquiries?: Maybe<Scalars["Int"]["output"]>;
   /** Unread direct notification count for the current user. */
   notifications?: Maybe<Scalars["Int"]["output"]>;
   /** Pending payment badge count for staff users. Null for end users. */
   payments?: Maybe<Scalars["Int"]["output"]>;
+  /** Count of unique review owners with at least one PENDING_APPROVAL moderation in review thread, rating, or messages. Staff only. */
+  pendingReviewUsers?: Maybe<Scalars["Int"]["output"]>;
   /** Product badge count. Staff users receive all products; end users receive active products. */
   products: Scalars["Int"]["output"];
   /** Support ticket badge count. Staff users receive open tickets; end users receive answered own tickets. */
@@ -656,6 +658,7 @@ export type GeneralSubscriptionGqlResponse = {
 export const GeneralSubscriptionUpdateType = {
   BADGE_COUNTS: "BADGE_COUNTS",
   NOTIFICATION: "NOTIFICATION",
+  PRODUCT_UPDATED: "PRODUCT_UPDATED",
   VERIFICATION_STATUS: "VERIFICATION_STATUS",
 } as const;
 
@@ -846,6 +849,16 @@ export type Mutation = {
   userLogout: Scalars["Boolean"]["output"];
   /** Bulk update current-user notifications by setting them read, unread, or archived */
   userNotificationUpdate: NotificationUpdateGqlResponse;
+  /** Transfer an anonymous visitor inquiry to a newly registered user. Call with the anonymous session JWT and pass the signed-up user's access token in the input. */
+  userProductInquiryClaim: UserProductInquiryClaimGqlResponse;
+  /** Create or update a user product inquiry with in-person visit contact details. Updates an existing preview inquiry when available; otherwise creates a new call-request inquiry. */
+  userProductInquiryContactSubmit: UserProductInquiryContactSubmitGqlResponse;
+  /** Persist a smart product preview inquiry after AI preview generation. Appends to an existing inquiry when inquiryId is provided. */
+  userProductInquiryPreviewSubmit: UserProductInquiryPreviewSubmitGqlResponse;
+  /** Update a user product inquiry status and optional status-change description. SUPER_ADMIN only. */
+  userProductInquiryStatusUpdate: UserProductInquiryDetailGqlResponse;
+  /** Replace all editable fields on a user product inquiry. SUPER_ADMIN only. Schema validation enforces status, preview, contact, and status-history contacted/saleCompleted consistency rules. */
+  userProductInquiryUpdate: UserProductInquiryDetailGqlResponse;
   /** Update the authenticated user's profile. Anonymous users may only update preferences. */
   userProfileUpdate: UserMutationGqlResponse;
   /** Send a verification email to the authenticated user's address */
@@ -982,6 +995,26 @@ export type MutationUserLoginArgs = {
 
 export type MutationUserNotificationUpdateArgs = {
   input: NotificationUpdateGqlInput;
+};
+
+export type MutationUserProductInquiryClaimArgs = {
+  input: UserProductInquiryClaimGqlInput;
+};
+
+export type MutationUserProductInquiryContactSubmitArgs = {
+  input: UserProductInquiryContactSubmitGqlInput;
+};
+
+export type MutationUserProductInquiryPreviewSubmitArgs = {
+  input: UserProductInquiryPreviewSubmitGqlInput;
+};
+
+export type MutationUserProductInquiryStatusUpdateArgs = {
+  input: UserProductInquiryStatusUpdateGqlInput;
+};
+
+export type MutationUserProductInquiryUpdateArgs = {
+  input: UserProductInquiryUpdateGqlInput;
 };
 
 export type MutationUserProfileUpdateArgs = {
@@ -1279,12 +1312,6 @@ export type PaymentCheckoutUsdtIrtRateGqlResponse = {
   valueIrt: Scalars["Float"]["output"];
 };
 
-export type ProductAiPreviewStagingDurationGqlResponse = {
-  __typename?: "ProductAiPreviewStagingDurationGqlResponse";
-  /** Estimated AI preview generation duration in seconds, maintained by the system */
-  durationSeconds: Scalars["Float"]["output"];
-};
-
 export type ProductCouponSnapshotGqlResponse = {
   __typename?: "ProductCouponSnapshotGqlResponse";
   /** Coupon code */
@@ -1308,6 +1335,8 @@ export type ProductCreateGqlInput = {
   fabrics?: InputMaybe<Array<ProductFabricGqlInput>>;
   /** Full product description */
   fullDescription?: InputMaybe<Scalars["String"]["input"]>;
+  /** Product guarantee period in months */
+  guaranteePeriodInMonths?: InputMaybe<Scalars["Int"]["input"]>;
   /** Whether the product is active */
   isActive?: InputMaybe<Scalars["Boolean"]["input"]>;
   /** Whether learners can submit reviews for this product */
@@ -1547,6 +1576,8 @@ export type ProductListGqlResponse = {
   fabrics: Array<ProductFabricGqlResponse>;
   /** Full product description */
   fullDescription?: Maybe<Scalars["String"]["output"]>;
+  /** Product guarantee period in months */
+  guaranteePeriodInMonths: Scalars["Int"]["output"];
   /** Product ID */
   id: Scalars["ID"]["output"];
   /** Whether the product is active */
@@ -1585,6 +1616,14 @@ export type ProductListPaginatedCursorGqlResponse = {
   pagination: PaginationCursorResponse;
 };
 
+export type ProductListReviewStatsGqlResponse = {
+  __typename?: "ProductListReviewStatsGqlResponse";
+  /** Total review threads recorded for this product */
+  reviewCount: Scalars["Int"]["output"];
+  /** Number of distinct users who have submitted at least one review for this product */
+  userCount: Scalars["Int"]["output"];
+};
+
 export type ProductListSortOptionInput = {
   /** Sort by creation date */
   createdAt?: InputMaybe<SortingOrder>;
@@ -1606,12 +1645,16 @@ export type ProductListSummaryGqlResponse = {
   coverImageAccessUrls: Array<FileAccessUrlGqlResponse>;
   /** Computed discount for the lowest color offer */
   discount?: Maybe<ProductDiscountGqlResponse>;
+  /** Product guarantee period in months */
+  guaranteePeriodInMonths: Scalars["Int"]["output"];
   /** Product ID */
   id: Scalars["ID"]["output"];
   /** Whether the product is active */
   isActive: Scalars["Boolean"]["output"];
   /** Minimum active color price in IRT */
   priceIrt?: Maybe<Scalars["Float"]["output"]>;
+  /** Review activity summary for SUPER_ADMIN list cards */
+  reviewStats?: Maybe<ProductListReviewStatsGqlResponse>;
   /** Product display rank used for manual ordering */
   sortOrder?: Maybe<Scalars["Float"]["output"]>;
   /** Short product summary */
@@ -2083,6 +2126,8 @@ export type ProductReviewListCursorPageOptionsParamsInput = {
 export type ProductReviewListFilterInput = {
   /** Filter reviews that include at least one message */
   hasMessages?: InputMaybe<Scalars["Boolean"]["input"]>;
+  /** Filter reviews with at least one pending moderation item (thread, rating, or message) */
+  hasPendingModeration?: InputMaybe<Scalars["Boolean"]["input"]>;
   /** Filter reviews that include a rating */
   hasRating?: InputMaybe<Scalars["Boolean"]["input"]>;
   /** Filter reviews containing at least one message with this visibility */
@@ -2158,6 +2203,8 @@ export type ProductReviewListPaginatedCursorGqlResponse = {
   items: Array<ProductReviewListGqlResponse>;
   /** Pagination metadata */
   pagination: PaginationCursorResponse;
+  /** Pending moderation counts when productReviewList is filtered by productId */
+  pendingModerationStats?: Maybe<ProductReviewPendingModerationStatsGqlResponse>;
   /** Aggregated rating summary excluding hidden reviews and hidden ratings */
   summary: ProductReviewRatingSummaryGqlResponse;
 };
@@ -2212,6 +2259,14 @@ export type ProductReviewModerationUpdateGqlInput = {
   target: ProductReviewModerationTarget;
   /** New moderation visibility */
   visibility: ProductReviewVisibility;
+};
+
+export type ProductReviewPendingModerationStatsGqlResponse = {
+  __typename?: "ProductReviewPendingModerationStatsGqlResponse";
+  /** Total pending moderation items (thread, rating, and messages) for this product */
+  reviewCount: Scalars["Int"]["output"];
+  /** Number of distinct users with at least one pending moderation item for this product */
+  userCount: Scalars["Int"]["output"];
 };
 
 export type ProductReviewProductSnapshotGqlResponse = {
@@ -2394,6 +2449,8 @@ export type ProductUpdateGqlInput = {
   fabrics?: InputMaybe<Array<ProductFabricGqlInput>>;
   /** Full product description */
   fullDescription?: InputMaybe<Scalars["String"]["input"]>;
+  /** Product guarantee period in months */
+  guaranteePeriodInMonths?: InputMaybe<Scalars["Int"]["input"]>;
   /** Product ID */
   id: Scalars["ID"]["input"];
   /** Whether the product is active */
@@ -2498,8 +2555,6 @@ export type Query = {
   me: UserMeGqlResponse;
   /** Get payment checkout settings for product purchases */
   paymentCheckoutConfig: PaymentCheckoutConfigGqlResponse;
-  /** Estimated AI product preview generation duration in seconds. Value is read from app settings and updated by the system after each successful generation. */
-  productAiPreviewStagingDuration: ProductAiPreviewStagingDurationGqlResponse;
   /** Inspect related records before deleting a product, including retained and removed dependencies */
   productDeleteDependencies: ProductDeleteDependenciesGqlResponse;
   /** Get full product data for SUPER_ADMIN, including furniture catalog fields for editing */
@@ -2530,6 +2585,12 @@ export type Query = {
   userNotificationList: NotificationListPaginatedCursorGqlResponse;
   /** Get active furniture product details for anonymous users and END_USER accounts */
   userProductDetail: UserProductDetailGqlResponse;
+  /** Get full user product inquiry data for SUPER_ADMIN review, including preview, contact, and status history */
+  userProductInquiryDetail: UserProductInquiryDetailGqlResponse;
+  /** Returns true when at least one non-terminal inquiry with contact details exists for the given product and phone number */
+  userProductInquiryHasActiveRequest: Scalars["Boolean"]["output"];
+  /** Get a paginated, filterable, sortable SUPER_ADMIN list of user product inquiries */
+  userProductInquiryList: UserProductInquiryListPaginatedOffsetGqlResponse;
   /** Get active products for anonymous users and END_USER views with purchase state */
   userProductList: UserProductListPaginatedCursorGqlResponse;
   /** Get a cursor-paginated list of public product reviews for anonymous users and END_USER accounts */
@@ -2606,6 +2667,18 @@ export type QueryUserNotificationListArgs = {
 
 export type QueryUserProductDetailArgs = {
   input: UserProductDetailGqlInput;
+};
+
+export type QueryUserProductInquiryDetailArgs = {
+  input: UserProductInquiryDetailGqlInput;
+};
+
+export type QueryUserProductInquiryHasActiveRequestArgs = {
+  input: UserProductInquiryHasActiveRequestGqlInput;
+};
+
+export type QueryUserProductInquiryListArgs = {
+  input: UserProductInquiryListGqlInput;
 };
 
 export type QueryUserProductListArgs = {
@@ -3416,6 +3489,617 @@ export type UserProductDetailGqlResponse = {
   title: Scalars["String"]["output"];
 };
 
+export type UserProductInquiryClaimGqlInput = {
+  /** Access token issued for the newly registered user after signup */
+  accessToken: Scalars["String"]["input"];
+  /** Inquiry ID to transfer to the signed-up user */
+  inquiryId: Scalars["ID"]["input"];
+};
+
+export type UserProductInquiryClaimGqlResponse = {
+  __typename?: "UserProductInquiryClaimGqlResponse";
+  /** Claimed user product inquiry ID */
+  id: Scalars["ID"]["output"];
+};
+
+export type UserProductInquiryContactSubmitContactGqlResponse = {
+  __typename?: "UserProductInquiryContactSubmitContactGqlResponse";
+  /** Contact first name */
+  firstName: Scalars["String"]["output"];
+  /** Contact last name */
+  lastName: Scalars["String"]["output"];
+  /** Contact phone number */
+  phone: Scalars["String"]["output"];
+  /** Date when contact was requested */
+  requestedAt: Scalars["DateTime"]["output"];
+};
+
+export type UserProductInquiryContactSubmitGqlInput = {
+  /** Selected fabric color key when available from the product dialog */
+  colorKey?: InputMaybe<Scalars["String"]["input"]>;
+  /** Selected fabric key when available from the product dialog */
+  fabricKey?: InputMaybe<Scalars["String"]["input"]>;
+  /** Contact full name */
+  fullName: Scalars["String"]["input"];
+  /** Existing inquiry ID from smart preview submit. When omitted, the service creates a new inquiry or updates the latest pending preview inquiry for this product. */
+  inquiryId?: InputMaybe<Scalars["ID"]["input"]>;
+  /** Contact mobile phone number */
+  phone: Scalars["String"]["input"];
+  /** Product ID for the visit request */
+  productId: Scalars["ID"]["input"];
+};
+
+export type UserProductInquiryContactSubmitGqlResponse = {
+  __typename?: "UserProductInquiryContactSubmitGqlResponse";
+  /** Submitted contact details */
+  contact: UserProductInquiryContactSubmitContactGqlResponse;
+  /** Updated user product inquiry ID */
+  id: Scalars["ID"]["output"];
+  /** Inquiry status after contact submission */
+  status: UserProductInquiryStatus;
+};
+
+export type UserProductInquiryDetailContactGqlResponse = {
+  __typename?: "UserProductInquiryDetailContactGqlResponse";
+  /** Optional customer note */
+  customerNote?: Maybe<Scalars["String"]["output"]>;
+  /** Contact first name */
+  firstName: Scalars["String"]["output"];
+  /** Contact last name */
+  lastName: Scalars["String"]["output"];
+  /** Contact phone number */
+  phone: Scalars["String"]["output"];
+  /** When contact was requested */
+  requestedAt: Scalars["DateTime"]["output"];
+};
+
+export type UserProductInquiryDetailFabricSnapshotGqlResponse = {
+  __typename?: "UserProductInquiryDetailFabricSnapshotGqlResponse";
+  /** Selected fabric color hex code */
+  colorHex?: Maybe<Scalars["String"]["output"]>;
+  /** Color key */
+  colorKey: Scalars["String"]["output"];
+  /** Selected fabric color name */
+  colorName: Scalars["String"]["output"];
+  /** Fabric key */
+  fabricKey: Scalars["String"]["output"];
+  /** Combined fabric and color label */
+  label: Scalars["String"]["output"];
+  /** Fabric pattern name */
+  patternName: Scalars["String"]["output"];
+};
+
+export type UserProductInquiryDetailGqlInput = {
+  /** User product inquiry ID */
+  id: Scalars["ID"]["input"];
+};
+
+export type UserProductInquiryDetailGqlResponse = {
+  __typename?: "UserProductInquiryDetailGqlResponse";
+  /** Contact request details, if any */
+  contact?: Maybe<UserProductInquiryDetailContactGqlResponse>;
+  /** Inquiry created date */
+  createdAt?: Maybe<Scalars["DateTime"]["output"]>;
+  /** User ID who created the inquiry */
+  createdBy?: Maybe<Scalars["ID"]["output"]>;
+  /** User product inquiry record ID */
+  id: Scalars["ID"]["output"];
+  /** Whether the inquiry is archived */
+  isArchived: Scalars["Boolean"]["output"];
+  /** AI preview generations, if any */
+  preview?: Maybe<Array<UserProductInquiryDetailPreviewGqlResponse>>;
+  /** Product snapshot captured when the inquiry was created */
+  product: UserProductInquiryDetailProductSnapshotGqlResponse;
+  /** Related product ID */
+  productId: Scalars["ID"]["output"];
+  /** Current inquiry status */
+  status: UserProductInquiryStatus;
+  /** Chronological status change history */
+  statusHistory: Array<UserProductInquiryDetailStatusHistoryEntryGqlResponse>;
+  /** Inquiry last update date */
+  updatedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  /** User ID who last updated the inquiry */
+  updatedBy?: Maybe<Scalars["ID"]["output"]>;
+  /** User snapshot captured when the inquiry was created */
+  user: UserProductInquiryDetailUserSnapshotGqlResponse;
+  /** Owner user ID */
+  userId: Scalars["ID"]["output"];
+};
+
+export type UserProductInquiryDetailPreviewGqlResponse = {
+  __typename?: "UserProductInquiryDetailPreviewGqlResponse";
+  /** Preview generation duration in seconds */
+  durationSeconds?: Maybe<Scalars["Float"]["output"]>;
+  /** Signed access descriptor for the room environment photo */
+  environmentFileAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
+  /** Uploaded room environment photo file ID */
+  environmentFileId: Scalars["ID"]["output"];
+  /** Selected fabric snapshot for this preview */
+  fabric: UserProductInquiryDetailFabricSnapshotGqlResponse;
+  /** When the preview was generated */
+  generatedAt: Scalars["DateTime"]["output"];
+  /** AI model metadata used for preview generation */
+  model: UserProductInquiryDetailPreviewModelGqlResponse;
+  /** Signed access descriptor for the generated preview image */
+  resultFileAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
+  /** Generated preview result image file ID */
+  resultFileId: Scalars["ID"]["output"];
+  /** Signed access descriptor for the source product image */
+  sourceProductImageFileAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
+  /** Source AI product image file ID */
+  sourceProductImageFileId?: Maybe<Scalars["ID"]["output"]>;
+};
+
+export type UserProductInquiryDetailPreviewModelGqlResponse = {
+  __typename?: "UserProductInquiryDetailPreviewModelGqlResponse";
+  /** Aspect ratio used for generation */
+  aspectRatio?: Maybe<Scalars["String"]["output"]>;
+  /** Image size used for generation */
+  imageSize?: Maybe<Scalars["String"]["output"]>;
+  /** AI model name */
+  model: Scalars["String"]["output"];
+  /** Placement prompt used for generation */
+  placementPrompt?: Maybe<Scalars["String"]["output"]>;
+  /** AI provider name */
+  provider: Scalars["String"]["output"];
+  /** Reasoning effort used for generation */
+  reasoningEffort?: Maybe<Scalars["String"]["output"]>;
+};
+
+export type UserProductInquiryDetailProductSnapshotGqlResponse = {
+  __typename?: "UserProductInquiryDetailProductSnapshotGqlResponse";
+  /** Current product cover image access URLs */
+  coverImageAccessUrls: Array<FileAccessUrlGqlResponse>;
+  /** Product title snapshot */
+  title: Scalars["String"]["output"];
+};
+
+export type UserProductInquiryDetailStatusHistoryContactedGqlResponse = {
+  __typename?: "UserProductInquiryDetailStatusHistoryContactedGqlResponse";
+  /** When contact was made */
+  contactedAt: Scalars["DateTime"]["output"];
+  /** User ID who marked the inquiry contacted */
+  contactedBy: Scalars["ID"]["output"];
+};
+
+export type UserProductInquiryDetailStatusHistoryEntryGqlResponse = {
+  __typename?: "UserProductInquiryDetailStatusHistoryEntryGqlResponse";
+  /** When the status changed */
+  changedAt: Scalars["DateTime"]["output"];
+  /** User ID who changed the status */
+  changedBy?: Maybe<Scalars["ID"]["output"]>;
+  /** Contact details when status is CONTACTED */
+  contacted?: Maybe<UserProductInquiryDetailStatusHistoryContactedGqlResponse>;
+  /** Optional status change description */
+  description?: Maybe<Scalars["String"]["output"]>;
+  /** Reason for the status change */
+  reason: Scalars["String"]["output"];
+  /** Sale completion details when status is SALE_COMPLETED */
+  saleCompleted?: Maybe<UserProductInquiryDetailStatusHistorySaleCompletedGqlResponse>;
+  /** Status after this change */
+  status: UserProductInquiryStatus;
+};
+
+export type UserProductInquiryDetailStatusHistorySaleCompletedGqlResponse = {
+  __typename?: "UserProductInquiryDetailStatusHistorySaleCompletedGqlResponse";
+  /** When the sale was completed */
+  completedAt: Scalars["DateTime"]["output"];
+  /** SUPER_ADMIN user ID who marked the sale completed */
+  completedBy: Scalars["ID"]["output"];
+  /** Final agreed sale price in IRT */
+  finalPriceIrt: Scalars["Float"]["output"];
+};
+
+export type UserProductInquiryDetailUserSnapshotGqlResponse = {
+  __typename?: "UserProductInquiryDetailUserSnapshotGqlResponse";
+  /** User full name snapshot */
+  fullName: Scalars["String"]["output"];
+  /** User phone number snapshot */
+  phoneNumber?: Maybe<Scalars["String"]["output"]>;
+  /** Current user roles */
+  roles: Array<UserRole>;
+  /** Username snapshot */
+  username: Scalars["String"]["output"];
+};
+
+export type UserProductInquiryHasActiveRequestGqlInput = {
+  /** Contact mobile phone number to check */
+  phone: Scalars["String"]["input"];
+  /** Product ID for the visit request check */
+  productId: Scalars["ID"]["input"];
+};
+
+export type UserProductInquiryListContactSummaryGqlResponse = {
+  __typename?: "UserProductInquiryListContactSummaryGqlResponse";
+  /** Contact first name */
+  firstName: Scalars["String"]["output"];
+  /** Contact last name */
+  lastName: Scalars["String"]["output"];
+  /** Contact phone number */
+  phone: Scalars["String"]["output"];
+  /** Date when contact was requested */
+  requestedAt: Scalars["DateTime"]["output"];
+};
+
+export type UserProductInquiryListFabricSummaryGqlResponse = {
+  __typename?: "UserProductInquiryListFabricSummaryGqlResponse";
+  /** Selected fabric color hex code */
+  colorHex?: Maybe<Scalars["String"]["output"]>;
+  /** Selected fabric color name */
+  colorName: Scalars["String"]["output"];
+  /** Fabric pattern name */
+  patternName: Scalars["String"]["output"];
+};
+
+export type UserProductInquiryListFilterInput = {
+  /** Filter by contact first name */
+  contactFirstName?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter by contact last name */
+  contactLastName?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter by contact phone */
+  contactPhone?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter contact requests from this ISO date */
+  contactRequestedAtFrom?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter contact requests until this ISO date */
+  contactRequestedAtTo?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter records created from this ISO date */
+  createdAtFrom?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter records created until this ISO date */
+  createdAtTo?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter by fabric label snapshot */
+  fabricLabel?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter inquiries by record ID */
+  id?: InputMaybe<Scalars["ID"]["input"]>;
+  /** Filter by archived flag */
+  isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
+  /** Filter previews generated from this ISO date */
+  previewGeneratedAtFrom?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter previews generated until this ISO date */
+  previewGeneratedAtTo?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter inquiries by product ID */
+  productId?: InputMaybe<Scalars["ID"]["input"]>;
+  /** Filter by product title snapshot */
+  productTitle?: InputMaybe<Scalars["String"]["input"]>;
+  /** Search query that matches user, product, fabric, or contact fields */
+  query?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter inquiries by a single status */
+  status?: InputMaybe<UserProductInquiryStatus>;
+  /** Filter inquiries by one or more statuses (OR) */
+  statuses?: InputMaybe<Array<UserProductInquiryStatus>>;
+  /** Filter records updated from this ISO date */
+  updatedAtFrom?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter records updated until this ISO date */
+  updatedAtTo?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter by inquiry contact full name */
+  userFullName?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter inquiries by user ID */
+  userId?: InputMaybe<Scalars["ID"]["input"]>;
+  /** Filter by inquiry contact phone */
+  userPhone?: InputMaybe<Scalars["String"]["input"]>;
+  /** Filter by username snapshot */
+  username?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type UserProductInquiryListGqlInput = {
+  /** Filter options for narrowing down the inquiry list */
+  filters?: InputMaybe<UserProductInquiryListFilterInput>;
+  /** Offset pagination and sorting options */
+  options?: InputMaybe<UserProductInquiryListOffsetPageOptionsParamsInput>;
+};
+
+export type UserProductInquiryListOffsetPageOptionsParamsInput = {
+  /** Maximum number of records to return */
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  /** Number of records to skip (offset) */
+  skip?: InputMaybe<Scalars["Int"]["input"]>;
+  /** Sort options as a map of field names to sort order */
+  sort?: InputMaybe<UserProductInquiryListSortOptionInput>;
+};
+
+export type UserProductInquiryListPaginatedOffsetGqlResponse = {
+  __typename?: "UserProductInquiryListPaginatedOffsetGqlResponse";
+  /** List of user product inquiries */
+  items: Array<UserProductInquiryListSummaryGqlResponse>;
+  /** Pagination metadata */
+  pagination: PaginationOffsetResponse;
+};
+
+export type UserProductInquiryListProductSummaryGqlResponse = {
+  __typename?: "UserProductInquiryListProductSummaryGqlResponse";
+  /** Product title snapshot */
+  title: Scalars["String"]["output"];
+};
+
+export type UserProductInquiryListSortOptionInput = {
+  /** Sort by contact requested date */
+  contactRequestedAt?: InputMaybe<SortingOrder>;
+  /** Sort by creation date */
+  createdAt?: InputMaybe<SortingOrder>;
+  /** Sort by preview generated date */
+  previewGeneratedAt?: InputMaybe<SortingOrder>;
+  /** Sort by product title snapshot */
+  productTitle?: InputMaybe<SortingOrder>;
+  /** Sort by inquiry status */
+  status?: InputMaybe<SortingOrder>;
+  /** Sort by last update date */
+  updatedAt?: InputMaybe<SortingOrder>;
+};
+
+export type UserProductInquiryListSummaryGqlResponse = {
+  __typename?: "UserProductInquiryListSummaryGqlResponse";
+  /** Contact request details, if any */
+  contact?: Maybe<UserProductInquiryListContactSummaryGqlResponse>;
+  /** Inquiry created date */
+  createdAt?: Maybe<Scalars["DateTime"]["output"]>;
+  /** Selected fabric snapshot, if any */
+  fabric?: Maybe<UserProductInquiryListFabricSummaryGqlResponse>;
+  /** User product inquiry record ID */
+  id: Scalars["ID"]["output"];
+  /** Number of AI preview generations on this inquiry */
+  previewCount: Scalars["Float"]["output"];
+  /** Date when the AI preview was generated */
+  previewGeneratedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  /** Product snapshot captured when the inquiry was created */
+  product: UserProductInquiryListProductSummaryGqlResponse;
+  /** Inquiry status */
+  status: UserProductInquiryStatus;
+  /** Inquiry last update date */
+  updatedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  /** User snapshot captured when the inquiry was created */
+  user: UserProductInquiryListUserSummaryGqlResponse;
+};
+
+export type UserProductInquiryListUserSummaryGqlResponse = {
+  __typename?: "UserProductInquiryListUserSummaryGqlResponse";
+  /** User full name snapshot */
+  fullName: Scalars["String"]["output"];
+  /** User phone number snapshot */
+  phoneNumber?: Maybe<Scalars["String"]["output"]>;
+  /** Username snapshot */
+  username: Scalars["String"]["output"];
+};
+
+export type UserProductInquiryPreviewSubmitFabricGqlResponse = {
+  __typename?: "UserProductInquiryPreviewSubmitFabricGqlResponse";
+  /** Selected fabric color hex code */
+  colorHex?: Maybe<Scalars["String"]["output"]>;
+  /** Selected fabric color name */
+  colorName: Scalars["String"]["output"];
+  /** Combined fabric and color label */
+  label: Scalars["String"]["output"];
+  /** Fabric pattern name */
+  patternName: Scalars["String"]["output"];
+};
+
+export type UserProductInquiryPreviewSubmitGqlInput = {
+  /** Selected fabric color key */
+  colorKey: Scalars["String"]["input"];
+  /** Uploaded room environment photo file ID */
+  environmentFileId: Scalars["ID"]["input"];
+  /** Selected fabric key */
+  fabricKey: Scalars["String"]["input"];
+  /** Existing inquiry ID from a prior smart preview submit. When provided, appends a new preview generation to that inquiry. */
+  inquiryId?: InputMaybe<Scalars["ID"]["input"]>;
+  /** Product ID used for the smart preview */
+  productId: Scalars["ID"]["input"];
+};
+
+export type UserProductInquiryPreviewSubmitGqlResponse = {
+  __typename?: "UserProductInquiryPreviewSubmitGqlResponse";
+  /** Aspect ratio used for preview generation */
+  aspectRatio?: Maybe<Scalars["String"]["output"]>;
+  /** Optional AI generation description */
+  description?: Maybe<Scalars["String"]["output"]>;
+  /** Preview generation duration in seconds for this run */
+  durationSeconds: Scalars["Float"]["output"];
+  /** Uploaded room environment photo file ID */
+  environmentFileId: Scalars["ID"]["output"];
+  /** Fabric snapshot for the generated preview */
+  fabric: UserProductInquiryPreviewSubmitFabricGqlResponse;
+  /** When the preview was generated */
+  generatedAt: Scalars["DateTime"]["output"];
+  /** Created user product inquiry ID */
+  id: Scalars["ID"]["output"];
+  /** Generated preview image URL */
+  image: Scalars["String"]["output"];
+  /** Image size used for preview generation */
+  imageSize: Scalars["String"]["output"];
+  /** Product snapshot for the generated preview */
+  product: UserProductInquiryPreviewSubmitProductGqlResponse;
+  /** Product ID for the inquiry */
+  productId: Scalars["ID"]["output"];
+  /** Access descriptor for the generated preview result image */
+  resultFileAccessUrl?: Maybe<FileAccessUrlGqlResponse>;
+  /** Stored AI preview result image file ID */
+  resultFileId: Scalars["ID"]["output"];
+  /** Source AI product image file ID used for generation */
+  sourceProductImageFileId: Scalars["ID"]["output"];
+  /** Estimated preview generation duration in seconds for progress UI */
+  stagingDurationSeconds: Scalars["Float"]["output"];
+  /** Inquiry status after preview submission */
+  status: UserProductInquiryStatus;
+};
+
+export type UserProductInquiryPreviewSubmitProductGqlResponse = {
+  __typename?: "UserProductInquiryPreviewSubmitProductGqlResponse";
+  /** Product ID for the generated preview */
+  id: Scalars["ID"]["output"];
+  /** Product title at preview generation time */
+  title: Scalars["String"]["output"];
+};
+
+/** Lifecycle status for a user product inquiry */
+export const UserProductInquiryStatus = {
+  CALL_REQUESTED: "CALL_REQUESTED",
+  CANCELLED: "CANCELLED",
+  CLOSED: "CLOSED",
+  CONTACTED: "CONTACTED",
+  PENDING: "PENDING",
+  PREVIEW_GENERATED: "PREVIEW_GENERATED",
+  SALE_COMPLETED: "SALE_COMPLETED",
+} as const;
+
+export type UserProductInquiryStatus =
+  (typeof UserProductInquiryStatus)[keyof typeof UserProductInquiryStatus];
+export type UserProductInquiryStatusUpdateContactedGqlInput = {
+  /** When contact was made */
+  contactedAt: Scalars["DateTime"]["input"];
+  /** SUPER_ADMIN user ID who made the contact */
+  contactedBy: Scalars["ID"]["input"];
+};
+
+export type UserProductInquiryStatusUpdateGqlInput = {
+  /** Contact details required when status is CONTACTED */
+  contacted?: InputMaybe<UserProductInquiryStatusUpdateContactedGqlInput>;
+  /** Optional status-change description stored on the new history entry */
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  /** User product inquiry record ID */
+  id: Scalars["ID"]["input"];
+  /** Sale completion details required when status is SALE_COMPLETED */
+  saleCompleted?: InputMaybe<UserProductInquiryStatusUpdateSaleCompletedGqlInput>;
+  /** New inquiry status */
+  status: UserProductInquiryStatus;
+};
+
+export type UserProductInquiryStatusUpdateSaleCompletedGqlInput = {
+  /** When the sale was completed */
+  completedAt: Scalars["DateTime"]["input"];
+  /** SUPER_ADMIN user ID who marked the sale completed */
+  completedBy: Scalars["ID"]["input"];
+  /** Final agreed sale price in IRT */
+  finalPriceIrt: Scalars["Float"]["input"];
+};
+
+export type UserProductInquiryUpdateContactGqlInput = {
+  /** Optional customer note */
+  customerNote?: InputMaybe<Scalars["String"]["input"]>;
+  /** Contact first name */
+  firstName: Scalars["String"]["input"];
+  /** Contact last name */
+  lastName: Scalars["String"]["input"];
+  /** Contact phone number */
+  phone: Scalars["String"]["input"];
+  /** When contact was requested */
+  requestedAt: Scalars["DateTime"]["input"];
+};
+
+export type UserProductInquiryUpdateFabricSnapshotGqlInput = {
+  /** Selected fabric color hex code */
+  colorHex?: InputMaybe<Scalars["String"]["input"]>;
+  /** Color key */
+  colorKey: Scalars["String"]["input"];
+  /** Selected fabric color name */
+  colorName: Scalars["String"]["input"];
+  /** Fabric key */
+  fabricKey: Scalars["String"]["input"];
+  /** Combined fabric and color label */
+  label: Scalars["String"]["input"];
+  /** Fabric pattern name */
+  patternName: Scalars["String"]["input"];
+};
+
+export type UserProductInquiryUpdateGqlInput = {
+  /** Contact request details. Use null to clear it. */
+  contact?: InputMaybe<UserProductInquiryUpdateContactGqlInput>;
+  /** User product inquiry record ID */
+  id: Scalars["ID"]["input"];
+  /** Whether the inquiry is archived */
+  isArchived: Scalars["Boolean"]["input"];
+  /** AI preview generations. Use null to clear them. */
+  preview?: InputMaybe<Array<UserProductInquiryUpdatePreviewGqlInput>>;
+  /** Product snapshot */
+  product: UserProductInquiryUpdateProductSnapshotGqlInput;
+  /** Related product ID */
+  productId: Scalars["ID"]["input"];
+  /** Current inquiry status */
+  status: UserProductInquiryStatus;
+  /** Full status change history replacement */
+  statusHistory: Array<UserProductInquiryUpdateStatusHistoryEntryGqlInput>;
+  /** User snapshot */
+  user: UserProductInquiryUpdateUserSnapshotGqlInput;
+  /** Owner user ID */
+  userId: Scalars["ID"]["input"];
+};
+
+export type UserProductInquiryUpdatePreviewGqlInput = {
+  /** Preview generation duration in seconds */
+  durationSeconds?: InputMaybe<Scalars["Float"]["input"]>;
+  /** Uploaded room environment photo file ID */
+  environmentFileId: Scalars["ID"]["input"];
+  /** Selected fabric snapshot for this preview */
+  fabric: UserProductInquiryUpdateFabricSnapshotGqlInput;
+  /** When the preview was generated */
+  generatedAt: Scalars["DateTime"]["input"];
+  /** AI model metadata used for preview generation */
+  model: UserProductInquiryUpdatePreviewModelGqlInput;
+  /** Generated preview result image file ID */
+  resultFileId: Scalars["ID"]["input"];
+  /** Source AI product image file ID */
+  sourceProductImageFileId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type UserProductInquiryUpdatePreviewModelGqlInput = {
+  /** Aspect ratio used for generation */
+  aspectRatio?: InputMaybe<Scalars["String"]["input"]>;
+  /** Image size used for generation */
+  imageSize?: InputMaybe<Scalars["String"]["input"]>;
+  /** AI model name */
+  model: Scalars["String"]["input"];
+  /** Placement prompt used for generation */
+  placementPrompt?: InputMaybe<Scalars["String"]["input"]>;
+  /** AI provider name */
+  provider: Scalars["String"]["input"];
+  /** Reasoning effort used for generation */
+  reasoningEffort?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type UserProductInquiryUpdateProductSnapshotGqlInput = {
+  /** Product title snapshot */
+  title: Scalars["String"]["input"];
+};
+
+export type UserProductInquiryUpdateStatusHistoryContactedGqlInput = {
+  /** When contact was made */
+  contactedAt: Scalars["DateTime"]["input"];
+  /** User ID who marked the inquiry contacted */
+  contactedBy: Scalars["ID"]["input"];
+};
+
+export type UserProductInquiryUpdateStatusHistoryEntryGqlInput = {
+  /** When the status changed */
+  changedAt: Scalars["DateTime"]["input"];
+  /** User ID who changed the status */
+  changedBy?: InputMaybe<Scalars["ID"]["input"]>;
+  /** Contact details when status is CONTACTED */
+  contacted?: InputMaybe<UserProductInquiryUpdateStatusHistoryContactedGqlInput>;
+  /** Optional status change description */
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  /** Reason for the status change */
+  reason: Scalars["String"]["input"];
+  /** Sale completion details when status is SALE_COMPLETED */
+  saleCompleted?: InputMaybe<UserProductInquiryUpdateStatusHistorySaleCompletedGqlInput>;
+  /** Status after this change */
+  status: UserProductInquiryStatus;
+};
+
+export type UserProductInquiryUpdateStatusHistorySaleCompletedGqlInput = {
+  /** When the sale was completed */
+  completedAt: Scalars["DateTime"]["input"];
+  /** SUPER_ADMIN user ID who marked the sale completed */
+  completedBy: Scalars["ID"]["input"];
+  /** Final agreed sale price in IRT */
+  finalPriceIrt: Scalars["Float"]["input"];
+};
+
+export type UserProductInquiryUpdateUserSnapshotGqlInput = {
+  /** User full name snapshot */
+  fullName: Scalars["String"]["input"];
+  /** User phone number snapshot */
+  phoneNumber?: InputMaybe<Scalars["String"]["input"]>;
+  /** Username snapshot */
+  username: Scalars["String"]["input"];
+};
+
 export type UserProductListDiscountGqlResponse = {
   __typename?: "UserProductListDiscountGqlResponse";
   /** Discount calculation type */
@@ -3430,6 +4114,8 @@ export type UserProductListGqlResponse = {
   coverImageAccessUrls: Array<FileAccessUrlGqlResponse>;
   /** Computed discount for the lowest active color offer */
   discount?: Maybe<UserProductListDiscountGqlResponse>;
+  /** Product guarantee period in months */
+  guaranteePeriodInMonths: Scalars["Int"]["output"];
   /** Product ID */
   id: Scalars["ID"]["output"];
   /** Whether the current END_USER has a paid purchase for this product */
@@ -3665,6 +4351,8 @@ export type UserSignupGqlInput = {
   mobile?: InputMaybe<Scalars["String"]["input"]>;
   /** Account password for signup */
   password?: InputMaybe<Scalars["String"]["input"]>;
+  /** When true, keeps the replaced anonymous session active until an inquiry claim handoff completes */
+  preserveReplacedAnonymousSession?: InputMaybe<Scalars["Boolean"]["input"]>;
   /** Profile data for signup (first name required; last name optional) */
   profile: UserSignupProfileGqlInput;
   /** If true, the newly-created session will be remembered longer (e.g. 30 days) */
@@ -4288,6 +4976,68 @@ export type UserNotificationUpdateMutation = {
   };
 };
 
+export type UserProductInquiryClaimMutationVariables = Exact<{
+  input: UserProductInquiryClaimGqlInput;
+}>;
+
+export type UserProductInquiryClaimMutation = {
+  __typename?: "Mutation";
+  userProductInquiryClaim: { __typename?: "UserProductInquiryClaimGqlResponse"; id: string };
+};
+
+export type UserProductInquiryContactSubmitMutationVariables = Exact<{
+  input: UserProductInquiryContactSubmitGqlInput;
+}>;
+
+export type UserProductInquiryContactSubmitMutation = {
+  __typename?: "Mutation";
+  userProductInquiryContactSubmit: {
+    __typename?: "UserProductInquiryContactSubmitGqlResponse";
+    id: string;
+    status: UserProductInquiryStatus;
+    contact: {
+      __typename?: "UserProductInquiryContactSubmitContactGqlResponse";
+      firstName: string;
+      lastName: string;
+      phone: string;
+      requestedAt: any;
+    };
+  };
+};
+
+export type UserProductInquiryStatusUpdateMutationVariables = Exact<{
+  input: UserProductInquiryStatusUpdateGqlInput;
+}>;
+
+export type UserProductInquiryStatusUpdateMutation = {
+  __typename?: "Mutation";
+  userProductInquiryStatusUpdate: {
+    __typename?: "UserProductInquiryDetailGqlResponse";
+    id: string;
+    status: UserProductInquiryStatus;
+    updatedAt?: any | null;
+    statusHistory: Array<{
+      __typename?: "UserProductInquiryDetailStatusHistoryEntryGqlResponse";
+      status: UserProductInquiryStatus;
+      reason: string;
+      description?: string | null;
+      changedAt: any;
+      changedBy?: string | null;
+      contacted?: {
+        __typename?: "UserProductInquiryDetailStatusHistoryContactedGqlResponse";
+        contactedAt: any;
+        contactedBy: string;
+      } | null;
+      saleCompleted?: {
+        __typename?: "UserProductInquiryDetailStatusHistorySaleCompletedGqlResponse";
+        completedAt: any;
+        completedBy: string;
+        finalPriceIrt: number;
+      } | null;
+    }>;
+  };
+};
+
 export type UserRequestEmailVerificationMutationVariables = Exact<{ [key: string]: never }>;
 
 export type UserRequestEmailVerificationMutation = {
@@ -4470,6 +5220,7 @@ export type BadgeCountQuery = {
     notifications?: number | null;
     tickets?: number | null;
     inquiries?: number | null;
+    pendingReviewUsers?: number | null;
   };
 };
 
@@ -4590,16 +5341,6 @@ export type PaymentCheckoutConfigQuery = {
       feeUsdt: number;
       coefficient: number;
     };
-  };
-};
-
-export type ProductAiPreviewStagingDurationQueryVariables = Exact<{ [key: string]: never }>;
-
-export type ProductAiPreviewStagingDurationQuery = {
-  __typename?: "Query";
-  productAiPreviewStagingDuration: {
-    __typename?: "ProductAiPreviewStagingDurationGqlResponse";
-    durationSeconds: number;
   };
 };
 
@@ -4885,6 +5626,62 @@ export type UserNotificationListQuery = {
       endCursor?: string | null;
       hasNextPage: boolean;
       hasPreviousPage: boolean;
+    };
+  };
+};
+
+export type UserProductInquiryHasActiveRequestQueryVariables = Exact<{
+  input: UserProductInquiryHasActiveRequestGqlInput;
+}>;
+
+export type UserProductInquiryHasActiveRequestQuery = {
+  __typename?: "Query";
+  userProductInquiryHasActiveRequest: boolean;
+};
+
+export type UserProductInquiryListQueryVariables = Exact<{
+  input: UserProductInquiryListGqlInput;
+}>;
+
+export type UserProductInquiryListQuery = {
+  __typename?: "Query";
+  userProductInquiryList: {
+    __typename?: "UserProductInquiryListPaginatedOffsetGqlResponse";
+    items: Array<{
+      __typename?: "UserProductInquiryListSummaryGqlResponse";
+      id: string;
+      status: UserProductInquiryStatus;
+      previewGeneratedAt?: any | null;
+      previewCount: number;
+      createdAt?: any | null;
+      updatedAt?: any | null;
+      user: {
+        __typename?: "UserProductInquiryListUserSummaryGqlResponse";
+        fullName: string;
+        username: string;
+        phoneNumber?: string | null;
+      };
+      product: { __typename?: "UserProductInquiryListProductSummaryGqlResponse"; title: string };
+      fabric?: {
+        __typename?: "UserProductInquiryListFabricSummaryGqlResponse";
+        patternName: string;
+        colorName: string;
+        colorHex?: string | null;
+      } | null;
+      contact?: {
+        __typename?: "UserProductInquiryListContactSummaryGqlResponse";
+        firstName: string;
+        lastName: string;
+        phone: string;
+        requestedAt: any;
+      } | null;
+    }>;
+    pagination: {
+      __typename?: "PaginationOffsetResponse";
+      limit: number;
+      skip: number;
+      total: number;
+      count: number;
     };
   };
 };
@@ -6185,6 +6982,201 @@ export const UserNotificationUpdateDocument = {
   UserNotificationUpdateMutation,
   UserNotificationUpdateMutationVariables
 >;
+export const UserProductInquiryClaimDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "UserProductInquiryClaim" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "input" } },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "UserProductInquiryClaimGqlInput" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "userProductInquiryClaim" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: { kind: "Variable", name: { kind: "Name", value: "input" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [{ kind: "Field", name: { kind: "Name", value: "id" } }],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UserProductInquiryClaimMutation,
+  UserProductInquiryClaimMutationVariables
+>;
+export const UserProductInquiryContactSubmitDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "UserProductInquiryContactSubmit" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "input" } },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "UserProductInquiryContactSubmitGqlInput" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "userProductInquiryContactSubmit" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: { kind: "Variable", name: { kind: "Name", value: "input" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "contact" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "firstName" } },
+                      { kind: "Field", name: { kind: "Name", value: "lastName" } },
+                      { kind: "Field", name: { kind: "Name", value: "phone" } },
+                      { kind: "Field", name: { kind: "Name", value: "requestedAt" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UserProductInquiryContactSubmitMutation,
+  UserProductInquiryContactSubmitMutationVariables
+>;
+export const UserProductInquiryStatusUpdateDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "UserProductInquiryStatusUpdate" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "input" } },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "UserProductInquiryStatusUpdateGqlInput" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "userProductInquiryStatusUpdate" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: { kind: "Variable", name: { kind: "Name", value: "input" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "statusHistory" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "status" } },
+                      { kind: "Field", name: { kind: "Name", value: "reason" } },
+                      { kind: "Field", name: { kind: "Name", value: "description" } },
+                      { kind: "Field", name: { kind: "Name", value: "changedAt" } },
+                      { kind: "Field", name: { kind: "Name", value: "changedBy" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "contacted" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "contactedAt" } },
+                            { kind: "Field", name: { kind: "Name", value: "contactedBy" } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "saleCompleted" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "completedAt" } },
+                            { kind: "Field", name: { kind: "Name", value: "completedBy" } },
+                            { kind: "Field", name: { kind: "Name", value: "finalPriceIrt" } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UserProductInquiryStatusUpdateMutation,
+  UserProductInquiryStatusUpdateMutationVariables
+>;
 export const UserRequestEmailVerificationDocument = {
   kind: "Document",
   definitions: [
@@ -6709,6 +7701,8 @@ export const BadgeCountDocument = {
                 { kind: "Field", name: { kind: "Name", value: "payments" } },
                 { kind: "Field", name: { kind: "Name", value: "notifications" } },
                 { kind: "Field", name: { kind: "Name", value: "tickets" } },
+                { kind: "Field", name: { kind: "Name", value: "inquiries" } },
+                { kind: "Field", name: { kind: "Name", value: "pendingReviewUsers" } },
               ],
             },
           },
@@ -6978,32 +7972,6 @@ export const PaymentCheckoutConfigDocument = {
     },
   ],
 } as unknown as DocumentNode<PaymentCheckoutConfigQuery, PaymentCheckoutConfigQueryVariables>;
-export const ProductAiPreviewStagingDurationDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "query",
-      name: { kind: "Name", value: "ProductAiPreviewStagingDuration" },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "productAiPreviewStagingDuration" },
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [{ kind: "Field", name: { kind: "Name", value: "durationSeconds" } }],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  ProductAiPreviewStagingDurationQuery,
-  ProductAiPreviewStagingDurationQueryVariables
->;
 export const ProductDeleteDependenciesDocument = {
   kind: "Document",
   definitions: [
@@ -7618,6 +8586,165 @@ export const UserNotificationListDocument = {
     },
   ],
 } as unknown as DocumentNode<UserNotificationListQuery, UserNotificationListQueryVariables>;
+export const UserProductInquiryHasActiveRequestDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "UserProductInquiryHasActiveRequest" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "input" } },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "UserProductInquiryHasActiveRequestGqlInput" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "userProductInquiryHasActiveRequest" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: { kind: "Variable", name: { kind: "Name", value: "input" } },
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UserProductInquiryHasActiveRequestQuery,
+  UserProductInquiryHasActiveRequestQueryVariables
+>;
+export const UserProductInquiryListDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "UserProductInquiryList" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "input" } },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "UserProductInquiryListGqlInput" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "userProductInquiryList" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: { kind: "Variable", name: { kind: "Name", value: "input" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "items" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "user" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "fullName" } },
+                            { kind: "Field", name: { kind: "Name", value: "username" } },
+                            { kind: "Field", name: { kind: "Name", value: "phoneNumber" } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "product" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [{ kind: "Field", name: { kind: "Name", value: "title" } }],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "fabric" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "patternName" } },
+                            { kind: "Field", name: { kind: "Name", value: "colorName" } },
+                            { kind: "Field", name: { kind: "Name", value: "colorHex" } },
+                          ],
+                        },
+                      },
+                      { kind: "Field", name: { kind: "Name", value: "status" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "contact" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            { kind: "Field", name: { kind: "Name", value: "firstName" } },
+                            { kind: "Field", name: { kind: "Name", value: "lastName" } },
+                            { kind: "Field", name: { kind: "Name", value: "phone" } },
+                            { kind: "Field", name: { kind: "Name", value: "requestedAt" } },
+                          ],
+                        },
+                      },
+                      { kind: "Field", name: { kind: "Name", value: "previewGeneratedAt" } },
+                      { kind: "Field", name: { kind: "Name", value: "previewCount" } },
+                      { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                      { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "pagination" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "limit" } },
+                      { kind: "Field", name: { kind: "Name", value: "skip" } },
+                      { kind: "Field", name: { kind: "Name", value: "total" } },
+                      { kind: "Field", name: { kind: "Name", value: "count" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<UserProductInquiryListQuery, UserProductInquiryListQueryVariables>;
 export const UserProductListDocument = {
   kind: "Document",
   definitions: [

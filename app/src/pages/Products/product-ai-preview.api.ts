@@ -5,6 +5,7 @@ import {
 import { USER_PRODUCT_INQUIRY_PREVIEW_SUBMIT_MUTATION } from "../../graphql/mutations/userProductInquiryPreviewSubmit.mutation";
 import { USER_PRODUCT_INQUIRY_CONTACT_SUBMIT_MUTATION } from "../../graphql/mutations/userProductInquiryContactSubmit.mutation";
 import { USER_PRODUCT_INQUIRY_CLAIM_MUTATION } from "../../graphql/mutations/userProductInquiryClaim.mutation";
+import { USER_PRODUCT_INQUIRY_HAS_ACTIVE_REQUEST_QUERY } from "../../graphql/queries/userProductInquiryHasActiveRequest.query";
 import { apolloClient } from "../../lib/apollo-client";
 import { getFileIdFromAccessUrl, type FileAccessUrl } from "../../utils/fileAccessUrl.util";
 import { uploadFile } from "../../utils/fileUpload.util";
@@ -213,4 +214,26 @@ export async function claimUserProductInquiryAfterSignup(params: {
   }
 
   return inquiryId;
+}
+
+type UserProductInquiryHasActiveRequestQueryResult = {
+  readonly userProductInquiryHasActiveRequest?: boolean;
+};
+
+export async function checkUserProductInquiryHasActiveRequest(params: {
+  readonly productId: string;
+  readonly phone: string;
+}): Promise<boolean> {
+  const result = await apolloClient.query<UserProductInquiryHasActiveRequestQueryResult>({
+    query: USER_PRODUCT_INQUIRY_HAS_ACTIVE_REQUEST_QUERY,
+    variables: {
+      input: {
+        productId: params.productId,
+        phone: params.phone,
+      },
+    },
+    fetchPolicy: "network-only",
+  });
+
+  return result.data?.userProductInquiryHasActiveRequest === true;
 }

@@ -339,6 +339,16 @@ export class ProductWriteGqlInput {
   @IsString({ each: true, message: "Each product tag must be a string" })
   tags?: string[];
 
+  @Field(() => Int, {
+    nullable: true,
+    description: "Product guarantee period in months",
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({}, { message: "Guarantee period must be a number" })
+  @Min(0)
+  guaranteePeriodInMonths?: number;
+
   @Field({ nullable: true, description: "Internal notes visible to SUPER_ADMIN" })
   @IsOptional()
   @IsString({ message: "Admin notes must be a string" })

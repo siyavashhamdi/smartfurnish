@@ -211,6 +211,11 @@ export class ProductListSummaryGqlResponse {
   @Field(() => [String], { description: "Product tags" })
   tags: string[];
 
+  @Field(() => Int, {
+    description: "Product guarantee period in months",
+  })
+  guaranteePeriodInMonths: number;
+
   @Field(() => ProductListReviewStatsGqlResponse, {
     nullable: true,
     description: "Review activity summary for SUPER_ADMIN list cards",
@@ -271,6 +276,11 @@ export class ProductListGqlResponse {
 
   @Field(() => [String], { description: "Product tags" })
   tags: string[];
+
+  @Field(() => Int, {
+    description: "Product guarantee period in months",
+  })
+  guaranteePeriodInMonths: number;
 
   @Field({
     nullable: true,

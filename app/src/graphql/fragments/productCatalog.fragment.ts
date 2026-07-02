@@ -106,6 +106,7 @@ export const PRODUCT_LIST_SUMMARY_FIELDS = `
     ${PRODUCT_DISCOUNT_FIELDS}
   }
   tags
+  guaranteePeriodInMonths
 `;
 
 export const PRODUCT_ADMIN_LIST_SUMMARY_FIELDS = `
@@ -135,6 +136,7 @@ export const PRODUCT_ADMIN_DETAIL_FIELDS = `
   isReviewsSectionVisible
   sortOrder
   tags
+  guaranteePeriodInMonths
   notes
   vendor {
     ${PRODUCT_VENDOR_FIELDS}

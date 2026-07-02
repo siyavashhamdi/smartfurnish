@@ -71,6 +71,7 @@ export type ProductListItemRow = {
   readonly isActive?: boolean;
   readonly sortOrder?: number | null;
   readonly tags: string[];
+  readonly guaranteePeriodInMonths?: number | null;
   readonly reviewStats?: {
     readonly userCount: number;
     readonly reviewCount: number;
@@ -94,6 +95,7 @@ export type ProductDetailItemRow = {
   readonly isReviewsSectionVisible?: boolean;
   readonly sortOrder?: number | null;
   readonly tags: string[];
+  readonly guaranteePeriodInMonths?: number | null;
   readonly notes?: string | null;
   readonly vendor?: ProductVendorRow | null;
   readonly materialProfile?: ProductMaterialProfileRow | null;
@@ -172,6 +174,7 @@ export type ProductListRecord = {
   readonly isActive: boolean;
   readonly sortOrder: number;
   readonly tags: string[];
+  readonly guaranteePeriodInMonths: number;
   readonly reviewStats: {
     readonly userCount: number;
     readonly reviewCount: number;
@@ -195,6 +198,7 @@ export type ProductEditRecord = {
   readonly isReviewsSectionVisible: boolean;
   readonly sortOrder: number | null;
   readonly tags: string[];
+  readonly guaranteePeriodInMonths: number;
   readonly notes: string;
   readonly vendor: ProductVendorRow | null;
   readonly materialProfile: ProductMaterialProfileRow | null;
@@ -304,6 +308,10 @@ export function mapProductListRowToRecord(row: ProductListItemRow): ProductListR
     isActive: row.isActive ?? true,
     sortOrder: typeof row.sortOrder === "number" ? row.sortOrder : 0,
     tags: row.tags || [],
+    guaranteePeriodInMonths:
+      typeof row.guaranteePeriodInMonths === "number" && row.guaranteePeriodInMonths > 0
+        ? row.guaranteePeriodInMonths
+        : 0,
     reviewStats:
       row.reviewStats &&
       typeof row.reviewStats.userCount === "number" &&
@@ -337,6 +345,10 @@ export function mapProductDetailRowToRecord(row: ProductDetailItemRow): ProductE
     isReviewsSectionVisible: row.isReviewsSectionVisible !== false,
     sortOrder: typeof row.sortOrder === "number" ? row.sortOrder : null,
     tags: row.tags || [],
+    guaranteePeriodInMonths:
+      typeof row.guaranteePeriodInMonths === "number" && row.guaranteePeriodInMonths >= 0
+        ? row.guaranteePeriodInMonths
+        : 0,
     notes: row.notes?.trim() || "",
     vendor: row.vendor ?? null,
     materialProfile: row.materialProfile ?? null,

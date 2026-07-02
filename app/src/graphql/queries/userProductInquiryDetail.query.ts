@@ -76,6 +76,14 @@ export const USER_PRODUCT_INQUIRY_DETAIL_QUERY = gql`
         requestedAt
         customerNote
       }
+      relatedActiveInquiries {
+        id
+        status
+        firstName
+        lastName
+        phone
+        requestedAt
+      }
       createdAt
       updatedAt
       createdBy

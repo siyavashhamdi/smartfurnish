@@ -31,6 +31,7 @@ import {
   NotificationMode,
   NotificationSource,
   UserProductInquiryStatus,
+  USER_PRODUCT_INQUIRY_TERMINAL_STATUSES,
   UserRole,
 } from "../../enums";
 import { SortingOrder } from "../../common/pagination/input/sorting-order.enum";
@@ -69,6 +70,7 @@ import {
   UserProductInquiryPreviewSubmitGqlInput,
   UserProductInquiryContactSubmitGqlInput,
   UserProductInquiryClaimGqlInput,
+  UserProductInquiryHasActiveRequestGqlInput,
 } from "./graphql/inputs";
 import {
   UserProductInquiryPreviewSubmitGqlResponse,
@@ -97,6 +99,22 @@ type UserProductInquiryListSortField =
   | "productTitle"
   | "previewGeneratedAt"
   | "contactRequestedAt";
+
+export type ActiveUserProductInquirySummary = {
+  readonly id: Types.ObjectId;
+  readonly status: UserProductInquiryStatus;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly phone: string;
+  readonly requestedAt: Date;
+};
+
+export type FindActiveUserProductInquiriesParams = {
+  readonly phone?: string;
+  readonly productId?: Types.ObjectId;
+  readonly userId?: Types.ObjectId;
+  readonly excludeInquiryId?: Types.ObjectId;
+};
 
 const INQUIRY_BADGE_STATUSES = [
   UserProductInquiryStatus.CALL_REQUESTED,
@@ -369,6 +387,103 @@ export class UserProductInquiryService {
     await this.notifyInquiryContactSubmitted(createdInquiry);
 
     return this.toContactSubmitResponse(createdInquiry);
+  }
+
+  async findActiveInquiries(
+    params: FindActiveUserProductInquiriesParams,
+  ): Promise<ActiveUserProductInquirySummary[]> {
+    const normalizedPhone = params.phone?.trim()
+      ? normalizeAuthIdentityMobileForSubmit(params.phone.trim())
+      : null;
+
+    if (!normalizedPhone && !params.userId) {
+      return [];
+    }
+
+    const filter: FilterQuery<UserProductInquiry> = {
+      $and: [
+        {
+          $or: [
+            { "audit.deletedAt": null },
+            { "audit.deletedAt": { $exists: false } },
+          ],
+        },
+      ],
+      isArchived: false,
+      status: { $nin: [...USER_PRODUCT_INQUIRY_TERMINAL_STATUSES] },
+      contact: { $exists: true, $ne: null },
+    };
+
+    if (normalizedPhone) {
+      filter["contact.phone"] = normalizedPhone;
+    }
+
+    if (params.productId) {
+      filter.productId = params.productId;
+    }
+
+    if (params.userId) {
+      filter.userId = params.userId;
+    }
+
+    if (params.excludeInquiryId) {
+      filter._id = { $ne: params.excludeInquiryId };
+    }
+
+    const inquiries = await this.userProductInquiryModel
+      .find(filter)
+      .select({
+        _id: 1,
+        status: 1,
+        "contact.firstName": 1,
+        "contact.lastName": 1,
+        "contact.phone": 1,
+        "contact.requestedAt": 1,
+      })
+      .sort({ "contact.requestedAt": -1 })
+      .lean<
+        Array<{
+          _id: Types.ObjectId;
+          status: UserProductInquiryStatus;
+          contact: {
+            firstName: string;
+            lastName: string;
+            phone: string;
+            requestedAt: Date;
+          };
+        }>
+      >()
+      .exec();
+
+    return inquiries.map((inquiry) => ({
+      id: inquiry._id,
+      status: inquiry.status,
+      firstName: inquiry.contact.firstName,
+      lastName: inquiry.contact.lastName,
+      phone: inquiry.contact.phone,
+      requestedAt: inquiry.contact.requestedAt,
+    }));
+  }
+
+  async hasActiveInquiryRequest(
+    input: UserProductInquiryHasActiveRequestGqlInput,
+  ): Promise<boolean> {
+    const phoneRaw = input.phone.trim();
+    if (!isValidMobilePhone(phoneRaw)) {
+      return false;
+    }
+
+    const normalizedPhone = normalizeAuthIdentityMobileForSubmit(phoneRaw);
+    if (!normalizedPhone) {
+      return false;
+    }
+
+    const activeInquiries = await this.findActiveInquiries({
+      phone: normalizedPhone,
+      productId: input.productId,
+    });
+
+    return activeInquiries.length > 0;
   }
 
   async claimInquiryForRegisteredUser(
@@ -1100,6 +1215,13 @@ export class UserProductInquiryService {
         Boolean(accessUrl),
       );
 
+    const relatedActiveInquiries = inquiry.contact?.phone
+      ? await this.findActiveInquiries({
+          phone: inquiry.contact.phone,
+          excludeInquiryId: inquiry._id,
+        })
+      : [];
+
     return {
       id: inquiry._id,
       isArchived: inquiry.isArchived,
@@ -1153,6 +1275,14 @@ export class UserProductInquiryService {
               : {}),
           }
         : undefined,
+      relatedActiveInquiries: relatedActiveInquiries.map((relatedInquiry) => ({
+        id: relatedInquiry.id,
+        status: relatedInquiry.status,
+        firstName: relatedInquiry.firstName,
+        lastName: relatedInquiry.lastName,
+        phone: relatedInquiry.phone,
+        requestedAt: relatedInquiry.requestedAt,
+      })),
       createdAt: inquiry.audit?.createdAt,
       updatedAt: inquiry.audit?.updatedAt,
       ...(inquiry.audit?.createdBy

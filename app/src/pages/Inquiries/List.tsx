@@ -356,6 +356,13 @@ const InquiriesList = (): ReactElement => {
     [navigate],
   );
 
+  const openRelatedInquiry = useCallback(
+    (inquiryId: string): void => {
+      navigate(inquiryViewPath(inquiryId));
+    },
+    [navigate],
+  );
+
   const closeViewModal = useCallback((): void => {
     navigate(APP_SHELL_ROUTES.inquiries);
   }, [navigate]);
@@ -722,6 +729,7 @@ const InquiriesList = (): ReactElement => {
         record={viewInquiryRecord}
         onClose={closeViewModal}
         onStatusEditSuccess={handleViewStatusEditSuccess}
+        onOpenRelatedInquiry={openRelatedInquiry}
       />
 
       <InquiryHistoryModal

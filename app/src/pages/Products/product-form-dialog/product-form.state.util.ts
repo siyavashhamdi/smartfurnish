@@ -312,6 +312,7 @@ export function buildProductWriteMutationInput(input: {
   readonly isActive: boolean;
   readonly isReviewSubmissionEnabled: boolean;
   readonly isReviewsSectionVisible: boolean;
+  readonly guaranteePeriodInMonths: string;
   readonly tags: string[];
   readonly coverImages: DraftCoverImage[];
   readonly vendor: DraftVendor;
@@ -338,6 +339,7 @@ export function buildProductWriteMutationInput(input: {
     isActive: input.isActive === true,
     isReviewSubmissionEnabled: input.isReviewSubmissionEnabled === true,
     isReviewsSectionVisible: input.isReviewsSectionVisible === true,
+    guaranteePeriodInMonths: parseOptionalNumber(input.guaranteePeriodInMonths) ?? 0,
     tags: input.tags,
     vendor: mapVendorInput(input.vendor),
     materialProfile: mapMaterialProfileInput(input.materialProfile),

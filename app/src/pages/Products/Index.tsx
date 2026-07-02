@@ -43,6 +43,7 @@ import { useDebounce } from "../../hooks/useDebounce";
 import { usePageSeoOverride } from "../../hooks/usePageSeoOverride";
 import { useBadgeCountFirstPageReload } from "../../hooks/useBadgeCountFirstPageReload";
 import { useProductPaymentStatusNotificationRefetch } from "../../hooks/useProductPaymentStatusNotificationRefetch";
+import { useProductUpdatedRefetch } from "../../hooks/useProductUpdatedRefetch";
 import { useCursorScrollLoadMore } from "../../hooks/useCursorScrollLoadMore";
 import { useAuth } from "../../contexts/AuthContext";
 import { UserRole } from "../../lib/graphql/generated";
@@ -454,6 +455,11 @@ const ProductsIndex = (): ReactElement => {
 
   useProductPaymentStatusNotificationRefetch({
     enabled: Boolean(authUser),
+    refetch: onRefresh,
+  });
+
+  useProductUpdatedRefetch({
+    enabled: true,
     refetch: onRefresh,
   });
 

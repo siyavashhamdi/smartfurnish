@@ -3,11 +3,9 @@ import {
   Box,
   Chip,
   CircularProgress,
-  Collapse,
   Stack,
   Typography,
 } from "@mui/material";
-import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 
 import type { UserProductInquiryDetailRecord } from "./inquiry-detail.api";
 import type { UserProductInquiryStatus } from "./inquiries-list.api";
@@ -26,6 +24,9 @@ import InquiryStatusEditSection, {
 } from "./InquiryStatusEditSection";
 import InquiryPreviewImageCarousel from "./InquiryPreviewImageCarousel";
 import InquiryPreviewEntryPanel from "./InquiryPreviewEntryPanel";
+import InquiryRelatedActiveInquiriesSection from "./InquiryRelatedActiveInquiriesSection";
+import CollapsibleDetailSection from "./CollapsibleDetailSection";
+import { formatSectionTitleWithCount } from "./inquiry-section-title.util";
 import {
   findLatestContactedDetails,
   findLatestSaleCompletedDetails,
@@ -39,6 +40,7 @@ type InquiryViewModalProps = {
   readonly record: UserProductInquiryDetailRecord | null;
   readonly onClose: () => void;
   readonly onStatusEditSuccess?: () => void;
+  readonly onOpenRelatedInquiry?: (inquiryId: string) => void;
 };
 
 const EMPTY_DISPLAY = "—";
@@ -118,42 +120,6 @@ function DetailSection({
   );
 }
 
-function CollapsibleDetailSection({
-  title,
-  children,
-  defaultExpanded = false,
-}: {
-  readonly title: string;
-  readonly children: ReactNode;
-  readonly defaultExpanded?: boolean;
-}): ReactElement {
-  const [expanded, setExpanded] = useState(defaultExpanded);
-
-  return (
-    <section className={styles.sectionCollapsible}>
-      <button
-        type="button"
-        className={styles.sectionToggle}
-        aria-expanded={expanded}
-        onClick={() => setExpanded((current) => !current)}
-      >
-        <Typography variant="subtitle1" fontWeight={800} component="span">
-          {title}
-        </Typography>
-        <ExpandMoreRoundedIcon
-          className={[styles.sectionToggleIcon, expanded ? styles.sectionToggleIconExpanded : undefined]
-            .filter(Boolean)
-            .join(" ")}
-          fontSize="small"
-        />
-      </button>
-      <Collapse in={expanded}>
-        <div className={styles.sectionBody}>{children}</div>
-      </Collapse>
-    </section>
-  );
-}
-
 function DetailFieldValue({
   value,
   latin,
@@ -217,6 +183,7 @@ function InquiryViewModal({
   record,
   onClose,
   onStatusEditSuccess,
+  onOpenRelatedInquiry,
 }: InquiryViewModalProps): ReactElement | null {
   const { t } = useTranslation();
   const statusEditRef = useRef<InquiryStatusEditSectionHandle>(null);
@@ -230,6 +197,8 @@ function InquiryViewModal({
     () => (record ? findLatestSaleCompletedDetails(record.statusHistory) : null),
     [record],
   );
+  const previewCount = record?.preview?.length ?? 0;
+  const statusHistoryCount = record?.statusHistory.length ?? 0;
 
   if (!open) {
     return null;
@@ -323,7 +292,49 @@ function InquiryViewModal({
             />
           </DetailSection>
 
-          <DetailSection title={t("pages.inquiries.viewModal.sections.preview")}>
+          <DetailSection title={t("pages.inquiries.viewModal.sections.contact")}>
+            {record.contact ? (
+              <DetailFieldGrid
+                fields={[
+                  {
+                    label: t("table.pages.inquiries.columns.contactFullName"),
+                    value: displayText(
+                      formatContactFullName(record.contact.firstName, record.contact.lastName),
+                    ),
+                    fullWidth: true,
+                  },
+                  {
+                    label: t("table.pages.inquiries.columns.contactPhone"),
+                    value: <PhoneFieldValue phone={record.contact.phone} />,
+                  },
+                  {
+                    label: t("table.pages.inquiries.columns.contactRequestedAt"),
+                    value: <DateTimeValue value={record.contact.requestedAt} emphasizeDate />,
+                  },
+                  {
+                    label: t("pages.inquiries.viewModal.fields.customerNote"),
+                    value: (
+                      <Typography variant="body2" fontWeight={600} sx={{ whiteSpace: "pre-wrap", lineHeight: 1.7 }}>
+                        {displayText(record.contact.customerNote)}
+                      </Typography>
+                    ),
+                    fullWidth: true,
+                  },
+                ]}
+              />
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                {EMPTY_DISPLAY}
+              </Typography>
+            )}
+          </DetailSection>
+
+          <DetailSection
+            title={formatSectionTitleWithCount(
+              t("pages.inquiries.viewModal.sections.preview"),
+              previewCount,
+            )}
+          >
             {record.preview?.length ? (
               <Stack spacing={1.25}>
                 {record.preview.map((preview, index) => (
@@ -392,46 +403,26 @@ function InquiryViewModal({
             )}
           </DetailSection>
 
-          <DetailSection title={t("pages.inquiries.viewModal.sections.contact")}>
-            {record.contact ? (
-              <DetailFieldGrid
-                fields={[
-                  {
-                    label: t("table.pages.inquiries.columns.contactFullName"),
-                    value: displayText(
-                      formatContactFullName(record.contact.firstName, record.contact.lastName),
-                    ),
-                    fullWidth: true,
-                  },
-                  {
-                    label: t("table.pages.inquiries.columns.contactPhone"),
-                    value: <PhoneFieldValue phone={record.contact.phone} />,
-                  },
-                  {
-                    label: t("table.pages.inquiries.columns.contactRequestedAt"),
-                    value: <DateTimeValue value={record.contact.requestedAt} emphasizeDate />,
-                  },
-                  {
-                    label: t("pages.inquiries.viewModal.fields.customerNote"),
-                    value: (
-                      <Typography variant="body2" fontWeight={600} sx={{ whiteSpace: "pre-wrap", lineHeight: 1.7 }}>
-                        {displayText(record.contact.customerNote)}
-                      </Typography>
-                    ),
-                    fullWidth: true,
-                  },
-                ]}
+          {record.relatedActiveInquiries.length > 0 && onOpenRelatedInquiry ? (
+            <CollapsibleDetailSection
+              title={formatSectionTitleWithCount(
+                t("pages.inquiries.viewModal.relatedActiveInquiries.title"),
+                record.relatedActiveInquiries.length,
+              )}
+            >
+              <InquiryRelatedActiveInquiriesSection
+                inquiries={record.relatedActiveInquiries}
+                onOpenInquiry={onOpenRelatedInquiry}
               />
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                {EMPTY_DISPLAY}
-              </Typography>
-            )}
-          </DetailSection>
+            </CollapsibleDetailSection>
+          ) : null}
 
           <CollapsibleDetailSection
             key={record.id}
-            title={t("pages.inquiries.viewModal.sections.statusHistory")}
+            title={formatSectionTitleWithCount(
+              t("pages.inquiries.viewModal.sections.statusHistory"),
+              statusHistoryCount,
+            )}
           >
             <InquiryStatusHistoryTimeline
               entries={record.statusHistory}

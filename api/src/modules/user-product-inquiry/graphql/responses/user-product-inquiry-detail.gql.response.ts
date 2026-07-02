@@ -219,6 +219,31 @@ export class UserProductInquiryDetailContactGqlResponse {
 }
 
 @ObjectType()
+export class UserProductInquiryDetailRelatedActiveInquiryGqlResponse {
+  @Field(() => ID, { description: "Related active inquiry record ID" })
+  id: Types.ObjectId;
+
+  @Field(() => UserProductInquiryStatus, {
+    description: "Current status of the related active inquiry",
+  })
+  status: UserProductInquiryStatus;
+
+  @Field({ description: "Contact first name" })
+  firstName: string;
+
+  @Field({ description: "Contact last name" })
+  lastName: string;
+
+  @Field({ description: "Contact phone number" })
+  phone: string;
+
+  @Field(() => GraphQLISODateTime, {
+    description: "When the contact visit was requested",
+  })
+  requestedAt: Date;
+}
+
+@ObjectType()
 export class UserProductInquiryDetailGqlResponse {
   @Field(() => ID, { description: "User product inquiry record ID" })
   id: Types.ObjectId;
@@ -263,6 +288,12 @@ export class UserProductInquiryDetailGqlResponse {
     description: "Contact request details, if any",
   })
   contact?: UserProductInquiryDetailContactGqlResponse;
+
+  @Field(() => [UserProductInquiryDetailRelatedActiveInquiryGqlResponse], {
+    description:
+      "Other non-terminal inquiries that share the same contact phone number",
+  })
+  relatedActiveInquiries: UserProductInquiryDetailRelatedActiveInquiryGqlResponse[];
 
   @Field(() => GraphQLISODateTime, {
     nullable: true,

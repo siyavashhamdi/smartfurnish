@@ -202,6 +202,9 @@ export class Product extends BaseIdTimestampableBlameableSchema {
   @Prop({ default: [], trim: true, type: [String] })
   tags?: string[];
 
+  @Prop({ default: 0, min: 0, type: Number })
+  guaranteePeriodInMonths?: number;
+
   @Prop({ trim: true, type: String })
   notes?: string;
 

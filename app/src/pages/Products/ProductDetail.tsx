@@ -12,6 +12,7 @@ import { useCachedFileAccessUrl } from "../../hooks/useCachedFileAccessUrl";
 import PageBackNavigation from "../../shared/PageBackNavigation";
 import { USER_PRODUCT_DETAIL_QUERY } from "../../graphql/queries/userProductDetail.query";
 import { useProductPaymentStatusNotificationRefetch } from "../../hooks/useProductPaymentStatusNotificationRefetch";
+import { useProductUpdatedRefetch } from "../../hooks/useProductUpdatedRefetch";
 import { usePageSeoOverride } from "../../hooks/usePageSeoOverride";
 import { useTranslation } from "../../hooks/useTranslation";
 import { API_CONFIG } from "../../config";
@@ -161,6 +162,14 @@ const ProductDetail = (): ReactElement => {
 
   useProductPaymentStatusNotificationRefetch({
     enabled: isRegisteredUser && Boolean(productId),
+    productId,
+    refetch: () => {
+      void refetchProductDetail();
+    },
+  });
+
+  useProductUpdatedRefetch({
+    enabled: Boolean(productId),
     productId,
     refetch: () => {
       void refetchProductDetail();

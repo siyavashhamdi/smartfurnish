@@ -51,6 +51,21 @@
   text-align: start;
 }
 
+.sectionCollapsibleHighlighted {
+  border-color: color-mix(in srgb, var(--app-primary-main) 24%, var(--app-surface-border));
+  background: color-mix(in srgb, var(--app-primary-main) 4%, var(--app-surface-elevated));
+}
+
+.sectionToggleTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-inline-size: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
 .sectionToggleIcon {
   flex-shrink: 0;
   color: var(--app-text-secondary);

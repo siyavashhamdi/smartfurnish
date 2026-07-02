@@ -6,3 +6,4 @@ export * from "./user-product-inquiry-status-update.gql.input";
 export * from "./user-product-inquiry-update.gql.input";
 export * from "./user-product-inquiry-list.gql.input";
 export * from "./user-product-inquiry-list-sort-option.gql.input";
+export * from "./user-product-inquiry-has-active-request.gql.input";

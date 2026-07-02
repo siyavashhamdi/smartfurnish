@@ -1,0 +1,98 @@
+@use "../../../styles/variables" as variables;
+
+.alert {
+  margin: 0;
+}
+
+.list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.listItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--app-surface-border);
+  border-radius: variables.$border-radius-md;
+  background: var(--app-surface-elevated);
+  padding-block: 0.8rem;
+  padding-inline: 0.9rem;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    transform 0.18s ease;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--app-primary-main) 35%, var(--app-surface-border));
+    background: color-mix(in srgb, var(--app-primary-main) 6%, var(--app-surface-elevated));
+    transform: translateY(-0.0625rem);
+  }
+}
+
+.listItemBody {
+  display: grid;
+  gap: 0.55rem;
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.listItemHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  inline-size: 100%;
+}
+
+.listItemHeaderStart {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.requestedAt {
+  color: var(--app-text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  text-align: end;
+}
+
+.identityRow {
+  inline-size: 100%;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.phoneWrap {
+  font-weight: 600;
+}
+
+.phoneValue,
+.phoneLink {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+
+.phoneLink {
+  color: var(--app-primary-main);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.statusChip {
+  flex-shrink: 0;
+}
+
+.chevron {
+  flex-shrink: 0;
+  align-self: center;
+  color: var(--app-text-secondary);
+}

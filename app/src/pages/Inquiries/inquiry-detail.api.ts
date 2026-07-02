@@ -70,6 +70,15 @@ export type UserProductInquiryDetailContact = {
   readonly customerNote?: string | null;
 };
 
+export type UserProductInquiryDetailRelatedActiveInquiry = {
+  readonly id: string;
+  readonly status: UserProductInquiryStatus;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly phone: string;
+  readonly requestedAt: string;
+};
+
 export type UserProductInquiryDetailRow = {
   readonly id: string;
   readonly isArchived: boolean;
@@ -81,6 +90,7 @@ export type UserProductInquiryDetailRow = {
   readonly statusHistory: readonly UserProductInquiryDetailStatusHistoryEntry[];
   readonly preview?: readonly UserProductInquiryDetailPreview[] | null;
   readonly contact?: UserProductInquiryDetailContact | null;
+  readonly relatedActiveInquiries: readonly UserProductInquiryDetailRelatedActiveInquiry[];
   readonly createdAt?: string | null;
   readonly updatedAt?: string | null;
   readonly createdBy?: string | null;

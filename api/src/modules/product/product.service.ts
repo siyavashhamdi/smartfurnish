@@ -345,6 +345,10 @@ export class ProductService {
 
     await this.deleteDetachedFiles(input.id, oldFileIds, newFileIds);
 
+    if (updatedProduct.isActive) {
+      await this.publishProductUpdatedSignal(updatedProduct._id);
+    }
+
     return response;
   }
 
@@ -1066,6 +1070,7 @@ export class ProductService {
           summary: 1,
           coverImageFileIds: 1,
           tags: 1,
+          guaranteePeriodInMonths: 1,
           setPieces: 1,
           fabrics: 1,
         })
@@ -1316,6 +1321,18 @@ export class ProductService {
     });
   }
 
+  private async publishProductUpdatedSignal(
+    productId: Types.ObjectId,
+  ): Promise<void> {
+    await this.userSubscriptionService.publishToActiveUsers({
+      updateType: GeneralSubscriptionUpdateType.PRODUCT_UPDATED,
+      targetId: productId.toString(),
+      payload: {
+        productId: productId.toString(),
+      },
+    });
+  }
+
   private async publishPaymentBadgeCountSignal(params: {
     userProductId: Types.ObjectId;
     productId: Types.ObjectId;
@@ -1492,6 +1509,11 @@ export class ProductService {
           : true,
       sortOrder: input.sortOrder,
       tags: this.normalizeTags(input.tags),
+      guaranteePeriodInMonths:
+        typeof input.guaranteePeriodInMonths === "number" &&
+        input.guaranteePeriodInMonths >= 0
+          ? input.guaranteePeriodInMonths
+          : 0,
       notes: this.normalizeNullableText(input.notes),
       vendor: this.normalizeVendorInput(input.vendor),
       materialProfile: this.normalizeMaterialProfileInput(
@@ -2238,6 +2260,7 @@ export class ProductService {
       isActive: productObj.isActive,
       sortOrder: productObj.sortOrder,
       tags: productObj.tags || [],
+      guaranteePeriodInMonths: productObj.guaranteePeriodInMonths ?? 0,
       reviewStats: reviewStatsByProductId?.get(product._id.toString()),
     };
   }
@@ -2381,6 +2404,7 @@ export class ProductService {
       isReviewsSectionVisible: productObj.isReviewsSectionVisible !== false,
       sortOrder: productObj.sortOrder,
       tags: productObj.tags || [],
+      guaranteePeriodInMonths: productObj.guaranteePeriodInMonths ?? 0,
       notes: productObj.notes,
       vendor: this.toVendorResponse(productObj.vendor),
       materialProfile: this.toMaterialProfileResponse(
@@ -2518,6 +2542,7 @@ export class ProductService {
       priceIrt: listPricing.priceIrt,
       discount: listPricing.discount,
       tags: productObj.tags || [],
+      guaranteePeriodInMonths: productObj.guaranteePeriodInMonths ?? 0,
       isPurchased:
         userProduct?.purchase?.status === UserProductPurchaseStatus.PAID,
     };

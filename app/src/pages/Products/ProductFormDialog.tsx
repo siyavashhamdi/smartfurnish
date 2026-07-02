@@ -123,6 +123,7 @@ type ProductFormSnapshot = {
   readonly isActive: boolean;
   readonly isReviewSubmissionEnabled: boolean;
   readonly isReviewsSectionVisible: boolean;
+  readonly guaranteePeriodInMonths: string;
   readonly coverImageCount: number;
   readonly setPieceCount: number;
   readonly fabricCount: number;
@@ -137,6 +138,7 @@ function buildProductFormSnapshot(input: {
   isActive: boolean;
   isReviewSubmissionEnabled: boolean;
   isReviewsSectionVisible: boolean;
+  guaranteePeriodInMonths: string;
   coverImages: DraftCoverImage[];
   setPieces: DraftSetPiece[];
   fabrics: DraftFabric[];
@@ -150,6 +152,7 @@ function buildProductFormSnapshot(input: {
     isActive: input.isActive,
     isReviewSubmissionEnabled: input.isReviewSubmissionEnabled,
     isReviewsSectionVisible: input.isReviewsSectionVisible,
+    guaranteePeriodInMonths: input.guaranteePeriodInMonths,
     coverImageCount: input.coverImages.length,
     setPieceCount: input.setPieces.length,
     fabricCount: input.fabrics.length,
@@ -219,6 +222,7 @@ const ProductFormDialog = ({
   const [isActive, setIsActive] = useState(false);
   const [isReviewSubmissionEnabled, setIsReviewSubmissionEnabled] = useState(true);
   const [isReviewsSectionVisible, setIsReviewsSectionVisible] = useState(true);
+  const [guaranteePeriodInMonths, setGuaranteePeriodInMonths] = useState("");
   const [vendor, setVendor] = useState<DraftVendor>({ name: "", phone: "", address: "", notes: "" });
   const [materialProfile, setMaterialProfile] = useState<DraftMaterialProfile>({
     texture: "",
@@ -242,6 +246,7 @@ const ProductFormDialog = ({
         isActive,
         isReviewSubmissionEnabled,
         isReviewsSectionVisible,
+        guaranteePeriodInMonths,
         coverImages,
         setPieces,
         fabrics,
@@ -253,6 +258,7 @@ const ProductFormDialog = ({
       isActive,
       isReviewSubmissionEnabled,
       isReviewsSectionVisible,
+      guaranteePeriodInMonths,
       notes,
       setPieces,
       summary,
@@ -273,6 +279,11 @@ const ProductFormDialog = ({
     setIsActive(nextProduct?.isActive ?? false);
     setIsReviewSubmissionEnabled(nextProduct?.isReviewSubmissionEnabled ?? true);
     setIsReviewsSectionVisible(nextProduct?.isReviewsSectionVisible ?? true);
+    setGuaranteePeriodInMonths(
+      nextProduct?.guaranteePeriodInMonths
+        ? formatIntegerWithThousands(String(nextProduct.guaranteePeriodInMonths))
+        : ""
+    );
     setVendor(drafts.vendor);
     setMaterialProfile(drafts.materialProfile);
     setSetPieces(drafts.setPieces);
@@ -287,6 +298,9 @@ const ProductFormDialog = ({
         isActive: nextProduct?.isActive ?? false,
         isReviewSubmissionEnabled: nextProduct?.isReviewSubmissionEnabled ?? true,
         isReviewsSectionVisible: nextProduct?.isReviewsSectionVisible ?? true,
+        guaranteePeriodInMonths: nextProduct?.guaranteePeriodInMonths
+          ? formatIntegerWithThousands(String(nextProduct.guaranteePeriodInMonths))
+          : "",
         coverImages: drafts.coverImages,
         setPieces: drafts.setPieces,
         fabrics: drafts.fabrics,
@@ -366,7 +380,8 @@ const ProductFormDialog = ({
     (hasFormChanges(initialSnapshot, currentSnapshot) ||
       hasPendingLocalFileSelections(coverImages, setPieces, fabrics));
   const canSubmit =
-    isEditFormReady && !isSubmitting && (isEditMode ? hasEditFormChanges : hasCreateInput);
+    isEditFormReady && !isSubmitting && (isEditMode || hasCreateInput);
+  const hasUnsavedChanges = isEditMode ? hasEditFormChanges : hasCreateInput;
   const uploadingFieldIds = useMemo(
     () => new Set(Object.keys(uploadProgressByFieldId)),
     [uploadProgressByFieldId]
@@ -590,6 +605,7 @@ const ProductFormDialog = ({
       isActive,
       isReviewSubmissionEnabled,
       isReviewsSectionVisible,
+      guaranteePeriodInMonths,
       tags,
       coverImages,
       vendor,
@@ -610,11 +626,13 @@ const ProductFormDialog = ({
         open={open}
         onClose={closeDialog}
         disableClose={isSubmitting}
-        hasUnsavedChanges={canSubmit}
+        hasUnsavedChanges={hasUnsavedChanges}
         title={isEditMode ? "ویرایش محصول" : "محصول جدید"}
         subtitle={
           isEditMode
-            ? t("pages.products.form.edit.subtitle")
+            ? title.trim() ||
+              detailProduct?.title.trim() ||
+              t("pages.products.form.edit.subtitle")
             : t("pages.products.form.create.subtitle")
         }
         maxWidth="lg"
@@ -713,6 +731,8 @@ const ProductFormDialog = ({
                         onIsReviewSubmissionEnabledChange={setIsReviewSubmissionEnabled}
                         isReviewsSectionVisible={isReviewsSectionVisible}
                         onIsReviewsSectionVisibleChange={setIsReviewsSectionVisible}
+                        guaranteePeriodInMonths={guaranteePeriodInMonths}
+                        onGuaranteePeriodInMonthsChange={setGuaranteePeriodInMonths}
                         formatIntegerWithThousands={formatIntegerWithThousands}
                         getCoverUploadFieldId={getCoverUploadFieldId}
                         uploadingFieldIds={uploadingFieldIds}

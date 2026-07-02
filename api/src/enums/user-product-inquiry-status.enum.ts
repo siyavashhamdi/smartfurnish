@@ -7,3 +7,9 @@ export enum UserProductInquiryStatus {
   CLOSED = "CLOSED",
   CANCELLED = "CANCELLED",
 }
+
+export const USER_PRODUCT_INQUIRY_TERMINAL_STATUSES = [
+  UserProductInquiryStatus.SALE_COMPLETED,
+  UserProductInquiryStatus.CLOSED,
+  UserProductInquiryStatus.CANCELLED,
+] as const;
