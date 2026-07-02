@@ -1,5 +1,6 @@
 export enum BadgeCountTriggerSource {
   PRODUCT = "PRODUCT",
+  PRODUCT_REVIEW = "PRODUCT_REVIEW",
   NOTIFICATION = "NOTIFICATION",
   PAYMENT = "PAYMENT",
   TICKET = "TICKET",

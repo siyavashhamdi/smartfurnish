@@ -112,6 +112,10 @@ export const PRODUCT_ADMIN_LIST_SUMMARY_FIELDS = `
   ${PRODUCT_LIST_SUMMARY_FIELDS}
   isActive
   sortOrder
+  reviewStats {
+    userCount
+    reviewCount
+  }
 `;
 
 export const PRODUCT_ADMIN_DETAIL_FIELDS = `

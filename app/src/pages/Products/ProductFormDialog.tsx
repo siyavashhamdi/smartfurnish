@@ -25,8 +25,10 @@ import CatalogSection from "./product-form-dialog/CatalogSection";
 import MainInfoSection from "./product-form-dialog/MainInfoSection";
 import ProductFormSectionTabs from "./ProductFormSectionTabs";
 import ProductReviewsAdminSection from "./ProductReviewsAdminSection";
+import { canUseAdminProductReviewList } from "./product-reviews.api";
 import type { ProductSectionTab } from "./product-section-tabs.shared";
 import formSectionStyles from "./product-form-dialog/styles/ProductFormSections.module.scss";
+import { useProductReviewList } from "./useProductReviewList";
 import type {
   ProductDetailQuery,
   ProductDetailQueryVariables,
@@ -167,6 +169,7 @@ const ProductFormDialog = ({
   const isEditMode = Boolean(productId);
   const isSuperAdmin = user?.roles?.includes(UserRole.SUPER_ADMIN) === true;
   const useEditSectionTabs = isEditMode && isSuperAdmin;
+  const canUseAdminReviews = canUseAdminProductReviewList(user?.roles);
   const [activeFormSectionTab, setActiveFormSectionTab] = useState<ProductSectionTab>("intro");
   const [reviewsRefreshToken, setReviewsRefreshToken] = useState(0);
   const isIntroFormTabActive = !useEditSectionTabs || activeFormSectionTab === "intro";
@@ -190,6 +193,22 @@ const ProductFormDialog = ({
     }
     return mapProductDetailRowToRecord(data.productDetail);
   }, [productId, data]);
+
+  const adminReviewListForBadge = useProductReviewList({
+    productId: productId ?? "",
+    mode: "admin",
+    enabled: open && useEditSectionTabs && Boolean(productId) && canUseAdminReviews,
+    starsFilter: null,
+    scrollRoot: "parent",
+  });
+
+  useEffect(() => {
+    if (!productId || reviewsRefreshToken === 0) {
+      return;
+    }
+
+    void adminReviewListForBadge.refetch();
+  }, [productId, reviewsRefreshToken, adminReviewListForBadge.refetch]);
 
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
@@ -653,6 +672,7 @@ const ProductFormDialog = ({
                 <ProductFormSectionTabs
                   activeTab={activeFormSectionTab}
                   onChange={handleFormSectionTabChange}
+                  pendingModerationCount={adminReviewListForBadge.pendingModerationCount}
                 />
               ) : null}
 

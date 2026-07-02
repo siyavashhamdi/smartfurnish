@@ -34,4 +34,11 @@ export class BadgeCountGqlResponse {
       "Actionable inquiry badge count for staff users in CALL_REQUESTED, CONTACTED, or PENDING status.",
   })
   inquiries?: number | null;
+
+  @Field(() => Int, {
+    nullable: true,
+    description:
+      "Count of unique review owners with at least one PENDING_APPROVAL moderation in review thread, rating, or messages. Staff only.",
+  })
+  pendingReviewUsers?: number | null;
 }

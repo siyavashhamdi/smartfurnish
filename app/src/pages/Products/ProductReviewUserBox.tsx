@@ -88,7 +88,6 @@ const ProductReviewUserBox = ({
     handleCaptchaChange,
     isSubmitting,
     pendingIsStarUpdate,
-    pendingSubmitStars,
     submitComment,
     submitStars,
     successMessageRef,
@@ -307,7 +306,6 @@ const ProductReviewUserBox = ({
           captchaVersion={captchaVersion}
           submitting={isSubmitting}
           canConfirm={captchaValid}
-          selectedStars={pendingSubmitStars}
           onClose={handleCaptchaDialogClose}
           onConfirm={confirmCaptchaDialog}
           onCaptchaChange={handleCaptchaChange}

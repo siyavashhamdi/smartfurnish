@@ -9,6 +9,27 @@
   @include mixins.mobile-page-stack-tight;
 }
 
+.sectionTabLabelWithBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sectionTabBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 1.1rem;
+  block-size: 1.1rem;
+  padding-inline: 0.28rem;
+  border-radius: 999rem;
+  background: color-mix(in srgb, variables.$color-error-main 88%, #fff);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .pageWithSectionTabs {
   --product-detail-sticky-tabs-height: 0rem;
 }

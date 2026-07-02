@@ -2312,6 +2312,7 @@ export type ProductReviewUserSnapshotGqlResponse = {
 /** Visibility state for product review content */
 export const ProductReviewVisibility = {
   HIDDEN: "HIDDEN",
+  PENDING_APPROVAL: "PENDING_APPROVAL",
   PRIVATE: "PRIVATE",
   PUBLIC: "PUBLIC",
 } as const;

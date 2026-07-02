@@ -24,3 +24,28 @@
 .app-shell-nav__profile-status-dot--offline {
   background: variables.$color-grey-400;
 }
+
+.app-shell-nav__multi-badge-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.app-shell-nav__pending-approval-badge {
+  position: absolute;
+  inset-inline-start: -0.9rem;
+  inset-block-start: -0.35rem;
+  min-inline-size: 1.15rem;
+  block-size: 1.15rem;
+  padding-inline: 0.2rem;
+  border-radius: 999rem;
+  background: variables.$color-error-main;
+  color: #fff;
+  border: 0.1rem solid var(--app-surface-bg, #fff);
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}

@@ -1,4 +1,4 @@
-import { type ReactElement } from "react";
+import { type ReactElement, type ReactNode } from "react";
 
 import SegmentFilterTabs from "../../shared/tabs/SegmentFilterTabs";
 import type { ProductDetailSectionTab } from "./product-section-tabs.shared";
@@ -10,7 +10,7 @@ type ProductDetailSectionTabsProps = {
   readonly onChange: (tab: ProductDetailSectionTab) => void;
   readonly tabs: ReadonlyArray<{
     readonly value: ProductDetailSectionTab;
-    readonly label: string;
+    readonly label: ReactNode;
   }>;
 };
 

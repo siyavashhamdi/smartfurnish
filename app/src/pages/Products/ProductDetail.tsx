@@ -238,9 +238,25 @@ const ProductDetail = (): ReactElement => {
   const sectionTabItems = useMemo(
     () =>
       PRODUCT_DETAIL_SECTION_TABS.filter((tab) => visibleSectionTabs.includes(tab.value)).map(
-        ({ value, label }) => ({ value, label })
+        ({ value, label }) => {
+          if (value !== "reviews" || !isStaffViewer || reviewList.pendingModerationCount <= 0) {
+            return { value, label };
+          }
+
+          return {
+            value,
+            label: (
+              <span className={styles.sectionTabLabelWithBadge}>
+                <span>{label}</span>
+                <span className={styles.sectionTabBadge}>
+                  {reviewList.pendingModerationCount.toLocaleString("fa-IR")}
+                </span>
+              </span>
+            ),
+          };
+        },
       ),
-    [visibleSectionTabs]
+    [isStaffViewer, reviewList.pendingModerationCount, visibleSectionTabs]
   );
 
   const [activeSectionTab, setActiveSectionTab] = useState<ProductDetailSectionTab>("intro");

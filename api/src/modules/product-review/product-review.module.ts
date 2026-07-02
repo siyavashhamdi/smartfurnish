@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { BadgeModule } from "../badge";
 import { DatabaseModule } from "../database";
 import { FileModule } from "../file";
 import { UserModule } from "../user";
@@ -14,7 +15,7 @@ import {
 } from "./graphql/queries";
 
 @Module({
-  imports: [DatabaseModule, FileModule, UserModule],
+  imports: [BadgeModule, DatabaseModule, FileModule, UserModule],
   providers: [
     ProductReviewService,
     ProductReviewSubmitMutation,

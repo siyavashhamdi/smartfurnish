@@ -83,6 +83,10 @@ export const PRODUCT_REVIEW_LIST_QUERY = gql`
           percentage
         }
       }
+      pendingModerationStats {
+        userCount
+        reviewCount
+      }
     }
   }
 `;

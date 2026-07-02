@@ -28,6 +28,7 @@ import {
   UserProductPurchaseCurrency,
   UserProductPurchaseStatus,
   PurchaseStatusChangedBy,
+  ProductReviewVisibility,
   UserStatus,
 } from "../../enums";
 import { SortingOrder } from "../../common/pagination/input";
@@ -158,6 +159,10 @@ type ProductPaymentFileLookupRecord = Pick<
 type ProductPaymentRelatedLookups = {
   usersById: Map<string, ProductPaymentUserLookupRecord>;
   filesById: Map<string, ProductPaymentFileLookupRecord>;
+};
+type ProductReviewStats = {
+  userCount: number;
+  reviewCount: number;
 };
 type ProductPurchasePricingInput = {
   productId: Types.ObjectId;
@@ -985,13 +990,20 @@ export class ProductService {
     const hasNextPage = productsWithExtra.length > limit;
     const products = productsWithExtra.slice(0, limit);
 
-    const fileAccessUrlMap = await this.buildFileAccessUrlLookup(products);
+    const [fileAccessUrlMap, reviewStatsByProductId] = await Promise.all([
+      this.buildFileAccessUrlLookup(products),
+      this.buildProductReviewStatsMap(products),
+    ]);
     const firstProduct = products[0];
     const lastProduct = products[products.length - 1];
 
     return {
       items: products.map((product) =>
-        this.toListSummaryResponse(product, fileAccessUrlMap),
+        this.toListSummaryResponse(
+          product,
+          fileAccessUrlMap,
+          reviewStatsByProductId,
+        ),
       ),
       pagination: {
         limit,
@@ -2206,6 +2218,7 @@ export class ProductService {
   private toListSummaryResponse(
     product: ProductDocument,
     fileAccessUrlMap?: Map<string, FileAccessUrlDescriptor>,
+    reviewStatsByProductId?: Map<string, ProductReviewStats>,
   ): ProductListSummaryGqlResponse {
     const productObj = (product.toObject?.() || product) as PlainProduct;
     const listPricing = resolveProductListPricing(productObj, {
@@ -2225,7 +2238,122 @@ export class ProductService {
       isActive: productObj.isActive,
       sortOrder: productObj.sortOrder,
       tags: productObj.tags || [],
+      reviewStats: reviewStatsByProductId?.get(product._id.toString()),
     };
+  }
+
+  private async buildProductReviewStatsMap(
+    products: ProductDocument[],
+  ): Promise<Map<string, ProductReviewStats>> {
+    const productIds = products.map((product) => product._id);
+    if (productIds.length === 0) {
+      return new Map();
+    }
+
+    const rows = await this.productReviewModel
+      .aggregate<{
+        _id: Types.ObjectId;
+        reviewCount: number;
+        userIds: Types.ObjectId[];
+      }>([
+        {
+          $match: {
+            productId: { $in: productIds },
+            $and: [
+              {
+                $or: [
+                  { "audit.deletedAt": null },
+                  { "audit.deletedAt": { $exists: false } },
+                ],
+              },
+              {
+                $or: [
+                  {
+                    "moderation.visibility":
+                      ProductReviewVisibility.PENDING_APPROVAL,
+                  },
+                  {
+                    "rating.moderation.visibility":
+                      ProductReviewVisibility.PENDING_APPROVAL,
+                  },
+                  {
+                    messages: {
+                      $elemMatch: {
+                        "moderation.visibility":
+                          ProductReviewVisibility.PENDING_APPROVAL,
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        {
+          $addFields: {
+            pendingModerationCount: {
+              $add: [
+                {
+                  $cond: [
+                    {
+                      $eq: [
+                        "$moderation.visibility",
+                        ProductReviewVisibility.PENDING_APPROVAL,
+                      ],
+                    },
+                    1,
+                    0,
+                  ],
+                },
+                {
+                  $cond: [
+                    {
+                      $eq: [
+                        "$rating.moderation.visibility",
+                        ProductReviewVisibility.PENDING_APPROVAL,
+                      ],
+                    },
+                    1,
+                    0,
+                  ],
+                },
+                {
+                  $size: {
+                    $filter: {
+                      input: { $ifNull: ["$messages", []] },
+                      as: "message",
+                      cond: {
+                        $eq: [
+                          "$$message.moderation.visibility",
+                          ProductReviewVisibility.PENDING_APPROVAL,
+                        ],
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+        {
+          $group: {
+            _id: "$productId",
+            reviewCount: { $sum: "$pendingModerationCount" },
+            userIds: { $addToSet: "$userId" },
+          },
+        },
+      ])
+      .exec();
+
+    return new Map(
+      rows.map((row) => [
+        row._id.toString(),
+        {
+          reviewCount: row.reviewCount ?? 0,
+          userCount: row.userIds?.length ?? 0,
+        },
+      ]),
+    );
   }
 
   private toListResponse(

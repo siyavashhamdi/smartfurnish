@@ -8,6 +8,7 @@ export const BADGE_COUNT_QUERY = gql`
       notifications
       tickets
       inquiries
+      pendingReviewUsers
     }
   }
 `;

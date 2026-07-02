@@ -136,6 +136,7 @@ type BadgeCountQuery = {
     readonly notifications?: number | null;
     readonly tickets?: number | null;
     readonly inquiries?: number | null;
+    readonly pendingReviewUsers?: number | null;
   };
 };
 
@@ -268,6 +269,7 @@ export function MainLayout({
   const roles = authUser?.roles ?? [];
   const isAuthenticated = isRegisteredUser;
   const isEndUser = roles.includes(UserRole.END_USER);
+  const isSuperAdmin = roles.includes(UserRole.SUPER_ADMIN);
   const appShellNavContext = useMemo(
     () => ({
       roles,
@@ -468,6 +470,7 @@ export function MainLayout({
   const supportBadgeCount = liveCounts.tickets ?? badgeCountData?.badgeCount.tickets ?? 0;
   const inquiriesBadgeCount =
     liveCounts.inquiries ?? badgeCountData?.badgeCount.inquiries ?? 0;
+  const pendingReviewUsersCount = badgeCountData?.badgeCount.pendingReviewUsers ?? 0;
   const appShellNavBadgeCounts = useMemo<AppShellNavBadgeCounts>(
     () => ({
       products: productsBadgeCount,
@@ -1030,6 +1033,7 @@ export function MainLayout({
                 showCollapseToggle
                 onToggleCollapsed={() => setIsSideMenuCollapsed((previous) => !previous)}
                 badgeCounts={appShellNavBadgeCounts}
+                pendingReviewUsersCount={pendingReviewUsersCount}
                 profileAvatar={profileAvatar}
                 profileSubscriptionOnline={profileSubscriptionOnline}
               />
@@ -1066,6 +1070,8 @@ export function MainLayout({
                 item={item}
                 variant="bottom"
                 badgeCounts={appShellNavBadgeCounts}
+                mockedPendingApprovalCount={pendingReviewUsersCount}
+                showPendingApprovalBadge={isSuperAdmin}
                 profileAvatar={profileAvatar}
                 profileSubscriptionOnline={profileSubscriptionOnline}
               />

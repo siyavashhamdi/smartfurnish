@@ -71,6 +71,10 @@ export type ProductListItemRow = {
   readonly isActive?: boolean;
   readonly sortOrder?: number | null;
   readonly tags: string[];
+  readonly reviewStats?: {
+    readonly userCount: number;
+    readonly reviewCount: number;
+  } | null;
   readonly isPurchased?: boolean | null;
 };
 
@@ -168,6 +172,10 @@ export type ProductListRecord = {
   readonly isActive: boolean;
   readonly sortOrder: number;
   readonly tags: string[];
+  readonly reviewStats: {
+    readonly userCount: number;
+    readonly reviewCount: number;
+  } | null;
   readonly isPurchased: boolean;
 };
 
@@ -296,6 +304,15 @@ export function mapProductListRowToRecord(row: ProductListItemRow): ProductListR
     isActive: row.isActive ?? true,
     sortOrder: typeof row.sortOrder === "number" ? row.sortOrder : 0,
     tags: row.tags || [],
+    reviewStats:
+      row.reviewStats &&
+      typeof row.reviewStats.userCount === "number" &&
+      typeof row.reviewStats.reviewCount === "number"
+        ? {
+            userCount: row.reviewStats.userCount,
+            reviewCount: row.reviewStats.reviewCount,
+          }
+        : null,
     isPurchased: row.isPurchased === true,
   };
 }

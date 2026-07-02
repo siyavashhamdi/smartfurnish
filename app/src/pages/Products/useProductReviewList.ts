@@ -33,6 +33,10 @@ type ReviewListPage = {
     readonly endCursor?: string | null;
   };
   readonly summary?: ProductReviewSummaryStats | null;
+  readonly pendingModerationStats?: {
+    readonly userCount: number;
+    readonly reviewCount: number;
+  } | null;
 };
 
 type UseProductReviewListOptions = {
@@ -40,12 +44,14 @@ type UseProductReviewListOptions = {
   readonly mode: ProductReviewListMode;
   readonly enabled: boolean;
   readonly starsFilter: number | null;
+  readonly pendingModerationOnly?: boolean;
   readonly scrollRoot?: ProductReviewListScrollRoot;
 };
 
 export type ProductReviewListController = {
   readonly items: ReadonlyArray<EndUserProductReviewRecord | AdminProductReviewRecord>;
   readonly totalCount: number;
+  readonly pendingModerationCount: number;
   readonly ratingSummary: ProductReviewSummaryStats;
   readonly loading: boolean;
   readonly isFetchingMore: boolean;
@@ -90,6 +96,7 @@ export function useProductReviewList({
   mode,
   enabled,
   starsFilter,
+  pendingModerationOnly = false,
   scrollRoot = "list",
 }: UseProductReviewListOptions): ProductReviewListController {
   const isAdminMode = mode === "admin";
@@ -101,6 +108,7 @@ export function useProductReviewList({
 
   const [items, setItems] = useState<ReviewListItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [pendingModerationCount, setPendingModerationCount] = useState(0);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [endCursor, setEndCursor] = useState<string | null>(null);
   const [ratingSummary, setRatingSummary] = useState<ProductReviewSummaryStats>(() =>
@@ -114,7 +122,8 @@ export function useProductReviewList({
             productId,
             starsFilter,
             null,
-            PRODUCT_REVIEW_LIST_PAGE_SIZE
+            PRODUCT_REVIEW_LIST_PAGE_SIZE,
+            pendingModerationOnly
           )
         : buildEndUserProductReviewListVariables(
             productId,
@@ -122,7 +131,7 @@ export function useProductReviewList({
             null,
             PRODUCT_REVIEW_LIST_PAGE_SIZE
           ),
-    [productId, isAdminMode, starsFilter]
+    [productId, isAdminMode, starsFilter, pendingModerationOnly]
   );
 
   const queryDocument = isAdminMode ? PRODUCT_REVIEW_LIST_QUERY : USER_PRODUCT_REVIEW_LIST_QUERY;
@@ -151,6 +160,7 @@ export function useProductReviewList({
     hasPaginatedRef.current = false;
     setItems([]);
     setTotalCount(0);
+    setPendingModerationCount(0);
     setHasNextPage(false);
     setEndCursor(null);
     setRatingSummary(mapProductReviewRatingSummaryToStats(null));
@@ -172,6 +182,7 @@ export function useProductReviewList({
     if (!hasPaginatedRef.current) {
       setItems(page.items);
       setTotalCount(page.pagination.total);
+      setPendingModerationCount(page.pendingModerationStats?.reviewCount ?? 0);
       setHasNextPage(page.pagination.hasNextPage);
       setEndCursor(page.pagination.endCursor ?? null);
       setRatingSummary(mapProductReviewRatingSummaryToStats(page.summary));
@@ -278,6 +289,7 @@ export function useProductReviewList({
   return {
     items,
     totalCount,
+    pendingModerationCount,
     ratingSummary,
     loading: isInitialLoading,
     isFetchingMore,

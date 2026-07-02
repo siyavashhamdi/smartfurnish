@@ -79,6 +79,17 @@ $layout-break: 56.25rem;
   gap: 0.4rem;
 }
 
+.moderationFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.filterGroups {
+  display: grid;
+  gap: 0.45rem;
+}
+
 .listShell {
   display: flex;
   flex-direction: column;

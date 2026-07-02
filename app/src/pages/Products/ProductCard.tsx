@@ -177,6 +177,18 @@ const ProductCard = ({
 
         {isManagement ? (
           <div className={styles.topChipsRow} onClick={(event) => event.stopPropagation()}>
+            {item.reviewStats ? (
+              <div className={styles.reviewStatsBadge}>
+                <span className={styles.reviewStatsMetric}>
+                  {item.reviewStats.userCount.toLocaleString("fa-IR")} کاربر
+                </span>
+                <span className={styles.reviewStatsDivider}>|</span>
+                <span className={styles.reviewStatsMetric}>
+                  {item.reviewStats.reviewCount.toLocaleString("fa-IR")} نظر
+                </span>
+              </div>
+            ) : null}
+
             <AppTooltip
               title={item.isActive ? "وضعیت فعال" : "وضعیت غیرفعال"}
               arrow

@@ -26,12 +26,15 @@ import {
   UserDocument,
 } from "../../database/schemas";
 import {
+  BadgeCountTriggerAction,
+  BadgeCountTriggerSource,
   ProductReviewVisibility,
   ProductReviewModerationTarget,
   UserProductPurchaseStatus,
   UserRole,
   UserStatus,
 } from "../../enums";
+import { BadgeService } from "../badge";
 import { FileService, FileAccessUrlDescriptor } from "../file";
 import { resolveAvatarAccessUrl } from "../file/file-access-url.util";
 import {
@@ -44,6 +47,7 @@ import {
   ProductReviewListGqlResponse,
   ProductReviewListPaginatedCursorGqlResponse,
   ProductReviewModerationGqlResponse,
+  ProductReviewPendingModerationStatsGqlResponse,
   ProductReviewRatingSummaryGqlResponse,
   ProductReviewSubmitGqlResponse,
   UserProductReviewListGqlResponse,
@@ -101,6 +105,7 @@ export class ProductReviewService {
     private readonly userProductModel: Model<UserProductDocument>,
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
+    private readonly badgeService: BadgeService,
     private readonly fileService: FileService,
     private readonly userCaptchaService: UserCaptchaService,
   ) {}
@@ -205,6 +210,7 @@ export class ProductReviewService {
       targetUserId,
       input.productId,
     );
+    let didCreateReview = false;
 
     this.assertEndUserSubmitAllowed(
       review,
@@ -219,6 +225,12 @@ export class ProductReviewService {
       : null;
     let isNewRating = false;
 
+    const staffReplyVisibility = this.resolveStaffReplyVisibility(
+      input.messageVisibility,
+    );
+    const submitModerationVisibility =
+      this.resolveSubmitModerationVisibility(isStaff);
+
     const appendPublicOwnerMessage = (
       targetReview: ProductReviewDocument,
       body: string,
@@ -227,7 +239,7 @@ export class ProductReviewService {
         key: randomUUID(),
         body,
         moderation: {
-          visibility: ProductReviewVisibility.PUBLIC,
+          visibility: submitModerationVisibility,
         },
         senderSnapshot: userSnapshot,
         senderUserId: targetUserId,
@@ -252,10 +264,6 @@ export class ProductReviewService {
       });
     };
 
-    const staffReplyVisibility = this.resolveStaffReplyVisibility(
-      input.messageVisibility,
-    );
-
     const applySubmitChanges = (targetReview: ProductReviewDocument): void => {
       targetReview.userSnapshot = userSnapshot;
       targetReview.productSnapshot = { title: product.title };
@@ -265,7 +273,7 @@ export class ProductReviewService {
 
       if (!targetReview.moderation?.visibility) {
         targetReview.moderation = {
-          visibility: ProductReviewVisibility.PUBLIC,
+          visibility: submitModerationVisibility,
         };
       }
 
@@ -281,13 +289,16 @@ export class ProductReviewService {
                 : undefined,
             ratedAt: now,
             moderation: {
-              visibility: ProductReviewVisibility.PUBLIC,
+              visibility: submitModerationVisibility,
             },
           };
           isNewRating = true;
         } else {
           targetReview.rating.stars = input.stars!;
           targetReview.rating.updatedAt = now;
+          targetReview.rating.moderation = {
+            visibility: submitModerationVisibility,
+          };
 
           if (!isStaffSupportSubmit && hasCommentInput && !hadRatingComment) {
             targetReview.rating.comment = normalizedComment;
@@ -334,7 +345,7 @@ export class ProductReviewService {
           },
           messages: [],
           moderation: {
-            visibility: ProductReviewVisibility.PUBLIC,
+            visibility: submitModerationVisibility,
           },
           ...(userProduct ? { userProductId: userProduct._id } : {}),
           userId: targetUserId,
@@ -349,12 +360,13 @@ export class ProductReviewService {
                       : undefined,
                   ratedAt: now,
                   moderation: {
-                    visibility: ProductReviewVisibility.PUBLIC,
+                    visibility: submitModerationVisibility,
                   },
                 },
               }
             : {}),
         });
+        didCreateReview = true;
         isNewRating = hasStarInput;
 
         if (hasCommentInput) {
@@ -417,6 +429,15 @@ export class ProductReviewService {
       isNewRating = !review.rating && hasStarInput;
       applySubmitChanges(review);
       await review.save();
+    }
+
+    if (!isStaff) {
+      await this.publishReviewBadgeCountSignal(
+        review,
+        didCreateReview
+          ? BadgeCountTriggerAction.CREATED
+          : BadgeCountTriggerAction.UPDATED,
+      );
     }
 
     return this.toSubmitResponse(review, isStaff, isNewRating);
@@ -502,6 +523,11 @@ export class ProductReviewService {
 
     await review.save();
 
+    await this.publishReviewBadgeCountSignal(
+      review,
+      BadgeCountTriggerAction.UPDATED,
+    );
+
     const ownerUsersById = await this.buildReviewParticipantUsersById([
       { userId: review.userId, messages: review.messages ?? [] },
     ]);
@@ -534,7 +560,7 @@ export class ProductReviewService {
         userSnapshot: review.userSnapshot,
       },
       relatedLookups,
-      this.isReviewOwnerListable(review.userId, ownerUsersById),
+      true,
     );
   }
 
@@ -637,20 +663,20 @@ export class ProductReviewService {
   ): Promise<ProductReviewListPaginatedCursorGqlResponse> {
     const baseFilterQuery = this.buildSuperAdminListFilterQuery(input.filters);
     const productId = input.filters?.productId?.trim();
-    const [{ reviews, total, limit, hasNextPage }, summary] = await Promise.all(
-      [
+    const productObjectId = productId ? new Types.ObjectId(productId) : null;
+    const [{ reviews, total, limit, hasNextPage }, summary, pendingModerationStats] =
+      await Promise.all([
         this.findThreadSortedCursorPaginatedReviews(
           baseFilterQuery,
           input.options,
         ),
-        productId
-          ? this.computeProductRatingSummary(
-              new Types.ObjectId(productId),
-              false,
-            )
+        productObjectId
+          ? this.computeProductRatingSummary(productObjectId, false)
           : Promise.resolve(this.createEmptyProductRatingSummary()),
-      ],
-    );
+        productObjectId
+          ? this.computePendingModerationStatsForProduct(productObjectId)
+          : Promise.resolve(undefined),
+      ]);
     const relatedLookups = await this.buildRelatedLookups(
       reviews as ProductReviewAdminListRecord[],
     );
@@ -659,7 +685,7 @@ export class ProductReviewService {
       this.toSuperAdminListResponse(
         review,
         relatedLookups,
-        this.isReviewOwnerListable(review.userId, relatedLookups.usersById),
+        true,
       ),
     );
     const firstReview = items[0];
@@ -677,6 +703,113 @@ export class ProductReviewService {
         hasPreviousPage: Boolean(input.options?.startCursor),
       },
       summary,
+      pendingModerationStats,
+    };
+  }
+
+  private async computePendingModerationStatsForProduct(
+    productId: Types.ObjectId,
+  ): Promise<ProductReviewPendingModerationStatsGqlResponse> {
+    const rows = await this.productReviewModel
+      .aggregate<{
+        _id: Types.ObjectId;
+        reviewCount: number;
+        userIds: Types.ObjectId[];
+      }>([
+        {
+          $match: {
+            productId,
+            $and: [
+              {
+                $or: [
+                  { "audit.deletedAt": null },
+                  { "audit.deletedAt": { $exists: false } },
+                ],
+              },
+              {
+                $or: [
+                  {
+                    "moderation.visibility":
+                      ProductReviewVisibility.PENDING_APPROVAL,
+                  },
+                  {
+                    "rating.moderation.visibility":
+                      ProductReviewVisibility.PENDING_APPROVAL,
+                  },
+                  {
+                    messages: {
+                      $elemMatch: {
+                        "moderation.visibility":
+                          ProductReviewVisibility.PENDING_APPROVAL,
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        {
+          $addFields: {
+            pendingModerationCount: {
+              $add: [
+                {
+                  $cond: [
+                    {
+                      $eq: [
+                        "$moderation.visibility",
+                        ProductReviewVisibility.PENDING_APPROVAL,
+                      ],
+                    },
+                    1,
+                    0,
+                  ],
+                },
+                {
+                  $cond: [
+                    {
+                      $eq: [
+                        "$rating.moderation.visibility",
+                        ProductReviewVisibility.PENDING_APPROVAL,
+                      ],
+                    },
+                    1,
+                    0,
+                  ],
+                },
+                {
+                  $size: {
+                    $filter: {
+                      input: { $ifNull: ["$messages", []] },
+                      as: "message",
+                      cond: {
+                        $eq: [
+                          "$$message.moderation.visibility",
+                          ProductReviewVisibility.PENDING_APPROVAL,
+                        ],
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+        {
+          $group: {
+            _id: "$productId",
+            reviewCount: { $sum: "$pendingModerationCount" },
+            userIds: { $addToSet: "$userId" },
+          },
+        },
+      ])
+      .exec();
+
+    const row = rows[0];
+
+    return {
+      reviewCount: row?.reviewCount ?? 0,
+      userCount: row?.userIds?.length ?? 0,
     };
   }
 
@@ -696,17 +829,18 @@ export class ProductReviewService {
     productId: Types.ObjectId,
     forEndUser: boolean,
   ): FilterQuery<ProductReview> {
-    return {
+    const query: FilterQuery<ProductReview> = {
       productId,
       ...this.buildNotDeletedFilter(),
-      "moderation.visibility": forEndUser
-        ? ProductReviewVisibility.PUBLIC
-        : { $ne: ProductReviewVisibility.HIDDEN },
       rating: { $exists: true, $ne: null },
-      "rating.moderation.visibility": forEndUser
-        ? ProductReviewVisibility.PUBLIC
-        : { $ne: ProductReviewVisibility.HIDDEN },
     };
+
+    if (forEndUser) {
+      query["moderation.visibility"] = ProductReviewVisibility.PUBLIC;
+      query["rating.moderation.visibility"] = ProductReviewVisibility.PUBLIC;
+    }
+
+    return query;
   }
 
   private async computeProductRatingSummary(
@@ -962,6 +1096,28 @@ export class ProductReviewService {
     if (filters.hasMessages === false) {
       this.addAndCondition(query, {
         $or: [{ messages: [] }, { messages: { $exists: false } }],
+      });
+    }
+
+    if (filters.hasPendingModeration === true) {
+      this.addAndCondition(query, {
+        $or: [
+          {
+            "moderation.visibility": ProductReviewVisibility.PENDING_APPROVAL,
+          },
+          {
+            "rating.moderation.visibility":
+              ProductReviewVisibility.PENDING_APPROVAL,
+          },
+          {
+            messages: {
+              $elemMatch: {
+                "moderation.visibility":
+                  ProductReviewVisibility.PENDING_APPROVAL,
+              },
+            },
+          },
+        ],
       });
     }
 
@@ -1403,7 +1559,9 @@ export class ProductReviewService {
 
         return (
           message.moderation.visibility === ProductReviewVisibility.PUBLIC ||
-          message.moderation.visibility === ProductReviewVisibility.PRIVATE
+          message.moderation.visibility === ProductReviewVisibility.PRIVATE ||
+          message.moderation.visibility ===
+            ProductReviewVisibility.PENDING_APPROVAL
         );
       })
       .map((message) => {
@@ -1591,6 +1749,14 @@ export class ProductReviewService {
     );
   }
 
+  private resolveSubmitModerationVisibility(
+    isStaff: boolean,
+  ): ProductReviewVisibility {
+    return isStaff
+      ? ProductReviewVisibility.PUBLIC
+      : ProductReviewVisibility.PENDING_APPROVAL;
+  }
+
   private resolveStaffReplyVisibility(
     visibility?: ProductReviewVisibility,
   ): ProductReviewVisibility {
@@ -1602,7 +1768,10 @@ export class ProductReviewService {
       return ProductReviewVisibility.PRIVATE;
     }
 
-    if (visibility === ProductReviewVisibility.HIDDEN) {
+    if (
+      visibility === ProductReviewVisibility.HIDDEN ||
+      visibility === ProductReviewVisibility.PENDING_APPROVAL
+    ) {
       throw new BadRequestException(
         EXCEPTION_CONSTANT.SUPPORT_REPLY_VISIBILITY_INVALID,
       );
@@ -1613,6 +1782,22 @@ export class ProductReviewService {
 
   private isStaffRole(roles: UserRole[]): boolean {
     return roles.includes(UserRole.SUPER_ADMIN);
+  }
+
+  private async publishReviewBadgeCountSignal(
+    review: ProductReviewDocument,
+    action: BadgeCountTriggerAction,
+  ): Promise<void> {
+    await this.badgeService.publishCountSignal({
+      includeStaffUsers: true,
+      payload: {
+        source: BadgeCountTriggerSource.PRODUCT_REVIEW,
+        action,
+        reviewId: review._id.toString(),
+        productId: review.productId.toString(),
+        reviewUserId: review.userId.toString(),
+      },
+    });
   }
 
   private isStaffUser(user?: ProductReviewUserLookupRecord | null): boolean {

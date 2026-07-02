@@ -111,6 +111,15 @@ export class ProductReviewListFilterInput {
   @IsOptional()
   @IsBoolean({ message: "hasMessages filter must be a boolean" })
   hasMessages?: boolean;
+
+  @Field(() => Boolean, {
+    nullable: true,
+    description:
+      "Filter reviews with at least one pending moderation item (thread, rating, or message)",
+  })
+  @IsOptional()
+  @IsBoolean({ message: "hasPendingModeration filter must be a boolean" })
+  hasPendingModeration?: boolean;
 }
 
 @InputType()

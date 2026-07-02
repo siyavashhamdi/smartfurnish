@@ -13,6 +13,7 @@ import {
   type ProductReviewSubmitMutation,
   type ProductReviewSubmitMutationVariables,
   type EndUserProductReviewRecord,
+  resolveProductReviewSubmitSuccessMessage,
 } from "./product-reviews.api";
 import styles from "./styles/ProductReviewsSection.module.scss";
 
@@ -72,6 +73,7 @@ const ProductReviewSubmitForm = ({
   });
 
   const hasExistingRating = Boolean(existingReview?.rating);
+  const hasExistingReview = Boolean(existingReview);
   const trimmedComment = comment.trim();
   const canSubmit =
     stars >= 1 && stars <= 5 && !submitResult.loading && (!captchaEnabled || captchaValid);
@@ -86,15 +88,12 @@ const ProductReviewSubmitForm = ({
   );
 
   const resolveSuccessMessage = (): string => {
-    if (!hasExistingRating) {
-      return trimmedComment ? "نظر شما ثبت شد." : "امتیاز شما ثبت شد.";
-    }
-
-    if (trimmedComment) {
-      return "نظر جدید ثبت شد.";
-    }
-
-    return "امتیاز شما به‌روزرسانی شد.";
+    return resolveProductReviewSubmitSuccessMessage({
+      hasExistingRating,
+      hasExistingReview,
+      hasComment: Boolean(trimmedComment),
+      hasStars: stars >= 1 && stars <= 5,
+    });
   };
 
   const handleSubmit = (): void => {

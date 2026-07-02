@@ -13,6 +13,8 @@ import {
   UserProductDocument,
   UserProductInquiry,
   UserProductInquiryDocument,
+  ProductReview,
+  ProductReviewDocument,
 } from "../../database/schemas";
 import {
   BadgeCountTriggerAction,
@@ -22,6 +24,7 @@ import {
   UserProductInquiryStatus,
   UserProductPurchaseStatus,
   UserRole,
+  ProductReviewVisibility,
 } from "../../enums";
 import { AuthenticatedUser } from "../../types/graphql-context.types";
 import { PushNotificationService } from "../push-notification";
@@ -62,6 +65,8 @@ export class BadgeService {
     private readonly ticketModel: Model<TicketDocument>,
     @InjectModel(UserProductInquiry.name)
     private readonly userProductInquiryModel: Model<UserProductInquiryDocument>,
+    @InjectModel(ProductReview.name)
+    private readonly productReviewModel: Model<ProductReviewDocument>,
     private readonly userService: UserService,
     private readonly userSubscriptionService: UserSubscriptionService,
     private readonly pushNotificationService: PushNotificationService,
@@ -77,18 +82,20 @@ export class BadgeService {
         notifications: null,
         tickets: null,
         inquiries: null,
+        pendingReviewUsers: null,
       };
     }
 
     const isStaff = this.isStaff(user);
 
-    const [products, payments, notifications, tickets, inquiries] =
+    const [products, payments, notifications, tickets, inquiries, pendingReviewUsers] =
       await Promise.all([
         this.countProducts(isStaff),
         isStaff ? this.countPendingPayments() : Promise.resolve(null),
         this.countUnreadNotifications(user),
         this.countTickets(user, isStaff),
         isStaff ? this.countActionableInquiries() : Promise.resolve(null),
+        isStaff ? this.countPendingReviewUsers() : Promise.resolve(null),
       ]);
 
     return {
@@ -97,6 +104,7 @@ export class BadgeService {
       notifications,
       tickets,
       inquiries,
+      pendingReviewUsers,
     };
   }
 
@@ -225,6 +233,57 @@ export class BadgeService {
         ],
       })
       .exec();
+  }
+
+  private async countPendingReviewUsers(): Promise<number> {
+    const pendingRows = await this.productReviewModel
+      .aggregate<{ _id: { userId: Types.ObjectId; productId: Types.ObjectId } }>(
+        [
+          {
+            $match: {
+              $and: [
+                {
+                  $or: [
+                    { "audit.deletedAt": null },
+                    { "audit.deletedAt": { $exists: false } },
+                  ],
+                },
+                {
+                  $or: [
+                    {
+                      "moderation.visibility":
+                        ProductReviewVisibility.PENDING_APPROVAL,
+                    },
+                    {
+                      "rating.moderation.visibility":
+                        ProductReviewVisibility.PENDING_APPROVAL,
+                    },
+                    {
+                      messages: {
+                        $elemMatch: {
+                          "moderation.visibility":
+                            ProductReviewVisibility.PENDING_APPROVAL,
+                        },
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+          {
+            $group: {
+              _id: {
+                userId: "$userId",
+                productId: "$productId",
+              },
+            },
+          },
+        ],
+      )
+      .exec();
+
+    return pendingRows.length;
   }
 
   private isStaff(user: AuthenticatedUser): boolean {

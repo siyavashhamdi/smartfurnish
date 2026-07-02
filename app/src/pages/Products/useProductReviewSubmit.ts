@@ -8,6 +8,7 @@ import { useSnackbar } from "../../hooks/useSnackbar";
 import { extractGraphQLErrorCode } from "../../utilities/graphql-error.util";
 import {
   isStaffProductReviewer,
+  resolveProductReviewSubmitSuccessMessage,
   type ProductReviewSubmitMutation,
   type ProductReviewSubmitMutationVariables,
 } from "./product-reviews.api";
@@ -177,11 +178,16 @@ export function useProductReviewSubmit({
 
       queueSubmit({
         stars,
-        successMessage: hasExistingRating ? "امتیاز شما به‌روزرسانی شد." : "امتیاز شما ثبت شد.",
+        successMessage: resolveProductReviewSubmitSuccessMessage({
+          isStaff: isStaffProductReviewer(user?.roles),
+          hasExistingRating,
+          hasExistingReview,
+          hasStars: true,
+        }),
       });
       return true;
     },
-    [hasExistingRating, persistedStars, queueSubmit]
+    [hasExistingRating, persistedStars, queueSubmit, user?.roles]
   );
 
   const submitComment = useCallback(
@@ -191,15 +197,21 @@ export function useProductReviewSubmit({
         return;
       }
 
-      const hasStarInput = stars >= 1 && stars <= 5;
+      const hasStarInput = !hasExistingRating && stars >= 1 && stars <= 5;
 
       queueSubmit({
         ...(hasStarInput ? { stars } : {}),
         comment: trimmedComment,
-        successMessage: hasExistingReview ? "نظر جدید ثبت شد." : "نظر شما ثبت شد.",
+        successMessage: resolveProductReviewSubmitSuccessMessage({
+          isStaff: isStaffProductReviewer(user?.roles),
+          hasExistingRating,
+          hasExistingReview,
+          hasComment: true,
+          ...(hasStarInput ? { hasStars: true } : {}),
+        }),
       });
     },
-    [hasExistingReview, queueSubmit]
+    [hasExistingRating, hasExistingReview, queueSubmit, user?.roles]
   );
 
   const confirmCaptchaDialog = useCallback((): void => {
@@ -223,7 +235,6 @@ export function useProductReviewSubmit({
     pendingIsStarUpdate: Boolean(
       pendingSubmit && !pendingSubmit.comment && typeof pendingSubmit.stars === "number"
     ),
-    pendingSubmitStars: pendingSubmit?.stars ?? 0,
     submitComment,
     submitStars,
     successMessageRef,

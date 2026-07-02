@@ -13,7 +13,6 @@ import {
 import { type ReactElement } from "react";
 
 import { appSurfacePaperSx } from "../../shared/crud/modalThemeSx";
-import StarRating from "../../shared/rating/StarRating";
 import { LoginCaptchaField } from "../Login/components/LoginCaptchaField";
 import styles from "./styles/ProductReviewsSection.module.scss";
 
@@ -22,7 +21,6 @@ type ProductReviewCaptchaDialogProps = {
   readonly captchaVersion: number;
   readonly submitting: boolean;
   readonly canConfirm: boolean;
-  readonly selectedStars: number;
   readonly onClose: () => void;
   readonly onConfirm: () => void;
   readonly onCaptchaChange: (input: { captchaId: string; value: string; isValid: boolean }) => void;
@@ -33,7 +31,6 @@ const ProductReviewCaptchaDialog = ({
   captchaVersion,
   submitting,
   canConfirm,
-  selectedStars,
   onClose,
   onConfirm,
   onCaptchaChange,
@@ -71,29 +68,12 @@ const ProductReviewCaptchaDialog = ({
       </DialogTitle>
 
       <DialogContent className={styles.captchaDialogContent}>
-        {selectedStars >= 1 ? (
-          <Box className={styles.captchaDialogStarsRow}>
-            <Typography component="span" variant="body2" className={styles.captchaDialogStarsLabel}>
-              امتیاز شما:
-            </Typography>
-            <StarRating value={selectedStars} size="medium" ariaLabel={`امتیاز ${selectedStars}`} />
-          </Box>
-        ) : (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            className={styles.captchaDialogStarsEmpty}
-          >
-            هنوز امتیازی ثبت نکرده‌اید.
-          </Typography>
-        )}
-
         <Typography
           variant="body2"
           color="text.secondary"
           className={styles.captchaDialogDescription}
         >
-          برای ثبت امتیاز یا نظر، کد امنیتی زیر را وارد کنید.
+          برای ارسال نظر، کد امنیتی زیر را وارد کنید.
         </Typography>
 
         {open ? (

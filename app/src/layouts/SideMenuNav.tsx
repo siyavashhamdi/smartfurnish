@@ -29,6 +29,7 @@ export interface SideMenuNavProps {
   readonly onToggleCollapsed?: () => void;
   readonly showCollapseToggle?: boolean;
   readonly badgeCounts?: AppShellNavBadgeCounts;
+  readonly pendingReviewUsersCount?: number;
   readonly profileAvatar?: { readonly src: string; readonly alt: string } | null;
   readonly profileSubscriptionOnline?: boolean;
 }
@@ -40,18 +41,19 @@ const DEFAULT_BADGE_COUNTS: AppShellNavBadgeCounts = {
   support: 0,
   inquiries: 0,
 };
-
 export function SideMenuNav({
   collapsed,
   onToggleCollapsed,
   showCollapseToggle = false,
   badgeCounts = DEFAULT_BADGE_COUNTS,
+  pendingReviewUsersCount = 0,
   profileAvatar = null,
   profileSubscriptionOnline,
 }: SideMenuNavProps): ReactElement {
   const { user } = useAuth();
   const roles = user?.roles ?? [];
   const isEndUser = roles.includes(UserRole.END_USER);
+  const isSuperAdmin = roles.includes(UserRole.SUPER_ADMIN);
   const isRegisteredUser = Boolean(user) && !isAnonymousUser(roles);
   const navContext = {
     roles,
@@ -111,6 +113,8 @@ export function SideMenuNav({
                 item={item}
                 variant="side"
                 badgeCounts={badgeCounts}
+                mockedPendingApprovalCount={pendingReviewUsersCount}
+                showPendingApprovalBadge={isSuperAdmin}
                 profileAvatar={profileAvatar}
                 profileSubscriptionOnline={profileSubscriptionOnline}
               />

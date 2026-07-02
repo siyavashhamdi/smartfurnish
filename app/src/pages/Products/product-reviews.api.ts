@@ -1,7 +1,11 @@
 import type { SortOrder } from "./product-list.api";
 import { UserRole } from "../../lib/graphql/generated";
 
-export type ProductReviewVisibility = "PUBLIC" | "PRIVATE" | "HIDDEN";
+export type ProductReviewVisibility =
+  | "PENDING_APPROVAL"
+  | "PUBLIC"
+  | "PRIVATE"
+  | "HIDDEN";
 
 export type ProductReviewModerationTarget = "REVIEW" | "RATING" | "MESSAGE";
 
@@ -117,11 +121,17 @@ export type UserProductReviewListQuery = {
   };
 };
 
+export type ProductReviewPendingModerationStats = {
+  userCount: number;
+  reviewCount: number;
+};
+
 export type ProductReviewListQuery = {
   productReviewList: {
     items: AdminProductReviewRecord[];
     pagination: ProductReviewPagination;
     summary: ProductReviewSummaryStats;
+    pendingModerationStats?: ProductReviewPendingModerationStats | null;
   };
 };
 
@@ -151,6 +161,7 @@ export type ProductReviewListQueryVariables = {
     filters?: {
       productId?: string;
       stars?: number;
+      hasPendingModeration?: boolean;
     };
     options: {
       limit: number;
@@ -226,6 +237,46 @@ export type ProductReviewModerationUpdateMutationVariables = {
 export const PRODUCT_REVIEW_LIST_PAGE_SIZE = 8;
 export const PRODUCT_REVIEW_COMMENT_PREVIEW_LIMIT = 2;
 export const PRODUCT_REVIEW_COMMENT_PREVIEW_LENGTH = 180;
+
+const PRODUCT_REVIEW_PENDING_APPROVAL_NOTE =
+  " فعلاً فقط برای شما قابل مشاهده است و پس از تأیید، برای دیگران نیز نمایش داده می‌شود.";
+
+export function resolveProductReviewSubmitSuccessMessage(input: {
+  readonly isStaff?: boolean;
+  readonly hasExistingRating: boolean;
+  readonly hasExistingReview: boolean;
+  readonly hasComment?: boolean;
+  readonly hasStars?: boolean;
+}): string {
+  const { isStaff, hasExistingRating, hasExistingReview, hasComment, hasStars } = input;
+
+  if (isStaff) {
+    if (hasComment) {
+      return hasExistingReview ? "نظر جدید ثبت شد." : "نظر شما ثبت شد.";
+    }
+
+    if (hasStars) {
+      return hasExistingRating ? "امتیاز شما به‌روزرسانی شد." : "امتیاز شما ثبت شد.";
+    }
+
+    return "ثبت با موفقیت انجام شد.";
+  }
+
+  if (hasStars && !hasComment && hasExistingRating) {
+    return "امتیاز شما به‌روزرسانی شد.";
+  }
+
+  if (hasComment) {
+    const base = hasExistingReview ? "نظر جدید ثبت شد." : "نظر شما ثبت شد.";
+    return `${base}${PRODUCT_REVIEW_PENDING_APPROVAL_NOTE}`;
+  }
+
+  if (hasStars && !hasExistingRating) {
+    return `امتیاز شما ثبت شد.${PRODUCT_REVIEW_PENDING_APPROVAL_NOTE}`;
+  }
+
+  return "ثبت با موفقیت انجام شد.";
+}
 
 export function canUseEndUserProductReviewList(roles: readonly string[] | undefined): boolean {
   if (!roles?.length) {
@@ -354,6 +405,7 @@ export function findOwnProductReview(
 }
 
 export const PRODUCT_REVIEW_VISIBILITY_LABEL: Record<ProductReviewVisibility, string> = {
+  PENDING_APPROVAL: "در انتظار تأیید",
   PUBLIC: "عمومی",
   PRIVATE: "خصوصی",
   HIDDEN: "پنهان",
@@ -363,6 +415,10 @@ export const PRODUCT_REVIEW_VISIBILITY_OPTIONS: ReadonlyArray<{
   readonly value: ProductReviewVisibility;
   readonly label: string;
 }> = [
+  {
+    value: "PENDING_APPROVAL",
+    label: PRODUCT_REVIEW_VISIBILITY_LABEL.PENDING_APPROVAL,
+  },
   { value: "PUBLIC", label: PRODUCT_REVIEW_VISIBILITY_LABEL.PUBLIC },
   { value: "PRIVATE", label: PRODUCT_REVIEW_VISIBILITY_LABEL.PRIVATE },
   { value: "HIDDEN", label: PRODUCT_REVIEW_VISIBILITY_LABEL.HIDDEN },
@@ -390,6 +446,14 @@ export const PRODUCT_REVIEW_STAR_FILTER_OPTIONS: ReadonlyArray<{
   { value: 1, label: "۱ ستاره" },
 ];
 
+export const PRODUCT_REVIEW_MODERATION_FILTER_OPTIONS: ReadonlyArray<{
+  readonly value: boolean;
+  readonly label: string;
+}> = [
+  { value: false, label: "همه" },
+  { value: true, label: "در انتظار تایید" },
+];
+
 export function buildEndUserProductReviewListVariables(
   productId: string,
   starsFilter: number | null,
@@ -414,13 +478,15 @@ export function buildAdminProductReviewListVariables(
   productId: string,
   starsFilter: number | null,
   startCursor: string | null,
-  limit = PRODUCT_REVIEW_LIST_PAGE_SIZE
+  limit = PRODUCT_REVIEW_LIST_PAGE_SIZE,
+  pendingModerationOnly = false
 ): ProductReviewListQueryVariables {
   return {
     input: {
       filters: {
         productId,
         ...(starsFilter != null ? { stars: starsFilter } : {}),
+        ...(pendingModerationOnly ? { hasPendingModeration: true } : {}),
       },
       options: {
         limit,

@@ -7,6 +7,7 @@ import {
   type CSSProperties,
   type MouseEvent,
   type ReactElement,
+  type ReactNode,
   type TouchEvent,
 } from "react";
 
@@ -25,7 +26,7 @@ type IndicatorMetrics = {
 
 export type SegmentFilterTabOption<T extends string> = {
   readonly value: T;
-  readonly label: string;
+  readonly label: ReactNode;
 };
 
 export type SegmentFilterTabChangeOptions = {

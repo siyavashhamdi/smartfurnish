@@ -257,6 +257,21 @@ export class ProductReviewRatingSummaryGqlResponse {
 }
 
 @ObjectType()
+export class ProductReviewPendingModerationStatsGqlResponse {
+  @Field(() => Int, {
+    description:
+      "Number of distinct users with at least one pending moderation item for this product",
+  })
+  userCount: number;
+
+  @Field(() => Int, {
+    description:
+      "Total pending moderation items (thread, rating, and messages) for this product",
+  })
+  reviewCount: number;
+}
+
+@ObjectType()
 export class ProductReviewListPaginatedCursorGqlResponse {
   @Field(() => [ProductReviewListGqlResponse], {
     description: "Full product review list for SUPER_ADMIN",
@@ -273,4 +288,11 @@ export class ProductReviewListPaginatedCursorGqlResponse {
       "Aggregated rating summary excluding hidden reviews and hidden ratings",
   })
   summary: ProductReviewRatingSummaryGqlResponse;
+
+  @Field(() => ProductReviewPendingModerationStatsGqlResponse, {
+    nullable: true,
+    description:
+      "Pending moderation counts when productReviewList is filtered by productId",
+  })
+  pendingModerationStats?: ProductReviewPendingModerationStatsGqlResponse;
 }

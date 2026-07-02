@@ -158,6 +158,20 @@ export class ProductSetPieceGqlResponse {
 }
 
 @ObjectType()
+export class ProductListReviewStatsGqlResponse {
+  @Field(() => Int, {
+    description:
+      "Number of distinct users who have submitted at least one review for this product",
+  })
+  userCount: number;
+
+  @Field(() => Int, {
+    description: "Total review threads recorded for this product",
+  })
+  reviewCount: number;
+}
+
+@ObjectType()
 export class ProductListSummaryGqlResponse {
   @Field(() => ID, { description: "Product ID" })
   id: Types.ObjectId;
@@ -196,6 +210,12 @@ export class ProductListSummaryGqlResponse {
 
   @Field(() => [String], { description: "Product tags" })
   tags: string[];
+
+  @Field(() => ProductListReviewStatsGqlResponse, {
+    nullable: true,
+    description: "Review activity summary for SUPER_ADMIN list cards",
+  })
+  reviewStats?: ProductListReviewStatsGqlResponse;
 }
 
 @ObjectType()

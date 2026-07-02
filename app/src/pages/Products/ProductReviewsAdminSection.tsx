@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactElement } from "react";
 
 import { useAuth } from "../../contexts/AuthContext";
 import ProductReviewAdminCard from "./ProductReviewAdminCard";
+import ProductReviewModerationFilters from "./ProductReviewModerationFilters";
 import ProductReviewStarFilters from "./ProductReviewStarFilters";
 import ProductReviewSummary from "./ProductReviewSummary";
 import ProductReviewUserBox from "./ProductReviewUserBox";
@@ -27,6 +28,7 @@ const ProductReviewsAdminSection = ({
 }: ProductReviewsAdminSectionProps): ReactElement => {
   const { user, isAuthenticated } = useAuth();
   const [starsFilter, setStarsFilter] = useState<number | null>(null);
+  const [pendingModerationOnly, setPendingModerationOnly] = useState(false);
   const canUseReviewList = canUseAdminProductReviewList(user?.roles);
 
   const canSubmitOwnReview = resolveCanSubmitProductReview({
@@ -39,6 +41,7 @@ const ProductReviewsAdminSection = ({
     mode: "admin",
     enabled: Boolean(productId) && canUseReviewList,
     starsFilter,
+    pendingModerationOnly,
     scrollRoot: "parent",
   });
 
@@ -93,11 +96,19 @@ const ProductReviewsAdminSection = ({
       <div className={styles.listFixed}>
         <ProductReviewSummary stats={summaryStats} isPartialSample={false} />
 
-        <ProductReviewStarFilters
-          activeStars={starsFilter}
-          disabled={reviewList.loading}
-          onChange={setStarsFilter}
-        />
+        <div className={styles.filterGroups}>
+          <ProductReviewStarFilters
+            activeStars={starsFilter}
+            disabled={reviewList.loading}
+            onChange={setStarsFilter}
+          />
+
+          <ProductReviewModerationFilters
+            pendingModerationOnly={pendingModerationOnly}
+            disabled={reviewList.loading}
+            onChange={setPendingModerationOnly}
+          />
+        </div>
 
         {reviewList.error ? (
           <Alert
@@ -158,9 +169,11 @@ const ProductReviewsAdminSection = ({
               <ReviewsRoundedIcon color="primary" />
               <h3>هنوز نظری ثبت نشده</h3>
               <p>
-                {starsFilter != null
-                  ? "نظری با این امتیاز پیدا نشد. فیلتر دیگری را امتحان کنید."
-                  : "برای این محصول هنوز امتیاز یا نظری ثبت نشده است."}
+                {pendingModerationOnly
+                  ? "نظری در انتظار تایید پیدا نشد."
+                  : starsFilter != null
+                    ? "نظری با این امتیاز پیدا نشد. فیلتر دیگری را امتحان کنید."
+                    : "برای این محصول هنوز امتیاز یا نظری ثبت نشده است."}
               </p>
             </div>
           ) : null}

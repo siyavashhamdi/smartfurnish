@@ -280,6 +280,30 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   gap: 0.4rem;
 }
 
+.reviewStatsBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.28rem 0.48rem;
+  border-radius: 999rem;
+  background: rgba(15, 23, 42, 0.58);
+  color: #fff;
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1;
+  border: 0.0625rem solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0.12rem 0.45rem rgba(15, 23, 42, 0.2);
+  backdrop-filter: blur(0.3rem);
+}
+
+.reviewStatsMetric {
+  white-space: nowrap;
+}
+
+.reviewStatsDivider {
+  opacity: 0.7;
+}
+
 .releaseTypeChipWrap {
   display: inline-flex;
 }

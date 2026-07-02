@@ -11,6 +11,8 @@ type AppShellNavItemIconProps = {
   readonly item: AppShellNavItemDefinition;
   readonly variant: "side" | "bottom";
   readonly badgeCounts: AppShellNavBadgeCounts;
+  readonly mockedPendingApprovalCount?: number;
+  readonly showPendingApprovalBadge?: boolean;
   readonly profileAvatar?: { readonly src: string; readonly alt: string } | null;
   /** When set, profile icon shows a green/gray subscription status dot. */
   readonly profileSubscriptionOnline?: boolean;
@@ -27,6 +29,8 @@ export function AppShellNavItemIcon({
   item,
   variant,
   badgeCounts,
+  mockedPendingApprovalCount = 0,
+  showPendingApprovalBadge = false,
   profileAvatar,
   profileSubscriptionOnline,
 }: AppShellNavItemIconProps): ReactElement {
@@ -85,12 +89,27 @@ export function AppShellNavItemIcon({
   }
 
   if (!item.badge || badgeCount <= 0) {
+    if (
+      item.id === "products" &&
+      showPendingApprovalBadge &&
+      mockedPendingApprovalCount > 0
+    ) {
+      return (
+        <span className="app-shell-nav__multi-badge-wrap">
+          {icon}
+          <span className="app-shell-nav__pending-approval-badge">
+            {mockedPendingApprovalCount > 99 ? "99+" : mockedPendingApprovalCount}
+          </span>
+        </span>
+      );
+    }
+
     return icon;
   }
 
   const badgeColor = BADGE_COLORS[item.badge as keyof typeof BADGE_COLORS] ?? "default";
 
-  return (
+  const primaryBadge = (
     <Badge
       badgeContent={badgeCount}
       color={badgeColor}
@@ -108,4 +127,21 @@ export function AppShellNavItemIcon({
       {icon}
     </Badge>
   );
+
+  if (
+    item.id === "products" &&
+    showPendingApprovalBadge &&
+    mockedPendingApprovalCount > 0
+  ) {
+    return (
+      <span className="app-shell-nav__multi-badge-wrap">
+        {primaryBadge}
+        <span className="app-shell-nav__pending-approval-badge">
+          {mockedPendingApprovalCount > 99 ? "99+" : mockedPendingApprovalCount}
+        </span>
+      </span>
+    );
+  }
+
+  return primaryBadge;
 }
